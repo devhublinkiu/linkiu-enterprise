@@ -1,6 +1,7 @@
 import { PropsWithChildren } from 'react';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
+import FloatingWhatsApp from '@/Components/FloatingWhatsApp';
 import { cn } from '@/lib/utils';
 
 export default function PublicLayout({ children }: PropsWithChildren) {
@@ -16,6 +17,9 @@ export default function PublicLayout({ children }: PropsWithChildren) {
 
             {/* Global Footer */}
             <Footer />
+
+            {/* Floating WhatsApp Button */}
+            <FloatingWhatsApp />
         </div>
     );
 }

@@ -176,9 +176,9 @@ export default function Navbar() {
                             </button>
                         </div>
 
-                        <div className="p-8 space-y-8 flex-1">
+                        <div className="p-4 space-y-4 flex-1">
                             {navItems.map((item) => (
-                                <div key={item.name} className="space-y-4">
+                                <div key={item.name} className="space-y-1">
                                     {item.submenu ? (
                                         <>
                                             <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-500/50 px-4">
@@ -190,7 +190,10 @@ export default function Navbar() {
                                                         key={sub.name}
                                                         href={sub.href}
                                                         onClick={() => setIsMobileMenuOpen(false)}
-                                                        className="flex items-center gap-4 px-4 py-4 text-sm font-bold text-slate-700 hover:bg-orange-50 hover:text-orange-500 rounded-xl transition-all active:scale-95 group"
+                                                        className={cn(
+                                                            "flex items-center gap-4 px-4 py-2.5 text-sm font-bold rounded-xl transition-all active:scale-95 group",
+                                                            (usePage().url === sub.href || (sub.href.startsWith('/') && usePage().url === sub.href)) ? "bg-orange-500 text-white shadow-md shadow-orange-500/20" : "text-slate-700 hover:bg-orange-50 hover:text-orange-500 border-l-2 border-transparent"
+                                                        )}
                                                     >
                                                         {sub.name}
                                                     </Link>
@@ -201,7 +204,10 @@ export default function Navbar() {
                                         <Link
                                             href={item.href}
                                             onClick={() => setIsMobileMenuOpen(false)}
-                                            className="block px-4 py-4 text-sm font-bold text-slate-900 hover:bg-orange-50 hover:text-orange-500 rounded-xl transition-all"
+                                            className={cn(
+                                                "block px-4 py-2.5 text-sm font-bold rounded-xl transition-all",
+                                                (usePage().url === item.href || (item.href?.startsWith('/') && usePage().url === item.href)) ? "bg-orange-500 text-white shadow-md shadow-orange-500/20" : "text-slate-900 hover:bg-orange-50 hover:text-orange-500 border-l-2 border-transparent"
+                                            )}
                                         >
                                             {item.name}
                                         </Link>

@@ -140,13 +140,21 @@ export default function Footer() {
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
-                                <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-orange-500 flex-shrink-0">
+                            <div className="flex gap-4 group/item">
+                                <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-orange-500 flex-shrink-0 group-hover/item:bg-orange-500 group-hover/item:text-white transition-colors">
                                     <Phone size={18} />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-black uppercase text-white tracking-widest">Contacto Directo</p>
-                                    <p className="text-sm">Disponible en horarios de oficina</p>
+                                    <p className="text-xs font-black uppercase text-white tracking-widest">WhatsApp / Celular</p>
+                                    <a 
+                                        href="https://wa.me/573507880664" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-sm font-bold hover:text-white transition-colors flex items-center gap-2"
+                                    >
+                                        +57 350 788 0664
+                                        <ExternalLink size={14} className="opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                                    </a>
                                 </div>
                             </div>
                         </div>

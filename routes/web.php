@@ -259,14 +259,6 @@ Route::middleware('auth')->group(function () {
         Route::get('contacts/{contact}', [App\Http\Controllers\Admin\ContactController::class, 'show'])->name('contacts.show');
         Route::patch('contacts/{contact}/status', [App\Http\Controllers\Admin\ContactController::class, 'updateStatus'])->name('contacts.update-status');
         Route::delete('contacts/{contact}', [App\Http\Controllers\Admin\ContactController::class, 'destroy'])->name('contacts.destroy');
-
-        // Red CAMEP Admin
-        Route::prefix('red-camep')->name('forums.')->group(function() {
-            Route::get('categories', [\App\Http\Controllers\Admin\ForumCategoryController::class, 'index'])->name('categories.index');
-            Route::post('categories', [\App\Http\Controllers\Admin\ForumCategoryController::class, 'store'])->name('categories.store');
-            Route::patch('categories/{category}', [\App\Http\Controllers\Admin\ForumCategoryController::class, 'update'])->name('categories.update');
-            Route::delete('categories/{category}', [\App\Http\Controllers\Admin\ForumCategoryController::class, 'destroy'])->name('categories.destroy');
-        });
     });
 
     Route::post('logout', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy'])

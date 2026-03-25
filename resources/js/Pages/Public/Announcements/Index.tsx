@@ -81,12 +81,12 @@ export default function Index({ announcements }: Props) {
                     {announcements.data.map((item) => (
                         <Card key={item.id} className="group relative border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-500 rounded-xl overflow-hidden bg-white">
                             {/* Image Header */}
-                            <div className="aspect-[16/10] overflow-hidden relative bg-slate-100">
+                            <div className="w-[378px] h-[200px] overflow-hidden relative bg-slate-100">
                                 {item.cover_url ? (
                                     <img
                                         src={item.cover_url}
                                         alt={item.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+                                        className="w-[378px] h-[200px] group-hover:scale-105 transition-transform duration-1000"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-slate-200">

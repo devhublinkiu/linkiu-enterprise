@@ -2,9 +2,9 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { Button } from '@/Components/ui/Button';
 import { Card, CardContent } from '@/Components/ui/Card';
-import { 
-    Megaphone, 
-    Calendar, 
+import {
+    Megaphone,
+    Calendar,
     ArrowRight,
     Search
 } from 'lucide-react';
@@ -60,14 +60,14 @@ export default function Index({ announcements }: Props) {
 
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-16 md:py-24">
-                
+
                 {/* Search Bar Placeholder */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
                     <div className="relative w-full md:w-96">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input 
-                            type="text" 
-                            placeholder="Buscar anuncios..." 
+                        <input
+                            type="text"
+                            placeholder="Buscar anuncios..."
                             className="w-full pl-12 pr-6 h-14 rounded-xl border-slate-200 focus:ring-orange-500 focus:border-orange-500 bg-white shadow-sm font-medium transition-all"
                         />
                     </div>
@@ -77,15 +77,15 @@ export default function Index({ announcements }: Props) {
                 </div>
 
                 {/* Grid Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {announcements.data.map((item) => (
                         <Card key={item.id} className="group relative border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-500 rounded-xl overflow-hidden bg-white">
                             {/* Image Header */}
                             <div className="aspect-[16/10] overflow-hidden relative bg-slate-100">
                                 {item.cover_url ? (
-                                    <img 
-                                        src={item.cover_url} 
-                                        alt={item.title} 
+                                    <img
+                                        src={item.cover_url}
+                                        alt={item.title}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
                                     />
                                 ) : (
@@ -102,7 +102,7 @@ export default function Index({ announcements }: Props) {
                                         {item.title}
                                     </h3>
                                 </Link>
-                                
+
                                 <p className="text-slate-500 text-sm line-clamp-3 mb-6 font-medium leading-relaxed">
                                     {item.excerpt || "Consulte los detalles oficiales de esta publicación institucional de CAMEP."}
                                 </p>

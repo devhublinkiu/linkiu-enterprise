@@ -9,11 +9,24 @@ use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = Service::with('category')->withCount('associates');
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        $perPage = in_array((int) $request->per_page, [10, 25, 50]) ? (int) $request->per_page : 10;
+
         return inertia('Admin/Services/Index', [
-            'services' => Service::with('category')->withCount('associates')->get(),
-            'categories' => ServiceCategory::all()
+            'services'   => $query->latest()->paginate($perPage)->withQueryString(),
+            'categories' => ServiceCategory::all(),
+            'filters'    => $request->only(['search', 'category_id', 'per_page']),
         ]);
     }
 

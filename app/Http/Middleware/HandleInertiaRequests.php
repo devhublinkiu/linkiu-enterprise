@@ -114,6 +114,11 @@ class HandleInertiaRequests extends Middleware
                 'company_name' => 'CAMEP',
                 'plan_type'    => 'Premium',
             ],
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error'   => $request->session()->get('error'),
+                'draft_saved' => $request->session()->get('draft_saved'),
+            ],
         ];
     }
 }

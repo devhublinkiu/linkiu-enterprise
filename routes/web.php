@@ -150,18 +150,24 @@ Route::middleware('auth')->group(function () {
     Route::name('associate.company.')->prefix('my-company')->middleware(['auth', 'associate.onboarding'])->group(function () {
         Route::get('/basic-info', [App\Http\Controllers\AssociateController::class, 'editBasicInfo'])->name('basic');
         Route::post('/basic-info', [App\Http\Controllers\AssociateController::class, 'updateBasicInfo'])->name('update.basic');
+        Route::post('/basic-info/draft', [App\Http\Controllers\AssociateController::class, 'saveBasicInfoDraft'])->name('save.draft');
+        Route::post('/basic-info/request-change', [App\Http\Controllers\AssociateController::class, 'requestFieldChange'])->name('request.field.change');
         
+
         Route::get('/characterization', [App\Http\Controllers\AssociateController::class, 'editCharacterization'])->name('characterization');
         Route::post('/characterization', [App\Http\Controllers\AssociateController::class, 'updateCharacterization'])->name('update.characterization');
+        Route::post('/characterization/draft', [App\Http\Controllers\AssociateController::class, 'saveCharacterizationDraft'])->name('save.characterization.draft');
         
         Route::get('/contacts', [App\Http\Controllers\AssociateController::class, 'editContacts'])->name('contacts');
         Route::post('/contacts', [App\Http\Controllers\AssociateController::class, 'updateContacts'])->name('update.contacts');
+        Route::post('/contacts/draft', [App\Http\Controllers\AssociateController::class, 'saveContactsDraft'])->name('save.contacts.draft');
 
         Route::get('/services', [App\Http\Controllers\AssociateController::class, 'editServices'])->name('services');
         Route::post('/services', [App\Http\Controllers\AssociateController::class, 'updateServices'])->name('update.services');
 
         Route::get('/documentation', [App\Http\Controllers\AssociateController::class, 'editDocumentation'])->name('documentation');
         Route::post('/documentation', [App\Http\Controllers\AssociateController::class, 'updateDocumentation'])->name('update.documentation');
+        Route::post('/documentation/draft', [App\Http\Controllers\AssociateController::class, 'saveDocumentationDraft'])->name('save.documentation.draft');
 
         Route::get('/gallery', [App\Http\Controllers\AssociateController::class, 'editGallery'])->name('gallery');
         Route::post('/gallery', [App\Http\Controllers\AssociateController::class, 'updateGallery'])->name('update.gallery');

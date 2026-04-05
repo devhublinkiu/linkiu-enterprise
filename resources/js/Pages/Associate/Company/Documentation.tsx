@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { Button } from '@/Components/ui/Button';
 import { Label } from '@/Components/ui/Label';
 import { Input } from '@/Components/ui/Input';
@@ -8,17 +9,13 @@ import {
     FileText,
     Upload,
     CheckCircle2,
-    AlertTriangle,
     Pencil,
     ShieldCheck,
-    MessageSquare,
     AlertCircle,
     FileCheck,
     Image as ImageIcon,
-    ChevronRight,
     Download,
     Eye,
-    Info,
     Check,
     X,
     FileDigit,
@@ -31,12 +28,21 @@ import {
     Building,
     Plus,
     Target,
-    FileUp
+    FileUp,
+    ChevronLeft,
+    MessageSquare,
+    RotateCcw,
+    Save,
+    ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ChangeRequestModal } from '@/Components/ChangeRequestModal';
+import { StatusBadge } from '@/Components/FieldWrapper';
+import AlertsForms from './BasicInfo/Parts/AlertsForms';
 
 interface Props {
     auth: any;
+    flash: any;
     initialAssociate?: any;
 }
 
@@ -51,53 +57,53 @@ const MANDATORY_DOCS = [
     { name: 'Antecedentes del contador público (Balance anterior)', icon: FileCheck, required: true, accept: '.pdf' },
     { name: 'Composición Accionaria', icon: CheckCircle2, required: true, accept: '.pdf' },
     { name: 'Certificación Parafiscales', icon: Check, required: true, accept: '.pdf' },
-    { 
-        name: 'Declaración de aceptación del PTEEI', 
-        icon: FileText, 
-        required: true, 
-        accept: '.pdf', 
-        legend: 'Usa la plantilla oficial', 
-        template: '/plantillas_docs/FR-PICAMEP-006_V01_FORMATO_DECLARACION_DE_ACEPTACION_Y_AUTORIZACION_DEL_PTEEI.pdf' 
+    {
+        name: 'Declaración de aceptación del PTEEI',
+        icon: FileText,
+        required: true,
+        accept: '.pdf',
+        legend: 'Usa la plantilla oficial',
+        template: '/plantillas_docs/FR-PICAMEP-006_V01_FORMATO_DECLARACION_DE_ACEPTACION_Y_AUTORIZACION_DEL_PTEEI.pdf'
     },
-    { 
-        name: 'Compromiso de autoregulacion', 
-        icon: Scale, 
-        required: true, 
-        accept: '.pdf', 
-        legend: 'Usa la plantilla oficial', 
-        template: '/plantillas_docs/FR-PICAMEP-005_FORMATO_COMPROMISO_DE_AUTOREGULACION.pdf' 
+    {
+        name: 'Compromiso de autoregulacion',
+        icon: Scale,
+        required: true,
+        accept: '.pdf',
+        legend: 'Usa la plantilla oficial',
+        template: '/plantillas_docs/FR-PICAMEP-005_FORMATO_COMPROMISO_DE_AUTOREGULACION.pdf'
     },
-    { 
-        name: 'Transferencia de datos', 
-        icon: Share2, 
-        required: true, 
-        accept: '.pdf', 
-        legend: 'Usa la plantilla oficial', 
-        template: '/plantillas_docs/FR-PICAMEP-004_FORMATO_TRANSFERENCIA_DE_DATOS.pdf' 
+    {
+        name: 'Transferencia de datos',
+        icon: Share2,
+        required: true,
+        accept: '.pdf',
+        legend: 'Usa la plantilla oficial',
+        template: '/plantillas_docs/FR-PICAMEP-004_FORMATO_TRANSFERENCIA_DE_DATOS.pdf'
     },
-    { 
-        name: 'Acuerdo de Afiliación', 
-        icon: FileText, 
-        required: true, 
-        accept: '.pdf', 
-        legend: 'Usa la plantilla oficial', 
-        template: '/plantillas_docs/FR-PICAMEP-003_FORMATO_ACUERDO_DE_AFILIACION.docx' 
+    {
+        name: 'Acuerdo de Afiliación',
+        icon: FileText,
+        required: true,
+        accept: '.pdf',
+        legend: 'Usa la plantilla oficial',
+        template: '/plantillas_docs/FR-PICAMEP-003_FORMATO_ACUERDO_DE_AFILIACION.docx'
     },
-    { 
-        name: 'Participación Accionaria', 
-        icon: Building2, 
-        required: true, 
-        accept: '.pdf', 
-        legend: 'Usa la plantilla oficial', 
-        template: '/plantillas_docs/FR-PICAMEP-007_FORMATO_PARTICIPACION_ACCIONARIA.docx' 
+    {
+        name: 'Participación Accionaria',
+        icon: Building2,
+        required: true,
+        accept: '.pdf',
+        legend: 'Usa la plantilla oficial',
+        template: '/plantillas_docs/FR-PICAMEP-007_FORMATO_PARTICIPACION_ACCIONARIA.docx'
     },
-    { 
-        name: 'Certificado tamaño empresas', 
-        icon: Building, 
-        required: true, 
-        accept: '.pdf', 
-        legend: 'Usa la plantilla oficial', 
-        template: '/plantillas_docs/FR-PICAMEP-008_FORMATO_CERTIFICACION_DE_TAMAÑO_EMPRESA_JURIDICAS.docx' 
+    {
+        name: 'Certificado tamaño empresas',
+        icon: Building,
+        required: true,
+        accept: '.pdf',
+        legend: 'Usa la plantilla oficial',
+        template: '/plantillas_docs/FR-PICAMEP-008_FORMATO_CERTIFICACION_DE_TAMAÑO_EMPRESA_JURIDICAS.docx'
     },
 ];
 
@@ -109,10 +115,17 @@ const OPTIONAL_DOCS = [
 
 const INTERESTS = ['Gestión Gremial', 'Información Sectorial', 'Comunidad de Negocios', 'Otro'];
 
+const FIELD_LABELS: Record<string, string> = {
+    rep_name:                  'Representante Legal',
+    rep_doc:                   'Cédula de Ciudadanía',
+    funds_origin_declaration:  'Declaración de Origen de Fondos',
+    membership_interest:       'Interés de Afiliación',
+};
+
 function completionScore(data: any, fileUrls: any) {
-    const mandatoryKeys = MANDATORY_DOCS.map(d => d.name);
-    const uploadedMandatory = mandatoryKeys.filter(key => data.files[key] || fileUrls[key]).length;
-    
+    const mandatoryKeys      = MANDATORY_DOCS.map(d => d.name);
+    const uploadedMandatory  = mandatoryKeys.filter(key => data.files[key] || fileUrls[key]).length;
+
     const checks = [
         uploadedMandatory === mandatoryKeys.length,
         data.rep_name?.trim().length > 0,
@@ -120,15 +133,69 @@ function completionScore(data: any, fileUrls: any) {
         data.funds_origin_declaration === true,
         data.membership_interest?.length > 0
     ];
-    
+
     const filled = checks.filter(Boolean).length;
-    return { 
-        filled, 
-        total: checks.length, 
-        pct: Math.round((filled / checks.length) * 100),
-        docsFilled: uploadedMandatory,
-        docsTotal: mandatoryKeys.length
+    return {
+        filled,
+        total:       checks.length,
+        pct:         Math.round((filled / checks.length) * 100),
+        docsFilled:  uploadedMandatory,
+        docsTotal:   mandatoryKeys.length
     };
+}
+
+function DocPreviewModal({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
+    const isImage = /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(url);
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+            <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 shrink-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="h-7 w-7 rounded-lg bg-slate-900 flex items-center justify-center shrink-0">
+                            <FileText size={13} className="text-white" />
+                        </div>
+                        <p className="text-[11px] font-black uppercase text-slate-700 tracking-wide truncate">{name}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-4">
+                        <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-[10px] font-black uppercase text-slate-500 hover:text-slate-900 border border-slate-200 rounded-lg px-3 py-1.5 transition-all hover:bg-slate-50"
+                        >
+                            <ExternalLink size={12} /> Abrir en pestaña
+                        </a>
+                        <button
+                            onClick={onClose}
+                            className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-hidden bg-slate-50 min-h-0">
+                    {isImage ? (
+                        <div className="h-full flex items-center justify-center p-6">
+                            <img src={url} alt={name} className="max-w-full max-h-full object-contain rounded-xl" />
+                        </div>
+                    ) : (
+                        <iframe
+                            src={url}
+                            title={name}
+                            className="w-full h-full min-h-[65vh] border-0"
+                        />
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 }
 
 function SectionHeader({ icon: Icon, title, right }: { icon: any; title: string; right?: React.ReactNode }) {
@@ -140,67 +207,119 @@ function SectionHeader({ icon: Icon, title, right }: { icon: any; title: string;
                 </div>
                 <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider">{title}</h2>
             </div>
-            {right}
+            {right && <div className="flex items-center gap-2">{right}</div>}
         </div>
     );
 }
 
-function StatusDot({ status }: { status: string | null }) {
-    if (!status) return null;
-    if (status === 'approved') return (
-        <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 uppercase shrink-0">
-            <CheckCircle2 size={11} /> Aprobado
-        </span>
-    );
-    if (status === 'rejected') return (
-        <span className="flex items-center gap-1 text-[10px] font-black text-red-500 uppercase shrink-0">
-            <AlertCircle size={11} /> Rechazado
-        </span>
-    );
-    return null;
-}
+export default function Documentation({ auth, flash, initialAssociate }: Props) {
+    const [isEditing, setIsEditing]                   = useState(false);
+    const [notification, setNotification]             = useState<{ type: 'success' | 'draft' | 'error'; msg: string } | null>(null);
+    const [changeRequestField, setChangeRequestField] = useState<string | null>(null);
+    const [changeRequesting, setChangeRequesting]     = useState(false);
+    const [previewDoc, setPreviewDoc]                 = useState<{ url: string; name: string } | null>(null);
+    const fileInputRef                                = useRef<HTMLInputElement>(null);
+    const [activeDocKey, setActiveDocKey]             = useState<string | null>(null);
 
-export default function Documentation({ auth, initialAssociate }: Props) {
-    const [isEditing, setIsEditing] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [activeDocKey, setActiveDocKey] = useState<string | null>(null);
-    const auditLog = initialAssociate?.audit_log || {};
-    const fileUrls = initialAssociate?.document_urls || {};
+    const associateStatus = initialAssociate?.status || 'draft';
+    const auditLog        = initialAssociate?.audit_log || {};
+    const fileUrls        = initialAssociate?.document_urls || {};
 
     const { data, setData, post, processing, errors } = useForm({
-        files: {} as any,
+        files:                    {} as any,
         funds_origin_declaration: initialAssociate?.funds_origin_declaration || false,
-        rep_name: initialAssociate?.rep_name || '',
-        rep_doc: initialAssociate?.rep_doc || '',
-        membership_interest: initialAssociate?.membership_interest || [] as string[],
+        rep_name:                 initialAssociate?.rep_name || '',
+        rep_doc:                  initialAssociate?.rep_doc || '',
+        membership_interest:      initialAssociate?.membership_interest || [] as string[],
     });
 
-    const score = completionScore(data, fileUrls);
+    const score            = completionScore(data, fileUrls);
+    const hasRejectedFields = Object.values(auditLog).some((f: any) => f.status === 'rejected');
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post(route('associate.company.update.documentation'), {
-            onSuccess: () => {
-                setIsEditing(false);
-                setSaved(true);
-                setTimeout(() => setSaved(false), 5000);
-            },
-        });
+    // ── Was ever reviewed heuristic ─────────────────────────────────────────
+    const docsWasEverReviewed =
+        Object.keys(FIELD_LABELS).some(f => !!auditLog[f]) ||
+        Object.keys(auditLog).some(k => k.startsWith('files.'));
+
+    // ── Field status ─────────────────────────────────────────────────────────
+    const fieldStatus = (field: string): string => {
+        const audit = auditLog[field];
+        if (audit) {
+            if (audit.status === 'approved' && audit.change_request) return 'change_requested';
+            if (audit.status === 'approved')  return 'approved';
+            if (audit.status === 'rejected')  return 'rejected';
+            if (audit.status === 'editable')  return 'editable';
+            if (audit.status === 'pending')   return 'pending';
+        }
+
+        if (docsWasEverReviewed && ['pending', 'approved', 'verified', 'rejected'].includes(associateStatus)) {
+            // Files are always re-uploadable — treat as editable in the status chain
+            if (field.startsWith('files.')) return 'editable';
+
+            let saved: any;
+            if (field === 'membership_interest') {
+                saved = (initialAssociate?.membership_interest?.length ?? 0) > 0 ? true : null;
+            } else if (field === 'funds_origin_declaration') {
+                saved = initialAssociate?.funds_origin_declaration || null;
+            } else {
+                saved = initialAssociate?.[field];
+            }
+            const isUnsubmitted = saved === null || saved === undefined ||
+                (typeof saved === 'string' && saved.trim() === '');
+            if (isUnsubmitted) return 'editable';
+            return associateStatus;
+        }
+
+        return 'editable';
     };
 
+    // ── Is locked ────────────────────────────────────────────────────────────
     const isLocked = (field: string) => {
         if (!isEditing) return true;
+        // Files can always be replaced (re-upload resets audit cycle)
         if (field.startsWith('files.')) return false;
-        if (auditLog[field]?.status === 'approved') return true;
-        return false;
+        const status = fieldStatus(field);
+        const isRejectedGlobal = status === 'rejected' && auditLog[field]?.status !== 'rejected';
+        return status === 'approved' ||
+               status === 'change_requested' ||
+               status === 'pending' ||
+               status === 'verified' ||
+               isRejectedGlobal;
     };
 
-    const fieldStatus = (field: string): string | null => {
-        const a = auditLog[field] || (field.startsWith('files.') ? auditLog[field] : null);
-        if (!a) return null;
-        return a.status === 'approved' ? 'approved' : a.status === 'rejected' ? 'rejected' : null;
+    // ── Flash ────────────────────────────────────────────────────────────────
+    useEffect(() => {
+        if (flash?.draft_saved) setNotification({ type: 'draft', msg: `Borrador guardado · ${flash.draft_saved}` });
+        if (flash?.success) {
+            setNotification({ type: 'success', msg: flash.success });
+            setIsEditing(false);
+        }
+        if (flash?.error) setNotification({ type: 'error', msg: flash.error });
+        if (flash) {
+            const t = setTimeout(() => setNotification(null), 5000);
+            return () => clearTimeout(t);
+        }
+    }, [flash]);
+
+    // ── Handlers ─────────────────────────────────────────────────────────────
+    const handleSubmit = () => {
+        post(route('associate.company.update.documentation'));
     };
+
+    const handleSaveDraft = () => {
+        post(route('associate.company.save.documentation.draft'));
+    };
+
+    const handleRequestChange = useCallback((reason: string) => {
+        if (!changeRequestField) return;
+        setChangeRequesting(true);
+        router.post(route('associate.company.request.field.change'), { field: changeRequestField, reason }, {
+            onFinish: () => {
+                setChangeRequesting(false);
+                setChangeRequestField(null);
+            },
+        });
+    }, [changeRequestField]);
 
     const handleUploadClick = (key: string) => {
         setActiveDocKey(key);
@@ -218,36 +337,41 @@ export default function Documentation({ auth, initialAssociate }: Props) {
     const toggleInterest = (interest: string) => {
         if (isLocked('membership_interest')) return;
         const current = data.membership_interest || [];
-        setData('membership_interest', current.includes(interest) ? current.filter((i: string) => i !== interest) : [...current, interest]);
+        setData('membership_interest', current.includes(interest)
+            ? current.filter((i: string) => i !== interest)
+            : [...current, interest]
+        );
     };
 
+    // ── Rejected fields list (detailed banner) ────────────────────────────────
     const rejectedFields = Object.entries(auditLog)
         .filter(([_, a]: [any, any]) => a.status === 'rejected')
         .map(([key, a]: [any, any]) => ({
-            field: key,
+            field:  key,
             reason: a.reason,
-            label: ({
+            label:  ({
                 funds_origin_declaration: 'Declaración de Fondos',
-                rep_name: 'Representante Legal',
-                membership_interest: 'Intereses de Afiliación',
+                rep_name:                 'Representante Legal',
+                membership_interest:      'Intereses de Afiliación',
             } as Record<string, string>)[key] || key.replace(/files\./g, 'Documento: ').replace(/_/g, ' '),
         }));
 
+    // ── Doc item renderer ─────────────────────────────────────────────────────
     const renderDocItem = (doc: any) => {
-        const hasLocal = !!data.files[doc.name];
-        const hasRemote = !!fileUrls[doc.name];
+        const hasLocal   = !!data.files[doc.name];
+        const hasRemote  = !!fileUrls[doc.name];
         const isUploaded = hasLocal || hasRemote;
-        const fieldKey = `files.${doc.name}`;
-        const status = fieldStatus(fieldKey);
+        const fieldKey   = `files.${doc.name}`;
+        const status     = fieldStatus(fieldKey);
 
         return (
             <div key={doc.name} className="flex flex-col gap-2">
-                <div 
+                <div
                     onClick={() => !isLocked(fieldKey) && handleUploadClick(doc.name)}
                     className={cn(
                         "relative group p-4 rounded-2xl border transition-all h-full flex flex-col justify-between",
-                        isUploaded 
-                            ? "bg-emerald-50/30 border-emerald-100 shadow-sm" 
+                        isUploaded
+                            ? "bg-emerald-50/30 border-emerald-100"
                             : "bg-slate-50/50 border-slate-100 hover:border-slate-300",
                         !isLocked(fieldKey) ? "cursor-pointer" : "cursor-default grayscale-[0.5]"
                     )}
@@ -266,7 +390,7 @@ export default function Documentation({ auth, initialAssociate }: Props) {
                                     isUploaded ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"
                                 )}>Obligatorio</span>
                             )}
-                            <StatusDot status={status} />
+                            <StatusBadge status={status === 'editable' ? null : status} />
                         </div>
                     </div>
 
@@ -279,10 +403,12 @@ export default function Documentation({ auth, initialAssociate }: Props) {
 
                     <div className="flex items-center gap-2 pt-2 border-t border-slate-100/50 mt-auto">
                         {hasRemote && (
-                            <a href={fileUrls[doc.name]} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                                className="flex-1 h-8 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase">
+                            <button
+                                onClick={e => { e.stopPropagation(); setPreviewDoc({ url: fileUrls[doc.name], name: doc.name }); }}
+                                className="flex-1 h-8 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase"
+                            >
                                 <Eye size={12} /> Ver
-                            </a>
+                            </button>
                         )}
                         {!isLocked(fieldKey) && (
                             <button className={cn(
@@ -308,45 +434,80 @@ export default function Documentation({ auth, initialAssociate }: Props) {
         <AppLayout>
             <Head title="Documentación Legal" />
 
+            {changeRequestField && (
+                <ChangeRequestModal
+                    field={changeRequestField}
+                    fieldLabel={FIELD_LABELS[changeRequestField]}
+                    onClose={() => setChangeRequestField(null)}
+                    onSubmit={handleRequestChange}
+                    isSubmitting={changeRequesting}
+                />
+            )}
+
+            {previewDoc && (
+                <DocPreviewModal
+                    url={previewDoc.url}
+                    name={previewDoc.name}
+                    onClose={() => setPreviewDoc(null)}
+                />
+            )}
+
             <div className="max-w-5xl mx-auto space-y-6 pb-20">
-                
+
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">Carga de Documentación</h1>
-                        <p className="text-slate-500 text-sm mt-2 font-medium">Requisitos legales y declaraciones juradas para socios CAMEP.</p>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-slate-400 mb-2">
+                            <Link href={route('dashboard')} className="hover:text-slate-900 transition-colors text-xs font-bold">Dashboard</Link>
+                            <ChevronLeft size={14} className="rotate-180" />
+                            <span className="text-slate-900 font-bold text-xs">Documentación</span>
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Carga de Documentación</h1>
+                        <p className="text-slate-500 text-sm font-medium">Requisitos legales y declaraciones juradas para socios CAMEP.</p>
                     </div>
+
                     <div className="flex items-center gap-3 shrink-0">
                         {!isEditing ? (
-                            <Button onClick={() => { setIsEditing(true); setSaved(false); }}
-                                className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center gap-2 px-5 shadow-lg shadow-slate-900/10">
-                                <Pencil size={14} /> Gestionar documentos
+                            <Button
+                                onClick={() => setIsEditing(true)}
+                                className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center gap-2 px-6 h-12 shadow-lg shadow-slate-200 transition-all active:scale-95"
+                            >
+                                <Pencil size={16} /> Gestionar documentos
                             </Button>
                         ) : (
-                            <>
-                                <Button variant="outline" onClick={() => setIsEditing(false)} className="border-slate-200 text-slate-600 rounded-xl">Cancelar</Button>
-                                <Button onClick={handleSubmit} disabled={processing || !data.funds_origin_declaration}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-2 px-5 shadow-lg shadow-emerald-600/10 transition-all">
-                                    <ShieldCheck size={15} />
-                                    {processing ? 'Subiendo...' : 'Enviar a revisión'}
-                                </Button>
-                            </>
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsEditing(false)}
+                                className="border-slate-200 text-slate-600 rounded-xl h-12 px-6 hover:bg-slate-50 transition-all font-bold"
+                            >
+                                Cancelar
+                            </Button>
                         )}
                     </div>
                 </div>
 
+                <AlertsForms
+                    isNew={false}
+                    associateStatus={associateStatus}
+                    notification={notification}
+                    onCloseNotification={() => setNotification(null)}
+                    hasRejectedFields={false}
+                />
+
                 {/* Progress Bar */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 flex items-center gap-4 shadow-sm">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 flex items-center gap-4">
                     <div className="flex-1">
                         <div className="flex items-center justify-between mb-1.5">
                             <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">Cumplimiento documental</span>
-                            <span className={cn("text-[11px] font-black", score.pct === 100 ? "text-emerald-600" : score.pct >= 60 ? "text-amber-600" : "text-red-500")}>
+                            <span className="text-[11px] font-black text-slate-600">
                                 {score.docsFilled}/{score.docsTotal} obligatorios cargados
                             </span>
                         </div>
                         <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <div className={cn("h-full rounded-full transition-all duration-700", score.pct === 100 ? "bg-emerald-500" : score.pct >= 60 ? "bg-amber-400" : "bg-red-400")}
-                                style={{ width: `${score.pct}%` }} />
+                            <div
+                                className="h-full rounded-full bg-slate-900 transition-all duration-700"
+                                style={{ width: `${(score.docsFilled / score.docsTotal) * 100}%` }}
+                            />
                         </div>
                     </div>
                     <div className="h-9 w-9 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
@@ -354,19 +515,7 @@ export default function Documentation({ auth, initialAssociate }: Props) {
                     </div>
                 </div>
 
-                {/* Success Banner */}
-                {saved && (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                        <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
-                        <div className="flex-1">
-                            <p className="text-sm font-black text-emerald-800 uppercase tracking-tight">¡Documentación enviada con éxito!</p>
-                            <p className="text-xs text-emerald-600 font-medium">CAMEP verificará la autenticidad de los archivos en 24-48 horas hábiles.</p>
-                        </div>
-                        <button onClick={() => setSaved(false)} className="text-emerald-400 hover:text-emerald-600"><X size={16} /></button>
-                    </div>
-                )}
-
-                {/* Rejections */}
+                {/* Detailed rejection banner */}
                 {rejectedFields.length > 0 && (
                     <div className="rounded-2xl border border-red-200 bg-red-50/60 p-5">
                         <div className="flex items-center gap-3 mb-3">
@@ -387,10 +536,10 @@ export default function Documentation({ auth, initialAssociate }: Props) {
                     </div>
                 )}
 
-                {/* Read-only Hint */}
+                {/* Read-only hint */}
                 {!isEditing && (
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center gap-2.5">
-                        <Info size={14} className="text-slate-400 shrink-0" />
+                        <Pencil size={13} className="text-slate-400 shrink-0" />
                         <p className="text-xs text-slate-500 font-medium flex-1">
                             Modo visualización · Haz clic en <strong>Gestionar documentos</strong> para subir o actualizar archivos.
                         </p>
@@ -399,15 +548,15 @@ export default function Documentation({ auth, initialAssociate }: Props) {
 
                 <div className="space-y-6">
                     {/* Archivos Obligatorios */}
-                    <section className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-                        <SectionHeader icon={FileUp} title="Documentación Obrigatoria" right={
+                    <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+                        <SectionHeader icon={FileUp} title="Documentación Obligatoria" right={
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic">PDF / JPG / PNG • Máx 10MB</span>
                         } />
                         <div className="p-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 {MANDATORY_DOCS.map(renderDocItem)}
                             </div>
-                            
+
                             <div className="mt-10 pt-8 border-t border-slate-100">
                                 <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2 italic">
                                     <Plus size={14} className="text-slate-300" /> Otros Documentos y Certificaciones
@@ -420,15 +569,32 @@ export default function Documentation({ auth, initialAssociate }: Props) {
                     </section>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        {/* Intereses */}
+                        {/* Intereses de Afiliación */}
                         <div className="lg:col-span-4">
-                            <section className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm h-full flex flex-col">
-                                <SectionHeader icon={Target} title="Interés de Afiliación" right={<StatusDot status={fieldStatus('membership_interest')} />} />
+                            <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden h-full flex flex-col">
+                                <SectionHeader
+                                    icon={Target}
+                                    title="Interés de Afiliación"
+                                    right={
+                                        <div className="flex items-center gap-2">
+                                            <StatusBadge status={fieldStatus('membership_interest') === 'editable' ? null : fieldStatus('membership_interest')} />
+                                            {fieldStatus('membership_interest') === 'approved' && isEditing && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setChangeRequestField('membership_interest')}
+                                                    className="flex items-center gap-1 text-[9px] font-black uppercase text-slate-400 hover:text-slate-700 border border-slate-200 rounded-lg px-2 py-0.5 transition-all bg-white"
+                                                >
+                                                    <RotateCcw size={9} /> Cambio
+                                                </button>
+                                            )}
+                                        </div>
+                                    }
+                                />
                                 <div className="p-6 space-y-2">
                                     {INTERESTS.map(interest => (
                                         <button key={interest} type="button" onClick={() => toggleInterest(interest)} disabled={isLocked('membership_interest')}
                                             className={cn("w-full flex items-center gap-3 p-4 border rounded-2xl transition-all group",
-                                                data.membership_interest?.includes(interest) ? "border-slate-900 bg-slate-900/5 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-slate-50/10",
+                                                data.membership_interest?.includes(interest) ? "border-slate-900 bg-slate-900/5" : "border-slate-100 hover:border-slate-200 bg-slate-50/10",
                                                 isLocked('membership_interest') && "opacity-50 cursor-not-allowed")}>
                                             <div className={cn("h-5 w-5 rounded-lg border-2 flex items-center justify-center transition-all",
                                                 data.membership_interest?.includes(interest) ? "bg-slate-900 border-slate-900" : "bg-white border-slate-200")}>
@@ -443,24 +609,61 @@ export default function Documentation({ auth, initialAssociate }: Props) {
 
                         {/* Declaración Jurada */}
                         <div className="lg:col-span-8">
-                            <section className="rounded-3xl border border-slate-900 bg-slate-900 text-white overflow-hidden shadow-2xl relative">
+                            <section className="rounded-2xl border border-slate-900 bg-slate-900 text-white overflow-hidden shadow-2xl relative">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -mr-32 -mt-32 blur-[80px] pointer-events-none" />
                                 <SectionHeader icon={Signature} title="Declaración Jurada" />
                                 <div className="p-8 space-y-8 relative z-10">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* rep_name */}
                                         <div className="space-y-2">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Representante Legal</Label>
-                                            <Input value={data.rep_name} onChange={e => setData('rep_name', e.target.value)} disabled={isLocked('rep_name')}
-                                                placeholder="Nombre como en CC" className="bg-white/5 border-white/10 text-white h-11 rounded-xl focus:bg-white focus:text-slate-900 placeholder:text-white/10 transition-all font-bold" />
+                                            <div className="flex items-center justify-between gap-2">
+                                                <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Representante Legal</Label>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <StatusBadge status={fieldStatus('rep_name') === 'editable' ? null : fieldStatus('rep_name')} />
+                                                    {fieldStatus('rep_name') === 'approved' && isEditing && (
+                                                        <button type="button" onClick={() => setChangeRequestField('rep_name')}
+                                                            className="flex items-center gap-1 text-[9px] font-black uppercase text-white/40 hover:text-white border border-white/10 hover:border-white/30 rounded-lg px-1.5 py-0.5 transition-all">
+                                                            <RotateCcw size={9} /> Cambio
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Input
+                                                value={data.rep_name}
+                                                onChange={e => setData('rep_name', e.target.value)}
+                                                disabled={isLocked('rep_name')}
+                                                placeholder="Nombre como en CC"
+                                                className="bg-white/5 border-white/10 text-white h-11 rounded-xl focus:bg-white focus:text-slate-900 placeholder:text-white/10 transition-all font-bold"
+                                            />
+                                            {errors.rep_name && <p className="text-[10px] text-red-400 font-bold">{errors.rep_name}</p>}
                                         </div>
+
+                                        {/* rep_doc */}
                                         <div className="space-y-2">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Cédula de Ciudadanía</Label>
-                                            <Input value={data.rep_doc} onChange={e => setData('rep_doc', e.target.value)} disabled={isLocked('rep_doc')}
-                                                placeholder="Número de identificación" className="bg-white/5 border-white/10 text-white h-11 rounded-xl focus:bg-white focus:text-slate-900 placeholder:text-white/10 transition-all font-bold" />
+                                            <div className="flex items-center justify-between gap-2">
+                                                <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Cédula de Ciudadanía</Label>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <StatusBadge status={fieldStatus('rep_doc') === 'editable' ? null : fieldStatus('rep_doc')} />
+                                                    {fieldStatus('rep_doc') === 'approved' && isEditing && (
+                                                        <button type="button" onClick={() => setChangeRequestField('rep_doc')}
+                                                            className="flex items-center gap-1 text-[9px] font-black uppercase text-white/40 hover:text-white border border-white/10 hover:border-white/30 rounded-lg px-1.5 py-0.5 transition-all">
+                                                            <RotateCcw size={9} /> Cambio
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Input
+                                                value={data.rep_doc}
+                                                onChange={e => setData('rep_doc', e.target.value)}
+                                                disabled={isLocked('rep_doc')}
+                                                placeholder="Número de identificación"
+                                                className="bg-white/5 border-white/10 text-white h-11 rounded-xl focus:bg-white focus:text-slate-900 placeholder:text-white/10 transition-all font-bold"
+                                            />
+                                            {errors.rep_doc && <p className="text-[10px] text-red-400 font-bold">{errors.rep_doc}</p>}
                                         </div>
                                     </div>
 
-                                    <div className="bg-white/5 rounded-3xl p-6 border border-white/5 space-y-4">
+                                    <div className="bg-white/5 rounded-2xl p-6 border border-white/5 space-y-4">
                                         <div className="flex items-center gap-3">
                                             <div className="h-1 w-8 bg-emerald-500 rounded-full" />
                                             <h4 className="text-white font-black text-[9px] uppercase tracking-[0.2em] italic">Manifestación del buen origen de fondos</h4>
@@ -470,9 +673,13 @@ export default function Documentation({ auth, initialAssociate }: Props) {
                                         </p>
                                     </div>
 
-                                    <div onClick={() => !isLocked('funds_origin_declaration') && setData('funds_origin_declaration', !data.funds_origin_declaration)}
+                                    <div
+                                        onClick={() => !isLocked('funds_origin_declaration') && setData('funds_origin_declaration', !data.funds_origin_declaration)}
                                         className={cn("p-6 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-6",
-                                            data.funds_origin_declaration ? "bg-emerald-500 border-emerald-400 shadow-lg shadow-emerald-500/20" : "bg-white/5 border-white/10 group")}>
+                                            data.funds_origin_declaration ? "bg-emerald-500 border-emerald-400 shadow-lg shadow-emerald-500/20" : "bg-white/5 border-white/10 group",
+                                            isLocked('funds_origin_declaration') && "opacity-60 cursor-not-allowed"
+                                        )}
+                                    >
                                         <div className="flex items-center gap-4">
                                             <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
                                                 data.funds_origin_declaration ? "bg-white text-emerald-600 scale-110" : "bg-white/5 text-white/20")}>
@@ -487,10 +694,18 @@ export default function Documentation({ auth, initialAssociate }: Props) {
                                         </div>
                                         {data.funds_origin_declaration ? <CheckCircle2 size={24} className="text-slate-950" /> : <div className="w-8 h-8 rounded-full border-4 border-white/10 group-hover:border-white/20" />}
                                     </div>
-                                    
+
                                     <div className="flex items-center justify-between opacity-30 px-2 pt-2 border-t border-white/5">
-                                         <span className="text-[8px] font-black uppercase tracking-widest">Trust Identity V2.44</span>
-                                         <StatusDot status={fieldStatus('funds_origin_declaration')} />
+                                        <span className="text-[8px] font-black uppercase tracking-widest">Trust Identity V2.44</span>
+                                        <div className="flex items-center gap-2">
+                                            <StatusBadge status={fieldStatus('funds_origin_declaration') === 'editable' ? null : fieldStatus('funds_origin_declaration')} />
+                                            {fieldStatus('funds_origin_declaration') === 'approved' && isEditing && (
+                                                <button type="button" onClick={() => setChangeRequestField('funds_origin_declaration')}
+                                                    className="flex items-center gap-1 text-[9px] font-black uppercase text-white/60 hover:text-white border border-white/10 hover:border-white/30 rounded-lg px-1.5 py-0.5 transition-all">
+                                                    <RotateCcw size={9} /> Cambio
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </section>
@@ -500,7 +715,7 @@ export default function Documentation({ auth, initialAssociate }: Props) {
 
                 {/* Sticky Save Bar */}
                 {isEditing && (
-                    <div className="sticky bottom-4 z-20 flex items-center justify-between p-4 bg-slate-900 rounded-3xl shadow-2xl shadow-slate-900/40 border border-white/10 backdrop-blur-md animate-in slide-in-from-bottom-5">
+                    <div className="sticky bottom-4 z-20 flex items-center justify-between p-4 bg-slate-900 rounded-2xl shadow-2xl shadow-slate-900/40 border border-white/10 backdrop-blur-md animate-in slide-in-from-bottom-5">
                         <div className="hidden sm:flex items-center gap-3 pl-2">
                             <div className="h-9 w-9 rounded-xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20">
                                 <ShieldCheck size={18} className="text-emerald-400" />
@@ -511,9 +726,23 @@ export default function Documentation({ auth, initialAssociate }: Props) {
                             </div>
                         </div>
                         <div className="flex gap-3 w-full sm:w-auto">
-                            <Button variant="ghost" onClick={() => setIsEditing(false)} className="flex-1 sm:flex-none text-white hover:bg-white/10 rounded-xl px-6 h-12 text-xs font-black uppercase">Cancelar</Button>
-                            <Button onClick={handleSubmit} disabled={processing || !data.funds_origin_declaration}
-                                className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl px-10 h-12 text-xs uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20">
+                            <Button variant="ghost" onClick={() => setIsEditing(false)}
+                                className="flex-1 sm:flex-none text-white hover:bg-white/10 rounded-xl px-6 h-12 text-xs font-black uppercase">
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={handleSaveDraft}
+                                disabled={processing}
+                                className="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 text-white font-black rounded-xl px-6 h-12 text-xs uppercase tracking-widest transition-all border border-white/10"
+                            >
+                                <Save size={14} className="mr-1.5" />
+                                {processing ? 'Guardando...' : 'Borrador'}
+                            </Button>
+                            <Button
+                                onClick={handleSubmit}
+                                disabled={processing || !data.funds_origin_declaration}
+                                className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl px-10 h-12 text-xs uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20"
+                            >
                                 {processing ? 'Subiendo...' : 'Confirmar y Enviar'}
                             </Button>
                         </div>
@@ -525,9 +754,3 @@ export default function Documentation({ auth, initialAssociate }: Props) {
         </AppLayout>
     );
 }
-
-const style = `
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-`;

@@ -11,7 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 
 interface SearchableSelectProps {
-    label: string;
+    label?: string;
     value: any;
     onChange: (opt: any) => void;
     options: any[];
@@ -62,10 +62,12 @@ export function SearchableSelect({
 
     return (
         <div className={cn("space-y-2 relative", open && "z-50")}>
-            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center">
-                {label}
-                {required && <span className="text-red-500 ml-1">*</span>}
-            </Label>
+            {label && (
+                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center">
+                    {label}
+                    {required && <span className="text-red-500 ml-1">*</span>}
+                </Label>
+            )}
 
             <div className="relative">
                 <div 
@@ -119,14 +121,14 @@ export function SearchableSelect({
                             <Search size={16} className="text-slate-400" />
                             <input
                                 className="w-full bg-transparent text-sm outline-none py-1 font-bold text-slate-700 placeholder:text-slate-300"
-                                placeholder={`Escribe para filtrar ${label.toLowerCase()}...`}
+                                placeholder={`Escribe para filtrar ${(label ?? '').toLowerCase()}...`}
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 onKeyDown={e => e.stopPropagation()}
                                 autoFocus
                             />
                             {search && (
-                                <button onClick={() => setSearch('')} className="p-1 hover:bg-slate-200 rounded-full transition-colors">
+                                <button type="button" onClick={() => setSearch('')} className="p-1 hover:bg-slate-200 rounded-full transition-colors">
                                     <XCircle size={14} className="text-slate-400" />
                                 </button>
                             )}

@@ -42,6 +42,9 @@ class HandleAssociateOnboarding
             $onboardingRoutes = [
                 'associate.company.basic',
                 'associate.company.update.basic',
+                'associate.company.save.draft',
+                'associate.company.save.characterization.draft',
+                'associate.company.request.field.change',
             ];
             
             if (!in_array($routeName, $onboardingRoutes)) {
@@ -65,14 +68,19 @@ class HandleAssociateOnboarding
                 $allowedPending = [
                     'associate.company.basic',
                     'associate.company.update.basic',
+                    'associate.company.save.draft',
+                    'associate.company.save.characterization.draft',
+                    'associate.company.request.field.change',
                     'associate.company.characterization',
                     'associate.company.update.characterization',
                     'associate.company.contacts',
                     'associate.company.update.contacts',
+                    'associate.company.save.contacts.draft',
                     'associate.company.services',
                     'associate.company.update.services',
                     'associate.company.documentation',
                     'associate.company.update.documentation',
+                    'associate.company.save.documentation.draft',
                     'associate.company.gallery',
                     'associate.company.update.gallery',
                     'associate.company.delete.gallery.image',
@@ -87,6 +95,11 @@ class HandleAssociateOnboarding
                 // Only allow billing and checkout
                 $allowedVerified = [
                     'associate.company.billing',
+                    'associate.company.basic',
+                    'associate.company.update.basic',
+                    'associate.company.save.draft',
+                    'associate.company.save.characterization.draft',
+                    'associate.company.request.field.change',
                     'associate.checkout.show',
                     'associate.checkout.store',
                 ];

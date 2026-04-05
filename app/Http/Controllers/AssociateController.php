@@ -37,7 +37,7 @@ class AssociateController extends Controller
             $this->appendFileUrls($associate);
         }
 
-        return Inertia::render('Associate/Company/BasicInfo', [
+        return Inertia::render('Associate/Company/BasicInfo/Index', [
             'initialAssociate' => $associate
         ]);
     }
@@ -45,10 +45,8 @@ class AssociateController extends Controller
     public function updateBasicInfo(Request $request)
     {
         $user = auth()->user();
-        
-        // Si el usuario no tiene associate_id, creamos uno nuevo
-        $associate = $user->associate_id 
-            ? Associate::find($user->associate_id) 
+        $associate = $user->associate_id
+            ? Associate::find($user->associate_id)
             : new Associate();
 
         if (!$associate && $user->associate_id) {
@@ -56,93 +54,194 @@ class AssociateController extends Controller
         }
 
         $data = $request->validate([
-            'company_name' => 'required|string|max:255',
-            'initials' => 'nullable|string|max:20',
-            'nit' => 'required|string|max:30|unique:associates,nit,' . ($associate->id ?? 'NULL'),
-            'legal_status' => 'nullable|string',
+            'company_name'       => 'required|string|max:255',
+            'initials'           => 'nullable|string|max:20',
+            'nit'                => 'required|string|max:30|unique:associates,nit,' . ($associate->id ?? 'NULL'),
+            'legal_status'       => 'required|string',
             'legal_status_other' => 'nullable|string',
-            'constitution_date' => 'nullable|date',
-            'country_origin' => 'nullable|string',
-            'phone' => 'nullable|string',
-            'website' => 'nullable|string',
-            'department' => 'nullable|string',
-            'department_id' => 'nullable|integer',
-            'city' => 'nullable|string',
-            'city_id' => 'nullable|integer',
-            'address' => 'nullable|string',
-            'rep_name' => 'nullable|string',
-            'rep_position' => 'nullable|string',
-            'rep_doc_type' => 'nullable|string|max:20',
-            'rep_doc' => 'nullable|string|max:50',
+            'constitution_date'  => 'nullable|date',
+            'country_origin'     => 'nullable|string',
+            'phone'              => 'required|string',
+            'website'            => 'nullable|string',
+            'department'         => 'required|string',
+            'department_id'      => 'required|integer',
+            'city'               => 'required|string',
+            'city_id'            => 'required|integer',
+            'address'            => 'required|string',
+            'rep_name'           => 'required|string',
+            'rep_position'       => 'required|string',
+            'rep_doc_type'       => 'required|string|max:20',
+            'rep_doc'            => 'required|string|max:50',
         ]);
 
-        // Manejo de 'Otro' en tipo de sociedad
         if (($data['legal_status'] ?? '') === 'Otro' && !empty($data['legal_status_other'])) {
             $data['legal_status'] = $data['legal_status_other'];
         }
 
-        Log::info('Data array before filling: ' . json_encode($data));
 
-        // Detectar cambios para auditoría si ya existe
         $auditLog = $associate->audit_log ?? [];
         if ($associate->exists) {
             foreach ($data as $key => $value) {
-                // Si el valor cambió, siempre reiniciamos la auditoría para ese campo (vuelve a pendiente)
-                if ($associate->$key != $value) {
+                // Normalización de valores para comparación justa
+                $currentVal = $associate->$key;
+                $newVal = $value;
+
+                // Si es fecha, comparamos el formato Y-m-d
+                if ($key === 'constitution_date' && $currentVal instanceof \Carbon\Carbon) {
+                    $currentVal = $currentVal->format('Y-m-d');
+                }
+
+                // Normalización de nulos y vacíos
+                if ($currentVal === null) $currentVal = '';
+                if ($newVal === null) $newVal = '';
+
+                // Solo reseteamos si DE VERDAD cambió el valor
+                if ($currentVal != $newVal) {
                     if (isset($auditLog[$key])) {
                         unset($auditLog[$key]);
                     }
-                } 
-                // Si el valor NO cambió, pero estaba rechazado, también lo reiniciamos para que CAMEP lo vuelva a revisar
-                else if (isset($auditLog[$key]) && $auditLog[$key]['status'] === 'rejected') {
-                    unset($auditLog[$key]);
                 }
             }
-            
-            // Caso especial para 'location' si existiera un rechazo general de ubicación
-            if (isset($auditLog['location']) && $auditLog['location']['status'] === 'rejected') {
+            if (isset($auditLog['location']) && ($auditLog['location']['status'] ?? '') === 'rejected') {
                 unset($auditLog['location']);
+            }
+
+            // Al enviar a revisión, el permiso 'editable' del admin queda consumido
+            foreach ($auditLog as $key => $entry) {
+                if (($entry['status'] ?? '') === 'editable') {
+                    unset($auditLog[$key]);
+                }
             }
         }
 
         $associate->fill(array_merge($data, [
             'audit_log' => $auditLog,
-            'status' => 'pending'
+            'status'    => 'pending',
         ]));
-        
         $associate->save();
 
-        // Vincular al usuario si es nuevo
         if (!$user->associate_id) {
             $user->update(['associate_id' => $associate->id]);
         }
 
-        return back()->with('success', 'Información básica actualizada y enviada a revisión.');
+        return back()->with('success', 'Información enviada a revisión correctamente.');
+    }
+
+    public function saveBasicInfoDraft(Request $request)
+    {
+        $user = auth()->user();
+        $associate = $user->associate_id
+            ? Associate::find($user->associate_id)
+            : new Associate();
+
+        if (!$associate && $user->associate_id) {
+            return abort(404, 'Associate not found');
+        }
+
+        $data = $request->validate([
+            'company_name'       => 'nullable|string|max:255',
+            'initials'           => 'nullable|string|max:20',
+            'nit'                => 'nullable|string|max:30|unique:associates,nit,' . ($associate->id ?? 'NULL'),
+            'legal_status'       => 'nullable|string',
+            'legal_status_other' => 'nullable|string',
+            'constitution_date'  => 'nullable|date',
+            'country_origin'     => 'nullable|string',
+            'phone'              => 'nullable|string',
+            'website'            => 'nullable|string',
+            'department'         => 'nullable|string',
+            'department_id'      => 'nullable|integer',
+            'city'               => 'nullable|string',
+            'city_id'            => 'nullable|integer',
+            'address'            => 'nullable|string',
+            'rep_name'           => 'nullable|string',
+            'rep_position'       => 'nullable|string',
+            'rep_doc_type'       => 'nullable|string|max:20',
+            'rep_doc'            => 'nullable|string|max:50',
+        ]);
+
+        if (($data['legal_status'] ?? '') === 'Otro' && !empty($data['legal_status_other'])) {
+            $data['legal_status'] = $data['legal_status_other'];
+        }
+
+        // Solo cambiar a draft si no está en un estado más avanzado
+        $currentStatus = $associate->exists ? $associate->status : null;
+        $newStatus = in_array($currentStatus, ['pending', 'approved', 'verified', 'rejected'])
+            ? $currentStatus  // No regresamos el status si ya está más avanzado
+            : 'draft';
+
+        $associate->fill(array_merge($data, ['status' => $newStatus]));
+        $associate->save();
+
+        if (!$user->associate_id) {
+            $user->update(['associate_id' => $associate->id]);
+        }
+
+        return back()->with('draft_saved', now()->format('d/m/Y H:i:s'));
+    }
+
+    public function requestFieldChange(Request $request)
+    {
+        $user = auth()->user();
+        $associate = Associate::findOrFail($user->associate_id);
+
+        $request->validate([
+            'field'  => 'required|string',
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $auditLog = $associate->audit_log ?? [];
+        $field = $request->field;
+
+        // Only allow if field is currently approved
+        if (($auditLog[$field]['status'] ?? '') !== 'approved') {
+            return back()->with('error', 'Este campo no está aprobado o ya fue modificado.');
+        }
+
+        $auditLog[$field]['change_request'] = [
+            'reason'       => $request->reason,
+            'requested_at' => now()->toIso8601String(),
+            'requested_by' => $user->name,
+        ];
+
+        $associate->update(['audit_log' => $auditLog]);
+
+        // Notify admin
+        try {
+            $adminEmail = config('mail.admin_recipient', env('ADMIN_EMAIL'));
+            if ($adminEmail) {
+                \Illuminate\Support\Facades\Mail::to($adminEmail)->send(
+                    new \App\Mail\AssociateFieldChangeRequested($associate, $field, $request->reason)
+                );
+            }
+        } catch (\Exception $e) {
+            Log::error('Error notifying admin of field change request: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Solicitud de cambio enviada. Te notificaremos cuando sea aprobada.');
     }
 
     private function appendFileUrls(Associate $associate)
     {
         $urls = [];
-        $disk = config('filesystems.default');
         
         if ($associate->logo_path) {
-            $urls['logo'] = Storage::disk($disk)->url($associate->logo_path);
+            $urls['logo'] = Storage::url($associate->logo_path);
         }
 
         if ($associate->cover_path) {
-            $urls['cover'] = Storage::disk($disk)->url($associate->cover_path);
+            $urls['cover'] = Storage::url($associate->cover_path);
         }
 
         if ($associate->files) {
             foreach ($associate->files as $name => $path) {
-                $urls[$name] = Storage::disk($disk)->url($path);
+                $urls[$name] = Storage::url($path);
             }
         }
 
         $associate->document_urls = $urls;
 
         if ($associate->cover_path) {
-            $associate->cover_url = Storage::disk($disk)->url($associate->cover_path);
+            $associate->cover_url = Storage::url($associate->cover_path);
         }
 
         $gallery = [];
@@ -150,7 +249,7 @@ class AssociateController extends Controller
             foreach ($associate->gallery_paths as $path) {
                 $gallery[] = [
                     'path' => $path,
-                    'url' => Storage::disk($disk)->url($path)
+                    'url' => Storage::url($path)
                 ];
             }
         }
@@ -166,7 +265,7 @@ class AssociateController extends Controller
             $this->appendFileUrls($associate);
         }
 
-        return Inertia::render('Associate/Company/Characterization', [
+        return Inertia::render('Associate/Company/Characterization/Index', [
             'initialAssociate' => $associate
         ]);
     }
@@ -199,13 +298,35 @@ class AssociateController extends Controller
             'private_income_pct' => 'required|integer|min:0|max:100',
         ]);
 
-        // Detectar cambios para auditoría
+        // Detectar cambios reales para auditoría
         $auditLog = $associate->audit_log ?? [];
         foreach ($data as $key => $value) {
-            if ($associate->$key != $value) {
+            $currentVal = $associate->$key;
+            $newVal = $value;
+
+            // Normalización de nulos y vacíos
+            if ($currentVal === null) $currentVal = '';
+            if ($newVal === null) $newVal = '';
+
+            if ($currentVal != $newVal) {
                 if (isset($auditLog[$key])) {
                     unset($auditLog[$key]);
                 }
+            }
+        }
+
+        // Limpia permisos 'editable' del admin (ya consumidos al re-enviar)
+        foreach ($auditLog as $key => $entry) {
+            if (($entry['status'] ?? '') === 'editable') {
+                unset($auditLog[$key]);
+            }
+        }
+
+        // Marca todos los campos enviados como 'pending' si no tienen estado definitivo
+        // Esto permite al frontend saber que la sección fue enviada a revisión
+        foreach (array_keys($data) as $field) {
+            if (!isset($auditLog[$field])) {
+                $auditLog[$field] = ['status' => 'pending'];
             }
         }
 
@@ -213,10 +334,51 @@ class AssociateController extends Controller
             'audit_log' => $auditLog,
             'status' => 'pending'
         ]));
-        
+
         $associate->save();
 
-        return back()->with('success', 'Caracterización actualizada y enviada a revisión.');
+        return back()->with('success', 'Caracterización enviada a revisión con éxito.');
+    }
+    public function saveCharacterizationDraft(Request $request)
+    {
+        $user = auth()->user();
+        $associate = Associate::findOrFail($user->associate_id);
+
+        $data = $request->validate([
+            'employees_tech' => 'nullable|integer|min:0',
+            'employees_prof' => 'nullable|integer|min:0',
+            'employees_admin' => 'nullable|integer|min:0',
+            'employees_exec' => 'nullable|integer|min:0',
+            'employees_other' => 'nullable|integer|min:0',
+            'employees_other_desc' => 'nullable|string',
+            'employees_direct_count' => 'nullable|integer|min:0',
+            'hydrocarbons_participation' => 'nullable|boolean',
+            'hydrocarbons_level' => 'nullable|string',
+            'pep_declaration' => 'nullable|boolean',
+            'pep_name' => 'nullable|string',
+            'pep_doc_type' => 'nullable|string',
+            'pep_entity' => 'nullable|string',
+            'other_guilds' => 'nullable|string',
+            'capacitation_plan' => 'nullable|boolean',
+            'capacitation_level' => 'nullable|string',
+            'capacitation_no_reason' => 'nullable|string',
+            'company_classification' => 'nullable|string',
+            'public_income_pct' => 'nullable|integer|min:0|max:100',
+            'private_income_pct' => 'nullable|integer|min:0|max:100',
+        ]);
+
+        // Evitar que el borrador resetee auditoría indiscriminadamente (podemos manejarlo después)
+        // Por ahora, solo guardamos los datos
+        
+        $currentStatus = $associate->status;
+        $newStatus = in_array($currentStatus, ['pending', 'approved', 'verified', 'rejected'])
+            ? $currentStatus 
+            : 'draft';
+
+        $associate->fill(array_merge($data, ['status' => $newStatus]));
+        $associate->save();
+
+        return back()->with('draft_saved', now()->format('d/m/Y H:i:s'));
     }
 
     public function editContacts()
@@ -228,7 +390,7 @@ class AssociateController extends Controller
             $this->appendFileUrls($associate);
         }
 
-        return Inertia::render('Associate/Company/Contacts', [
+        return Inertia::render('Associate/Company/Contacts/Index', [
             'initialAssociate' => $associate
         ]);
     }
@@ -262,17 +424,44 @@ class AssociateController extends Controller
             'social_other' => 'nullable|string',
         ]);
 
-        // Detectar cambios para auditoría
+        // Detectar cambios reales para auditoría
         $auditLog = $associate->audit_log ?? [];
         $fieldsToReset = [
             'contacts', 'main_ciiu', 'secondary_ciiu', 'billing_email', 
             'company_type', 'references', 'social_instagram', 
             'social_facebook', 'social_linkedin', 'social_other'
         ];
-
+        
         foreach ($fieldsToReset as $key) {
-            if (isset($auditLog[$key])) {
+            $currentVal = $associate->$key;
+            $newVal = $data[$key] ?? null;
+
+            // Normalización y comparación quirúrgica
+            if (is_array($currentVal)) {
+                if (json_encode($currentVal) !== json_encode($newVal)) {
+                    if (isset($auditLog[$key])) unset($auditLog[$key]);
+                }
+            } else {
+                if ($currentVal === null) $currentVal = '';
+                if ($newVal === null) $newVal = '';
+                
+                if ($currentVal != $newVal) {
+                    if (isset($auditLog[$key])) unset($auditLog[$key]);
+                }
+            }
+        }
+
+        // Limpia permisos 'editable' del admin (ya consumidos al re-enviar)
+        foreach ($auditLog as $key => $entry) {
+            if (($entry['status'] ?? '') === 'editable') {
                 unset($auditLog[$key]);
+            }
+        }
+
+        // Marca todos los campos enviados como 'pending' si no tienen estado definitivo
+        foreach ($fieldsToReset as $field) {
+            if (!isset($auditLog[$field])) {
+                $auditLog[$field] = ['status' => 'pending'];
             }
         }
 
@@ -280,7 +469,7 @@ class AssociateController extends Controller
             'audit_log' => $auditLog,
             'status' => 'pending'
         ]));
-        
+
         $associate->save();
 
         if ($request->has('contacts')) {
@@ -302,6 +491,64 @@ class AssociateController extends Controller
         }
 
         return back()->with('success', 'Contactos y referencias actualizados y enviados a revisión.');
+    }
+
+    public function saveContactsDraft(Request $request)
+    {
+        $user = auth()->user();
+        $associate = Associate::findOrFail($user->associate_id);
+
+        $data = $request->validate([
+            'contacts' => 'nullable|array',
+            'contacts.*.area' => 'nullable|string',
+            'contacts.*.name' => 'nullable|string',
+            'contacts.*.position' => 'nullable|string',
+            'contacts.*.email' => 'nullable|string',
+            'contacts.*.phone' => 'nullable|string',
+            'main_ciiu' => 'nullable|string',
+            'secondary_ciiu' => 'nullable|string',
+            'billing_email' => 'nullable|string',
+            'company_type' => 'nullable|array',
+            'references' => 'nullable|array',
+            'references.*.type' => 'nullable|string',
+            'references.*.name' => 'nullable|string',
+            'references.*.contact_person' => 'nullable|string',
+            'references.*.position' => 'nullable|string',
+            'references.*.phone' => 'nullable|string',
+            'references.*.email' => 'nullable|string',
+            'social_instagram' => 'nullable|string',
+            'social_facebook' => 'nullable|string',
+            'social_linkedin' => 'nullable|string',
+            'social_other' => 'nullable|string',
+        ]);
+
+        $currentStatus = $associate->status;
+        $newStatus = in_array($currentStatus, ['pending', 'approved', 'verified', 'rejected'])
+            ? $currentStatus 
+            : 'draft';
+
+        $associate->fill(array_merge($data, ['status' => $newStatus]));
+        $associate->save();
+
+        if ($request->has('contacts')) {
+            $associate->contacts()->delete();
+            foreach ($request->contacts as $contact) {
+                if (!empty($contact['name'])) {
+                    $associate->contacts()->create($contact);
+                }
+            }
+        }
+
+        if ($request->has('references')) {
+            $associate->references()->delete();
+            foreach ($request->references as $reference) {
+                if (!empty($reference['name'])) {
+                    $associate->references()->create($reference);
+                }
+            }
+        }
+
+        return back()->with('draft_saved', now()->format('d/m/Y H:i:s'));
     }
 
     public function editServices()
@@ -348,13 +595,26 @@ class AssociateController extends Controller
 
         $associate->services()->sync($data['service_ids']);
 
-        // Reset audit log for modified fields
         $auditLog = $associate->audit_log ?? [];
         $fieldsToReset = ['description', 'service_ids'];
 
-        foreach ($fieldsToReset as $key) {
-            if (isset($auditLog[$key])) {
+        // Detectar cambios y limpiar entradas afectadas
+        if ($associate->description !== $data['description']) {
+            unset($auditLog['description']);
+        }
+        unset($auditLog['service_ids']); // Los servicios siempre se re-sincronizan
+
+        // Limpia permisos 'editable' del admin (ya consumidos al re-enviar)
+        foreach ($auditLog as $key => $entry) {
+            if (($entry['status'] ?? '') === 'editable') {
                 unset($auditLog[$key]);
+            }
+        }
+
+        // Marca campos enviados como 'pending' si no tienen estado definitivo
+        foreach ($fieldsToReset as $field) {
+            if (!isset($auditLog[$field])) {
+                $auditLog[$field] = ['status' => 'pending'];
             }
         }
 
@@ -391,68 +651,131 @@ class AssociateController extends Controller
             'membership_interest' => 'required|array|min:1',
         ]);
 
-        $storedFiles = $associate->files ?? [];
-        $logoPath = $associate->logo_path;
-        $auditLog = $associate->audit_log ?? [];
+        // Capture old values BEFORE update to detect changes correctly
+        $oldRepName              = $associate->rep_name;
+        $oldRepDoc               = $associate->rep_doc;
+        $oldMembershipInterest   = $associate->membership_interest ?? [];
+        $oldFundsOrigin          = $associate->funds_origin_declaration;
+
+        $storedFiles      = $associate->files ?? [];
+        $auditLog         = $associate->audit_log ?? [];
+        $uploadedFileKeys = [];
 
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $docName => $file) {
                 if (!$file) continue;
-                
-                $extension = $file->getClientOriginalExtension();
-                $fileName = Str::slug($docName) . '_' . time() . '.' . $extension;
-                $path = $file->storeAs("associates/{$associate->id}/docs", $fileName, config('filesystems.default'));
-                
-                if ($docName === 'Logo HD (JPG/PNG)') {
-                    $logoPath = $path;
-                    // Reset logo audit if present
-                    if (isset($auditLog['logo_path'])) unset($auditLog['logo_path']);
-                }
-                
-                $storedFiles[$docName] = $path;
 
-                // Reset specific file audit if present
-                $fileAuditKey = "files.{$docName}";
-                if (isset($auditLog[$fileAuditKey])) {
-                    unset($auditLog[$fileAuditKey]);
-                }
+                $extension = $file->getClientOriginalExtension();
+                $fileName  = Str::slug($docName) . '_' . time() . '.' . $extension;
+                $path      = $file->storeAs("associates/{$associate->id}/docs", $fileName, config('filesystems.default'));
+
+                // logo_path se actualiza solo cuando el admin aprueba el documento
+                $storedFiles[$docName]  = $path;
+                $uploadedFileKeys[]     = "files.{$docName}";
             }
         }
 
         $associate->update([
-            'files' => $storedFiles,
-            'logo_path' => $logoPath,
-            'rep_name' => $request->rep_name,
-            'rep_doc' => $request->rep_doc,
-            'membership_interest' => $request->membership_interest,
+            'files'                    => $storedFiles,
+            'rep_name'                 => $request->rep_name,
+            'rep_doc'                  => $request->rep_doc,
+            'membership_interest'      => $request->membership_interest,
             'funds_origin_declaration' => true,
-            'status' => 'pending'
+            'status'                   => 'pending',
         ]);
 
         try {
             \Illuminate\Support\Facades\Mail::to(config('mail.admin_recipient', env('ADMIN_EMAIL')))
                 ->send(new \App\Mail\AssociateDocsSubmitted($associate));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error enviando alerta de documentos a admin: ' . $e->getMessage());
+            Log::error('Error enviando alerta de documentos a admin: ' . $e->getMessage());
         }
 
-        // Reset audit log for other modified fields
-        $fieldsToReset = ['rep_name', 'rep_doc', 'membership_interest', 'funds_origin_declaration'];
-        
-        foreach ($fieldsToReset as $field) {
-            if (isset($auditLog[$field])) {
-                unset($auditLog[$field]);
-            }
+        // 1. Clean editable entries
+        foreach ($auditLog as $key => $entry) {
+            if (($entry['status'] ?? '') === 'editable') unset($auditLog[$key]);
         }
-        
-        // Reset general 'files' rejection if any document is updated
-        if ($request->hasFile('files') && isset($auditLog['files'])) {
-            unset($auditLog['files']);
+
+        // 2. Uploaded files: unset existing audit then mark pending
+        foreach ($uploadedFileKeys as $fileKey) {
+            unset($auditLog[$fileKey]);
+            $auditLog[$fileKey] = ['status' => 'pending'];
         }
+
+        // 3. Scalar fields: unset if changed, add pending if not set
+        if ($oldRepName !== $request->rep_name)     unset($auditLog['rep_name']);
+        if ($oldRepDoc  !== $request->rep_doc)      unset($auditLog['rep_doc']);
+        if ((bool)$oldFundsOrigin !== true)         unset($auditLog['funds_origin_declaration']);
+
+        if (!isset($auditLog['rep_name']))              $auditLog['rep_name']              = ['status' => 'pending'];
+        if (!isset($auditLog['rep_doc']))               $auditLog['rep_doc']               = ['status' => 'pending'];
+        if (!isset($auditLog['funds_origin_declaration'])) $auditLog['funds_origin_declaration'] = ['status' => 'pending'];
+
+        // 4. membership_interest
+        if (json_encode($oldMembershipInterest) !== json_encode($request->membership_interest)) {
+            unset($auditLog['membership_interest']);
+        }
+        if (!isset($auditLog['membership_interest'])) {
+            $auditLog['membership_interest'] = ['status' => 'pending'];
+        }
+
+        if (isset($auditLog['files'])) unset($auditLog['files']);
 
         $associate->update(['audit_log' => $auditLog]);
 
         return back()->with('success', 'Documentación y declaraciones enviadas a revisión correctamente.');
+    }
+
+    public function saveDocumentationDraft(Request $request)
+    {
+        $user      = auth()->user();
+        $associate = Associate::findOrFail($user->associate_id);
+
+        $request->validate([
+            'files'               => 'nullable|array',
+            'files.*'             => 'nullable|file|mimes:pdf,jpg,jpeg,png,svg,doc,docx|max:10240',
+            'rep_name'            => 'nullable|string|max:255',
+            'rep_doc'             => 'nullable|string|max:255',
+            'membership_interest' => 'nullable|array',
+        ]);
+
+        $storedFiles = $associate->files ?? [];
+        $auditLog    = $associate->audit_log ?? [];
+
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $docName => $file) {
+                if (!$file) continue;
+
+                $extension = $file->getClientOriginalExtension();
+                $fileName  = Str::slug($docName) . '_' . time() . '.' . $extension;
+                $path      = $file->storeAs("associates/{$associate->id}/docs", $fileName, config('filesystems.default'));
+
+                // logo_path se actualiza solo cuando el admin aprueba el documento
+                $storedFiles[$docName] = $path;
+
+                // Mark file as editable (uploaded but not yet submitted to review)
+                $fileKey = "files.{$docName}";
+                if (!isset($auditLog[$fileKey]) || in_array($auditLog[$fileKey]['status'] ?? '', ['approved', 'rejected'])) {
+                    $auditLog[$fileKey] = ['status' => 'editable'];
+                }
+            }
+        }
+
+        $currentStatus = $associate->status;
+        $newStatus     = in_array($currentStatus, ['pending', 'approved', 'verified', 'rejected'])
+            ? $currentStatus
+            : 'draft';
+
+        $associate->update([
+            'files'               => $storedFiles,
+            'rep_name'            => $request->rep_name ?? $associate->rep_name,
+            'rep_doc'             => $request->rep_doc  ?? $associate->rep_doc,
+            'membership_interest' => $request->membership_interest ?? $associate->membership_interest,
+            'status'              => $newStatus,
+            'audit_log'           => $auditLog,
+        ]);
+
+        return back()->with('draft_saved', now()->format('d/m/Y H:i:s'));
     }
 
     public function show(Associate $associate)
@@ -491,11 +814,26 @@ class AssociateController extends Controller
     {
         $request->validate([
             'field' => 'required|string',
-            'status' => 'required|in:approved,rejected',
+            'status' => 'required|in:approved,rejected,reset',
             'reason' => 'nullable|string'
         ]);
 
         $auditLog = $associate->audit_log ?? [];
+
+        if ($request->status === 'reset') {
+            $auditLog[$request->field] = [
+                'status' => 'editable',
+                'reason' => 'Modificación permitida por el administrador',
+                'reset_at' => now(),
+                'auditor' => auth()->user()->name
+            ];
+            $associate->update([
+                'audit_log' => $auditLog
+                // No cambiamos el status global para mantener otros campos bloqueados si están "En revisión"
+            ]);
+            return back()->with('success', 'Campo habilitado para modificación');
+        }
+
         $auditLog[$request->field] = [
             'status' => $request->status,
             'reason' => $request->reason,
@@ -503,7 +841,17 @@ class AssociateController extends Controller
             'auditor' => auth()->user()->name
         ];
 
-        $associate->update(['audit_log' => $auditLog]);
+        $updateData = ['audit_log' => $auditLog];
+
+        // Cuando se aprueba el logo, promoverlo como imagen de perfil del asociado
+        if ($request->field === 'files.Logo HD (JPG/PNG)' && $request->status === 'approved') {
+            $logoDocPath = $associate->files['Logo HD (JPG/PNG)'] ?? null;
+            if ($logoDocPath) {
+                $updateData['logo_path'] = $logoDocPath;
+            }
+        }
+
+        $associate->update($updateData);
 
         // Notificar al asociado si el campo fue rechazado
         if ($request->status === 'rejected') {
@@ -516,7 +864,7 @@ class AssociateController extends Controller
                         ->send(new \App\Mail\AssociateAuditRejected($associate, $request->field, $request->reason));
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Error enviando notificación de auditoría: ' . $e->getMessage());
+                Log::error('Error enviando notificación de auditoría: ' . $e->getMessage());
             }
         }
 
@@ -536,7 +884,7 @@ class AssociateController extends Controller
                 \Illuminate\Support\Facades\Mail::to($recipientEmail)->send(new \App\Mail\AssociateApproved($associate));
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error enviando correo de aprobación: ' . $e->getMessage());
+            Log::error('Error enviando correo de aprobación: ' . $e->getMessage());
         }
 
         // No activamos perfil público todavía, debe pagar primero

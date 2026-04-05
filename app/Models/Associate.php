@@ -8,7 +8,7 @@ class Associate extends Model
 {
     protected $fillable = [
         'company_name', 'initials', 'description', 'legal_status', 'constitution_date', 
-        'country_origin', 'nit', 'address', 'department', 'city', 'phone', 
+        'country_origin', 'nit', 'address', 'department', 'department_id', 'city', 'city_id', 'phone', 
         'website', 'rep_name', 'rep_position', 'rep_doc', 'rep_doc_type', 'company_classification',
         'employees_direct_count', 'employees_tech', 'employees_prof', 
         'employees_admin', 'employees_exec', 'employees_other', 

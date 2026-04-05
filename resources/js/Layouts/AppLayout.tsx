@@ -60,7 +60,7 @@ export default function AppLayout({
                                         alt="Avatar"
                                         className="h-full w-full object-cover bg-white"
                                     />
-                                ) : (usePage().props.auth as any).associate?.status === 'approved' && (usePage().props.auth as any).associate?.logo_url ? (
+                                ) : (usePage().props.auth as any).associate?.logo_url ? (
                                     <img
                                         src={(usePage().props.auth as any).associate.logo_url}
                                         alt="Logo"

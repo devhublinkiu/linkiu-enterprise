@@ -12,7 +12,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 export default function Navbar() {
-    const { tenant, auth, service_categories } = usePage<PageProps>().props;
+    const { tenant, auth, service_categories, recent_companies } = usePage<PageProps>().props;
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -23,7 +23,12 @@ export default function Navbar() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const navItems = [
+    const navItems: Array<{
+        name: string;
+        href?: string;
+        isMegaMenu?: boolean;
+        submenu?: Array<{ name: string; href: string }>;
+    }> = [
         { name: 'Inicio', href: route('welcome') },
         {
             name: 'Nosotros',
@@ -36,16 +41,7 @@ export default function Navbar() {
             ]
         },
         { name: 'Bienes y servicios', href: route('bienes-servicios.index') },
-        {
-            name: 'Nuestras empresas',
-            submenu: [
-                { name: 'Ver todas las empresas', href: route('companies.index') },
-                ...(service_categories || []).map((cat: any) => ({
-                    name: `Categoría ${cat.name}`,
-                    href: route('categories.show', cat.slug),
-                }))
-            ]
-        },
+        { name: 'Nuestras empresas', isMegaMenu: true },
         {
             name: 'Enterate',
             submenu: [
@@ -77,8 +73,8 @@ export default function Navbar() {
                     {/* Desktop Menu - Centered with good separation */}
                     <div className="hidden xl:flex items-center gap-2 xl:gap-6 h-full absolute left-1/2 -translate-x-1/2">
                         {navItems.map((item) => (
-                            <div 
-                                key={item.name} 
+                            <div
+                                key={item.name}
                                 className="relative h-full flex items-center"
                                 onMouseEnter={() => setHoveredItem(item.name)}
                                 onMouseLeave={() => setHoveredItem(null)}
@@ -89,7 +85,7 @@ export default function Navbar() {
                                             {item.name}
                                             <ChevronDown size={16} className={cn("text-slate-400 transition-transform duration-200", hoveredItem === item.name && "rotate-180 text-orange-500")} />
                                         </button>
-                                        
+
                                         {/* Hover Submenu */}
                                         {hoveredItem === item.name && (
                                             <div className="absolute top-[100%] left-0 w-64 pt-2 animate-in fade-in slide-in-from-top-2 duration-200 z-[70]">
@@ -107,6 +103,11 @@ export default function Navbar() {
                                             </div>
                                         )}
                                     </>
+                                ) : item.isMegaMenu ? (
+                                    <button className="flex items-center gap-1.5 px-3 py-2 text-base font-bold text-slate-600 hover:text-orange-500 transition-colors tracking-tight outline-none whitespace-nowrap">
+                                        {item.name}
+                                        <ChevronDown size={16} className={cn("text-slate-400 transition-transform duration-200", hoveredItem === item.name && "rotate-180 text-orange-500")} />
+                                    </button>
                                 ) : (
                                     <Link
                                         href={item.href}
@@ -154,6 +155,66 @@ export default function Navbar() {
                         </button>
                     </div>
                 </div>
+                {/* MegaMenu — Nuestras empresas */}
+                {hoveredItem === 'Nuestras empresas' && (
+                    <div
+                        className="absolute top-full left-0 w-full z-[65] pt-1 animate-in fade-in slide-in-from-top-2 duration-200"
+                        onMouseEnter={() => setHoveredItem('Nuestras empresas')}
+                        onMouseLeave={() => setHoveredItem(null)}
+                    >
+                        <div className="bg-white border-t border-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.12)]">
+                            <div className="max-w-7xl mx-auto px-6 py-8">
+                                <div className="flex gap-10">
+
+                                    {/* Left — header + CTA */}
+                                    <div className="w-52 shrink-0 flex flex-col justify-between">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-orange-500 mb-2">Directorio</p>
+                                            <h3 className="text-xl font-black text-slate-900 leading-tight mb-3">Nuestras Empresas</h3>
+                                            <p className="text-sm text-slate-500 leading-relaxed">
+                                                Explora el directorio de empresas asociadas a CAMEP organizadas por categoría.
+                                            </p>
+                                        </div>
+                                        <Link
+                                            href={route('companies.index')}
+                                            className="mt-6 inline-flex items-center gap-2 bg-orange-500 hover:bg-slate-900 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-orange-500/20 hover:-translate-y-0.5 whitespace-nowrap"
+                                        >
+                                            Ver todas
+                                            <ChevronDown size={14} className="-rotate-90" />
+                                        </Link>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <div className="w-px bg-slate-100 shrink-0" />
+
+                                    {/* Center — categories in columns */}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-4">Categorías</p>
+                                        <div className="grid grid-cols-3 gap-x-8 gap-y-1">
+                                            {[...(service_categories || [])]
+                                                .sort((a, b) => (b.services_count ?? 0) - (a.services_count ?? 0))
+                                                .slice(0, 15)
+                                                .map((cat) => (
+                                                <Link
+                                                    key={cat.id}
+                                                    href={route('categories.show', cat.slug)}
+                                                    className="flex items-center gap-2 px-3 py-1 text-[13px] font-semibold text-slate-600 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-all group"
+                                                >
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-orange-300 group-hover:bg-orange-500 transition-colors shrink-0" />
+                                                    {cat.name}
+                                                    {cat.services_count ? (
+                                                        <span className="ml-auto text-[11px] text-slate-400 font-medium">{cat.services_count}</span>
+                                                    ) : null}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </nav>
 
             {/* Mobile/Tablet Menu Popup */}
@@ -196,6 +257,31 @@ export default function Navbar() {
                                                         )}
                                                     >
                                                         {sub.name}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        </>
+                                    ) : item.isMegaMenu ? (
+                                        <>
+                                            <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-500/50 px-4">
+                                                {item.name}
+                                            </h3>
+                                            <div className="grid grid-cols-1 gap-1">
+                                                <Link
+                                                    href={route('companies.index')}
+                                                    onClick={() => setIsMobileMenuOpen(false)}
+                                                    className="flex items-center gap-4 px-4 py-2.5 text-sm font-bold rounded-xl transition-all text-slate-700 hover:bg-orange-50 hover:text-orange-500"
+                                                >
+                                                    Ver todas las empresas
+                                                </Link>
+                                                {(service_categories || []).map((cat) => (
+                                                    <Link
+                                                        key={cat.id}
+                                                        href={route('categories.show', cat.slug)}
+                                                        onClick={() => setIsMobileMenuOpen(false)}
+                                                        className="flex items-center gap-4 px-4 py-2.5 text-sm font-bold rounded-xl transition-all text-slate-700 hover:bg-orange-50 hover:text-orange-500 border-l-2 border-transparent"
+                                                    >
+                                                        {cat.name}
                                                     </Link>
                                                 ))}
                                             </div>

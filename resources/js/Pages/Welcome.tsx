@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import {
@@ -87,6 +88,27 @@ export default function Welcome({
 }: WelcomeProps) {
     const { tenant, auth } = usePage<PageProps>().props;
 
+    // --- Featured companies carousel ---
+    const carouselRef = useRef<HTMLDivElement>(null);
+    const [slide, setSlide] = useState(0);
+    const [cardWidth, setCardWidth] = useState(0);
+
+    useEffect(() => {
+        const measure = () => {
+            if (carouselRef.current) {
+                const gap = 32; // gap-8 = 2rem
+                setCardWidth((carouselRef.current.offsetWidth - 2 * gap) / 3);
+            }
+        };
+        measure();
+        window.addEventListener('resize', measure);
+        return () => window.removeEventListener('resize', measure);
+    }, []);
+
+    const totalSlides = all_associates.length;
+    const maxSlide = Math.max(0, totalSlides - 3);
+    const slideOffset = slide * (cardWidth + 32);
+
     return (
         <PublicLayout>
             <Head title="Bienvenido" />
@@ -110,99 +132,103 @@ export default function Welcome({
                         </div>
                     </div>
 
-                    <div className="relative group/carousel">
-                        {/* Custom Horizontal Scroll/Carousel for featured companies */}
-                        <div className="flex overflow-x-auto pb-8 gap-8 no-scrollbar snap-x snap-mandatory">
-                            {all_associates.slice(0, 6).map((assoc, i) => (
-                                <div
-                                    key={assoc.id}
-                                    className="min-w-[250px] md:min-w-[300px] snap-center animate-in fade-in zoom-in duration-700"
-                                    style={{ animationDelay: `${i * 100}ms` }}
-                                >
-                                    <div className="group relative flex flex-col h-full bg-white rounded-xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-all duration-700 hover:-translate-y-2">
-                                        {/* Main Company Image (Cover) */}
-                                        <div className="relative h-48 w-full overflow-hidden">
-                                            {assoc.cover ? (
-                                                <img
-                                                    src={assoc.cover}
-                                                    alt={assoc.name}
-                                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                                                />
-                                            ) : (
-                                                <div className={cn(
-                                                    "w-full h-full transition-transform duration-1000 group-hover:scale-110",
-                                                    ["bg-slate-200", "bg-orange-50", "bg-slate-100", "bg-amber-50"][i % 4]
-                                                )}>
-                                                    <div className="w-full h-full flex items-center justify-center opacity-20">
+                    <div className="relative">
+                        {/* Track */}
+                        <div ref={carouselRef} className="overflow-hidden">
+                            <div
+                                className="flex gap-8 transition-transform duration-500 ease-in-out"
+                                style={{ transform: `translateX(-${slideOffset}px)` }}
+                            >
+                                {all_associates.map((assoc, i) => (
+                                    <div
+                                        key={assoc.id}
+                                        className="shrink-0"
+                                        style={{ width: cardWidth > 0 ? `${cardWidth}px` : 'calc(33.333% - 1.333rem)' }}
+                                    >
+                                        <div className="group relative flex flex-col h-full bg-white rounded-xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-all duration-700 hover:-translate-y-2">
+                                            {/* Cover */}
+                                            <div className="relative h-48 w-full overflow-hidden">
+                                                {assoc.cover ? (
+                                                    <img src={assoc.cover} alt={assoc.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                                                ) : (
+                                                    <div className={cn("w-full h-full flex items-center justify-center opacity-20", ["bg-slate-200","bg-orange-50","bg-slate-100","bg-amber-50"][i % 4])}>
                                                         <ImageIcon size={48} />
                                                     </div>
-                                                </div>
-                                            )}
-
-                                            {/* Gradient Overlay */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                                        </div>
-
-                                        {/* Overlapping Logo - Outside the overflow-hidden container */}
-                                        <div className="absolute top-[52%] -translate-y-1/2 left-8 z-30 pb-16">
-                                            {/* Gradient Border Wrapper */}
-                                            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-red-500 via-orange-600 to-green-600 p-[3px] shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-orange-200/50">
-                                                <div className="h-full w-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                                                    {assoc.logo ? (
-                                                        <img src={assoc.logo} alt={assoc.name} className="w-full h-full object-cover rounded-full shadow-inner" />
-                                                    ) : (
-                                                        <div className={cn(
-                                                            "w-full h-full rounded-full flex items-center justify-center text-white font-black text-2xl shadow-inner",
-                                                            ["bg-orange-500", "bg-amber-400", "bg-green-600", "bg-slate-400", "bg-yellow-500", "bg-teal-600"][i % 6]
-                                                        )}>
-                                                            {assoc.name.substring(0, 1)}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-10 pb-8 px-8 flex flex-col items-start text-left flex-1 bg-gradient-to-b from-white to-slate-50/30">
-                                            {/* Verification Badge */}
-                                            <div className={cn(
-                                                "inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4 border",
-                                                assoc.is_verified
-                                                    ? "bg-emerald-50 text-emerald-600 border-emerald-100/50"
-                                                    : "bg-slate-100 text-slate-400 border-slate-200"
-                                            )}>
-                                                <ShieldCheck size={12} className={cn(assoc.is_verified ? "fill-emerald-600/10" : "opacity-40")} />
-                                                <span className="text-[9px] font-black uppercase tracking-wider">
-                                                    {assoc.is_verified ? 'Empresa Verificada' : 'Empresa No Verificada'}
-                                                </span>
+                                                )}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                                             </div>
 
-                                            <h3 className="text-xl font-bold text-slate-900 leading-tight group-hover:text-orange-600 transition-colors line-clamp-2 min-h-[3.5rem]">
-                                                {assoc.name}
-                                            </h3>
+                                            {/* Overlapping Logo */}
+                                            <div className="absolute top-[52%] -translate-y-1/2 left-8 z-30 pb-16">
+                                                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-red-500 via-orange-600 to-green-600 p-[3px] shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3">
+                                                    <div className="h-full w-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                                                        {assoc.logo ? (
+                                                            <img src={assoc.logo} alt={assoc.name} className="w-full h-full object-cover rounded-full" />
+                                                        ) : (
+                                                            <div className={cn("w-full h-full rounded-full flex items-center justify-center text-white font-black text-2xl", ["bg-orange-500","bg-amber-400","bg-green-600","bg-slate-400","bg-yellow-500","bg-teal-600"][i % 6])}>
+                                                                {assoc.name.substring(0, 1)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                            <div className="w-full flex items-center justify-between gap-4">
+                                            <div className="pt-10 pb-8 px-8 flex flex-col items-start text-left flex-1 bg-gradient-to-b from-white to-slate-50/30">
+                                                <div className={cn("inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4 border", assoc.is_verified ? "bg-emerald-50 text-emerald-600 border-emerald-100/50" : "bg-slate-100 text-slate-400 border-slate-200")}>
+                                                    <ShieldCheck size={12} className={cn(assoc.is_verified ? "fill-emerald-600/10" : "opacity-40")} />
+                                                    <span className="text-[9px] font-black uppercase tracking-wider">
+                                                        {assoc.is_verified ? 'Empresa Verificada' : 'Empresa No Verificada'}
+                                                    </span>
+                                                </div>
+                                                <h3 className="text-xl font-bold text-slate-900 leading-tight group-hover:text-orange-600 transition-colors line-clamp-2 min-h-[3.5rem]">
+                                                    {assoc.name}
+                                                </h3>
                                                 <Link href={route('companies.show', assoc.id)}>
                                                     <Button variant="ghost" className="rounded-xl bg-slate-900 text-white hover:bg-orange-500 hover:text-white transition-all duration-500 gap-3 px-6 h-10 shadow-lg shadow-slate-900/10">
                                                         <span className="text-xs font-bold uppercase tracking-[0.2em]">Ver empresa</span>
-                                                        <ArrowRight size={14} className="group-hover/btn:translate-x-1" />
+                                                        <ArrowRight size={14} />
                                                     </Button>
                                                 </Link>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
 
-                        {/* Navigation Arrows (Visual only for now since it's native scroll) */}
-                        <div className="hidden lg:flex absolute top-1/2 -translate-y-1/2 -left-6 -right-6 justify-between pointer-events-none">
-                            <button className="h-12 w-12 bg-slate-900 text-white rounded-xl shadow-2xl flex items-center justify-center pointer-events-auto hover:bg-orange-500 transition-all opacity-0 group-hover/carousel:opacity-100">
-                                <ChevronLeft size={20} />
-                            </button>
-                            <button className="h-12 w-12 bg-slate-900 text-white rounded-xl shadow-2xl flex items-center justify-center pointer-events-auto hover:bg-orange-500 transition-all opacity-0 group-hover/carousel:opacity-100">
-                                <ChevronRight size={20} />
-                            </button>
-                        </div>
+                        {/* Controls */}
+                        {totalSlides > 3 && (
+                            <div className="flex items-center justify-center gap-4 mt-10">
+                                <button
+                                    onClick={() => setSlide(s => Math.max(0, s - 1))}
+                                    disabled={slide === 0}
+                                    className="h-11 w-11 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm flex items-center justify-center hover:bg-slate-900 hover:text-white hover:border-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
+
+                                <div className="flex items-center gap-2">
+                                    {Array.from({ length: maxSlide + 1 }).map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setSlide(i)}
+                                            className={cn(
+                                                "rounded-full transition-all duration-300",
+                                                i === slide ? "w-6 h-2.5 bg-orange-500" : "w-2.5 h-2.5 bg-slate-200 hover:bg-slate-300"
+                                            )}
+                                        />
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => setSlide(s => Math.min(maxSlide, s + 1))}
+                                    disabled={slide === maxSlide}
+                                    className="h-11 w-11 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm flex items-center justify-center hover:bg-slate-900 hover:text-white hover:border-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>
@@ -229,7 +255,10 @@ export default function Welcome({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {service_categories.map((category) => {
+                        {[...service_categories]
+                            .sort((a, b) => (b.services_count ?? 0) - (a.services_count ?? 0))
+                            .slice(0, 8)
+                            .map((category) => {
                             const getIcon = (slug: string) => {
                                 const s = slug.toLowerCase();
                                 if (s.includes('transporte')) return Truck;
@@ -381,37 +410,34 @@ export default function Welcome({
                     </div>
 
                     <div className="relative">
-                        <div className="flex flex-wrap justify-center items-center gap-12 md:gap-20">
+                        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
                             {all_associates.map((assoc, i) => (
-                                <div
+                                <Link
                                     key={assoc.id}
-                                    className="group relative transition-all duration-300 transform hover:-translate-y-1"
+                                    href={route('companies.show', assoc.id)}
+                                    className="group flex flex-col items-center gap-3 transition-all duration-300 hover:-translate-y-1"
                                     title={assoc.name}
                                 >
-                                    {assoc.logo ? (
-                                        <div className="bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center transition-shadow hover:shadow-md">
+                                    <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white shadow-md bg-white flex items-center justify-center group-hover:shadow-xl group-hover:border-orange-100 transition-all duration-300">
+                                        {assoc.logo ? (
                                             <img
                                                 src={assoc.logo}
                                                 alt={assoc.name}
-                                                className="max-h-[100px] max-w-full rounded-xl object-contain transition-transform duration-300 group-hover:scale-105"
+                                                className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110"
                                             />
-                                        </div>
-                                    ) : (
-                                        <div className={cn(
-                                            "h-20 md:h-28 w-32 md:w-44 lg:w-48 flex items-center justify-center text-white font-bold text-sm tracking-wider shadow-sm transition-all duration-300",
-                                            [
-                                                "bg-orange-500",
-                                                "bg-amber-400",
-                                                "bg-green-600",
-                                                "bg-slate-400",
-                                                "bg-yellow-500",
-                                                "bg-teal-600"
-                                            ][i % 6]
-                                        )}>
-                                            <span className="text-center">{assoc.name}</span>
-                                        </div>
-                                    )}
-                                </div>
+                                        ) : (
+                                            <div className={cn(
+                                                "w-full h-full rounded-full flex items-center justify-center text-white font-black text-xl",
+                                                ["bg-orange-500","bg-amber-400","bg-green-600","bg-slate-400","bg-yellow-500","bg-teal-600"][i % 6]
+                                            )}>
+                                                {assoc.name.substring(0, 2).toUpperCase()}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="text-[11px] font-bold text-slate-500 group-hover:text-orange-500 transition-colors text-center max-w-[80px] leading-tight line-clamp-2">
+                                        {assoc.name}
+                                    </span>
+                                </Link>
                             ))}
                             {all_associates.length === 0 && (
                                 <div className="text-slate-400 font-medium italic">Se parte de nuestro ecosistema empresarial</div>
@@ -443,7 +469,7 @@ export default function Welcome({
                             </Link>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {latest_announcements.map((item) => (
                                 <Link 
                                     key={item.id} 

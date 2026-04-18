@@ -27,4 +27,9 @@ export type PageProps<
         slug: string;
         services_count?: number;
     }>;
+    recent_companies?: Array<{
+        id: number;
+        name: string;
+        logo: string | null;
+    }>;
 };

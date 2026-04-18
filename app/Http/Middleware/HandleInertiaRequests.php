@@ -109,6 +109,16 @@ class HandleInertiaRequests extends Middleware
                 ? \App\Models\Invoice::where('associate_id', $user->associate_id)->whereNull('read_at')->count()
                 : null,
             'service_categories' => ServiceCategory::withCount('services')->get(['id', 'name', 'slug', 'services_count']),
+            'recent_companies' => \App\Models\Associate::where('status', 'approved')
+                ->where('is_public', true)
+                ->latest()
+                ->take(5)
+                ->get(['id', 'company_name', 'logo_path'])
+                ->map(fn($a) => [
+                    'id'   => $a->id,
+                    'name' => $a->company_name,
+                    'logo' => $a->logo_path ? \Illuminate\Support\Facades\Storage::url($a->logo_path) : null,
+                ]),
             'tenant' => [
                 'id'           => 'camep',
                 'company_name' => 'CAMEP',

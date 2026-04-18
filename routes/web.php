@@ -48,7 +48,7 @@ Route::get('/', function () {
         'latest_announcements' => \App\Models\Announcement::published()
             ->public()
             ->latest()
-            ->take(4)
+            ->take(3)
             ->get()
             ->map(fn($a) => [
                 'id' => $a->id,

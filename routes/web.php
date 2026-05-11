@@ -123,7 +123,18 @@ Route::middleware('guest')->group(function () {
 // Protected CAMEP Routes
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
+        $user      = auth()->user();
+        $associate = null;
+        if ($user->associate_id) {
+            $associate = \App\Models\Associate::select(['id', 'company_name', 'section_reviews'])
+                ->find($user->associate_id);
+        }
+        return Inertia::render('Dashboard', [
+            'associateProfile' => $associate ? [
+                'company_name'    => $associate->company_name,
+                'section_reviews' => $associate->section_reviews ?? [],
+            ] : null,
+        ]);
     })->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -151,7 +162,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/basic-info', [App\Http\Controllers\AssociateController::class, 'editBasicInfo'])->name('basic');
         Route::post('/basic-info', [App\Http\Controllers\AssociateController::class, 'updateBasicInfo'])->name('update.basic');
         Route::post('/basic-info/draft', [App\Http\Controllers\AssociateController::class, 'saveBasicInfoDraft'])->name('save.draft');
-        Route::post('/basic-info/request-change', [App\Http\Controllers\AssociateController::class, 'requestFieldChange'])->name('request.field.change');
+        Route::post('/section/request-change', [App\Http\Controllers\AssociateController::class, 'requestSectionChange'])->name('request.section.change');
         
 
         Route::get('/characterization', [App\Http\Controllers\AssociateController::class, 'editCharacterization'])->name('characterization');
@@ -164,6 +175,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/services', [App\Http\Controllers\AssociateController::class, 'editServices'])->name('services');
         Route::post('/services', [App\Http\Controllers\AssociateController::class, 'updateServices'])->name('update.services');
+        Route::post('/services/draft', [App\Http\Controllers\AssociateController::class, 'saveServicesDraft'])->name('save.services.draft');
 
         Route::get('/documentation', [App\Http\Controllers\AssociateController::class, 'editDocumentation'])->name('documentation');
         Route::post('/documentation', [App\Http\Controllers\AssociateController::class, 'updateDocumentation'])->name('update.documentation');
@@ -196,8 +208,12 @@ Route::middleware('auth')->group(function () {
     Route::name('admin.')->prefix('admin')->group(function () {
         Route::get('associates', [App\Http\Controllers\AssociateController::class, 'index'])->name('associates.index');
         Route::get('associates/{associate}', [App\Http\Controllers\AssociateController::class, 'show'])->name('associates.show');
-        Route::post('associates/{associate}/audit', [App\Http\Controllers\AssociateController::class, 'audit'])->name('associates.audit');
+        Route::post('associates/{associate}/audit-section', [App\Http\Controllers\AssociateController::class, 'auditSection'])->name('associates.audit-section');
+        Route::post('associates/{associate}/audit-change-request', [App\Http\Controllers\AssociateController::class, 'auditChangeRequest'])->name('associates.audit-change-request');
         Route::put('associates/{associate}', [App\Http\Controllers\AssociateController::class, 'update'])->name('associates.update');
+        Route::post('associates/{associate}/gallery', [App\Http\Controllers\AssociateController::class, 'adminGalleryUpload'])->name('associates.gallery.upload');
+        Route::post('associates/{associate}/gallery/delete', [App\Http\Controllers\AssociateController::class, 'adminGalleryDelete'])->name('associates.gallery.delete');
+        Route::post('associates/{associate}/gallery/cover', [App\Http\Controllers\AssociateController::class, 'adminGalleryCover'])->name('associates.gallery.cover');
         Route::post('associates/{associate}/approve', [App\Http\Controllers\AssociateController::class, 'approve'])->name('associates.approve');
         Route::post('associates/{associate}/toggle-public', [App\Http\Controllers\AssociateController::class, 'togglePublic'])->name('associates.toggle-public');
         Route::post('associates/{associate}/toggle-verified', [App\Http\Controllers\AssociateController::class, 'toggleVerified'])->name('associates.toggle-verified');

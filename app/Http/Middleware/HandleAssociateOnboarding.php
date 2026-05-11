@@ -44,7 +44,7 @@ class HandleAssociateOnboarding
                 'associate.company.update.basic',
                 'associate.company.save.draft',
                 'associate.company.save.characterization.draft',
-                'associate.company.request.field.change',
+                'associate.company.request.section.change',
             ];
             
             if (!in_array($routeName, $onboardingRoutes)) {
@@ -70,7 +70,7 @@ class HandleAssociateOnboarding
                     'associate.company.update.basic',
                     'associate.company.save.draft',
                     'associate.company.save.characterization.draft',
-                    'associate.company.request.field.change',
+                    'associate.company.request.section.change',
                     'associate.company.characterization',
                     'associate.company.update.characterization',
                     'associate.company.contacts',
@@ -78,6 +78,7 @@ class HandleAssociateOnboarding
                     'associate.company.save.contacts.draft',
                     'associate.company.services',
                     'associate.company.update.services',
+                    'associate.company.save.services.draft',
                     'associate.company.documentation',
                     'associate.company.update.documentation',
                     'associate.company.save.documentation.draft',
@@ -99,7 +100,7 @@ class HandleAssociateOnboarding
                     'associate.company.update.basic',
                     'associate.company.save.draft',
                     'associate.company.save.characterization.draft',
-                    'associate.company.request.field.change',
+                    'associate.company.request.section.change',
                     'associate.checkout.show',
                     'associate.checkout.store',
                 ];

@@ -1,25 +1,21 @@
 import React from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Head, Link } from '@inertiajs/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/Card';
+import { Card, CardContent } from '@/Components/ui/Card';
 import { Button } from '@/Components/ui/Button';
 import { Badge } from '@/Components/ui/Badge';
-import { 
-    Building2, 
-    Search, 
-    Filter, 
-    Eye, 
-    Clock, 
-    CheckCircle2, 
-    XCircle,
-    ChevronRight,
-    ArrowUpRight
+import {
+    Building2,
+    Search,
+    Filter,
+    ArrowUpRight,
 } from 'lucide-react';
 import { Input } from '@/Components/ui/Input';
-
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/Components/ui/Tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/Tabs';
 import StatusToggle from '@/Components/StatusToggle';
-import { ShieldCheck, ShieldAlert } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const SECTION_KEYS = ['basicinfo', 'characterization', 'contacts', 'documentation', 'services'] as const;
 
 interface Associate {
     id: number;
@@ -28,9 +24,34 @@ interface Associate {
     city: string;
     status: 'pending' | 'verified' | 'approved' | 'rejected' | 'inactive';
     created_at: string;
-    audit_log: any;
+    section_reviews: Record<string, { status: string }>;
     is_public: boolean;
     is_verified: boolean;
+}
+
+function SectionDots({ reviews }: { reviews: Record<string, { status: string }> }) {
+    const statusColor: Record<string, string> = {
+        approved:      'bg-emerald-500',
+        pending:       'bg-amber-400',
+        change_pending:'bg-amber-400',
+        rejected:      'bg-red-500',
+        draft:         'bg-slate-200',
+    };
+
+    return (
+        <div className="flex gap-1 items-center">
+            {SECTION_KEYS.map(key => {
+                const status = reviews?.[key]?.status || 'draft';
+                return (
+                    <span
+                        key={key}
+                        title={`${key}: ${status}`}
+                        className={cn("inline-block w-2 h-2 rounded-full", statusColor[status] ?? 'bg-slate-200')}
+                    />
+                );
+            })}
+        </div>
+    );
 }
 
 export default function Index({ associates, currentStatus }: { associates: Associate[], currentStatus: string }) {
@@ -54,7 +75,6 @@ export default function Index({ associates, currentStatus }: { associates: Assoc
             <Head title="Gestión de Empresas - CAMEP" />
 
             <div className="space-y-6">
-                {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Empresas Asociadas</h1>
@@ -62,7 +82,6 @@ export default function Index({ associates, currentStatus }: { associates: Assoc
                     </div>
                 </div>
 
-                {/* Tabs & Search */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <Tabs defaultValue={currentStatus} className="w-full md:w-auto" onValueChange={(val) => {
                          window.location.href = route('admin.associates.index', { status: val });
@@ -95,7 +114,6 @@ export default function Index({ associates, currentStatus }: { associates: Assoc
                     </div>
                 </div>
 
-                {/* List */}
                 <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl">
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
@@ -105,6 +123,7 @@ export default function Index({ associates, currentStatus }: { associates: Assoc
                                         <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Empresa</th>
                                         <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">NIT</th>
                                         <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Ubicación</th>
+                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Secciones</th>
                                         <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Verificado</th>
                                         <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Público</th>
                                         <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-center">Estado</th>
@@ -125,17 +144,20 @@ export default function Index({ associates, currentStatus }: { associates: Assoc
                                             <td className="px-6 py-4 text-sm text-slate-600 font-medium">{associate.nit}</td>
                                             <td className="px-6 py-4 text-sm text-slate-600">{associate.city}</td>
                                             <td className="px-6 py-4">
-                                                <StatusToggle 
-                                                    id={associate.id} 
-                                                    value={associate.is_verified} 
+                                                <SectionDots reviews={associate.section_reviews || {}} />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <StatusToggle
+                                                    id={associate.id}
+                                                    value={associate.is_verified}
                                                     route="admin.associates.toggle-verified"
                                                     label={associate.is_verified ? "SÍ" : "NO"}
                                                 />
                                             </td>
                                             <td className="px-6 py-4">
-                                                <StatusToggle 
-                                                    id={associate.id} 
-                                                    value={associate.is_public} 
+                                                <StatusToggle
+                                                    id={associate.id}
+                                                    value={associate.is_public}
                                                     route="admin.associates.toggle-public"
                                                     label={associate.is_public ? "ACTIVO" : "INACTIVO"}
                                                 />
@@ -155,7 +177,7 @@ export default function Index({ associates, currentStatus }: { associates: Assoc
                                     ))}
                                     {associates.length === 0 && (
                                         <tr>
-                                            <td colSpan={6} className="px-6 py-12 text-center">
+                                            <td colSpan={8} className="px-6 py-12 text-center">
                                                 <div className="flex flex-col items-center">
                                                     <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4">
                                                         <Building2 size={24} />

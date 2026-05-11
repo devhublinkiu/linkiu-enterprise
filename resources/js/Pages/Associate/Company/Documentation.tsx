@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import { Button } from '@/Components/ui/Button';
 import { Label } from '@/Components/ui/Label';
@@ -9,9 +9,7 @@ import {
     FileText,
     Upload,
     CheckCircle2,
-    Pencil,
     ShieldCheck,
-    AlertCircle,
     FileCheck,
     Image as ImageIcon,
     Download,
@@ -30,15 +28,13 @@ import {
     Target,
     FileUp,
     ChevronLeft,
-    MessageSquare,
-    RotateCcw,
     Save,
+    Send,
     ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ChangeRequestModal } from '@/Components/ChangeRequestModal';
 import { StatusBadge } from '@/Components/FieldWrapper';
-import AlertsForms from './BasicInfo/Parts/AlertsForms';
+import SectionReviewBanner, { SectionReview } from '@/Components/SectionReviewBanner';
 
 interface Props {
     auth: any;
@@ -115,16 +111,9 @@ const OPTIONAL_DOCS = [
 
 const INTERESTS = ['Gestión Gremial', 'Información Sectorial', 'Comunidad de Negocios', 'Otro'];
 
-const FIELD_LABELS: Record<string, string> = {
-    rep_name:                  'Representante Legal',
-    rep_doc:                   'Cédula de Ciudadanía',
-    funds_origin_declaration:  'Declaración de Origen de Fondos',
-    membership_interest:       'Interés de Afiliación',
-};
-
 function completionScore(data: any, fileUrls: any) {
-    const mandatoryKeys      = MANDATORY_DOCS.map(d => d.name);
-    const uploadedMandatory  = mandatoryKeys.filter(key => data.files[key] || fileUrls[key]).length;
+    const mandatoryKeys     = MANDATORY_DOCS.map(d => d.name);
+    const uploadedMandatory = mandatoryKeys.filter(key => data.files[key] || fileUrls[key]).length;
 
     const checks = [
         uploadedMandatory === mandatoryKeys.length,
@@ -137,10 +126,10 @@ function completionScore(data: any, fileUrls: any) {
     const filled = checks.filter(Boolean).length;
     return {
         filled,
-        total:       checks.length,
-        pct:         Math.round((filled / checks.length) * 100),
-        docsFilled:  uploadedMandatory,
-        docsTotal:   mandatoryKeys.length
+        total:      checks.length,
+        pct:        Math.round((filled / checks.length) * 100),
+        docsFilled: uploadedMandatory,
+        docsTotal:  mandatoryKeys.length
     };
 }
 
@@ -153,7 +142,6 @@ function DocPreviewModal({ url, name, onClose }: { url: string; name: string; on
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
                 onClick={e => e.stopPropagation()}
             >
-                {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 shrink-0">
                     <div className="flex items-center gap-2.5 min-w-0">
                         <div className="h-7 w-7 rounded-lg bg-slate-900 flex items-center justify-center shrink-0">
@@ -179,7 +167,6 @@ function DocPreviewModal({ url, name, onClose }: { url: string; name: string; on
                     </div>
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 overflow-hidden bg-slate-50 min-h-0">
                     {isImage ? (
                         <div className="h-full flex items-center justify-center p-6">
@@ -213,17 +200,16 @@ function SectionHeader({ icon: Icon, title, right }: { icon: any; title: string;
 }
 
 export default function Documentation({ auth, flash, initialAssociate }: Props) {
-    const [isEditing, setIsEditing]                   = useState(false);
-    const [notification, setNotification]             = useState<{ type: 'success' | 'draft' | 'error'; msg: string } | null>(null);
-    const [changeRequestField, setChangeRequestField] = useState<string | null>(null);
-    const [changeRequesting, setChangeRequesting]     = useState(false);
-    const [previewDoc, setPreviewDoc]                 = useState<{ url: string; name: string } | null>(null);
-    const fileInputRef                                = useRef<HTMLInputElement>(null);
-    const [activeDocKey, setActiveDocKey]             = useState<string | null>(null);
+    const sectionReview: SectionReview = initialAssociate?.section_reviews?.documentation ?? { status: 'draft' };
+    const sectionStatus = sectionReview.status;
+    const canEdit = ['draft', 'rejected'].includes(sectionStatus);
 
-    const associateStatus = initialAssociate?.status || 'draft';
-    const auditLog        = initialAssociate?.audit_log || {};
-    const fileUrls        = initialAssociate?.document_urls || {};
+    const [notification, setNotification] = useState<{ type: 'success' | 'draft' | 'error'; msg: string } | null>(null);
+    const [previewDoc, setPreviewDoc]     = useState<{ url: string; name: string } | null>(null);
+    const fileInputRef                    = useRef<HTMLInputElement>(null);
+    const [activeDocKey, setActiveDocKey] = useState<string | null>(null);
+
+    const fileUrls = initialAssociate?.document_urls || {};
 
     const { data, setData, post, processing, errors } = useForm({
         files:                    {} as any,
@@ -233,93 +219,23 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
         membership_interest:      initialAssociate?.membership_interest || [] as string[],
     });
 
-    const score            = completionScore(data, fileUrls);
-    const hasRejectedFields = Object.values(auditLog).some((f: any) => f.status === 'rejected');
+    const score = completionScore(data, fileUrls);
 
-    // ── Was ever reviewed heuristic ─────────────────────────────────────────
-    const docsWasEverReviewed =
-        Object.keys(FIELD_LABELS).some(f => !!auditLog[f]) ||
-        Object.keys(auditLog).some(k => k.startsWith('files.'));
+    const fieldStatus = (_field: string): string => canEdit ? 'editable' : sectionStatus;
+    const isLocked    = (_field: string) => !canEdit;
 
-    // ── Field status ─────────────────────────────────────────────────────────
-    const fieldStatus = (field: string): string => {
-        const audit = auditLog[field];
-        if (audit) {
-            if (audit.status === 'approved' && audit.change_request) return 'change_requested';
-            if (audit.status === 'approved')  return 'approved';
-            if (audit.status === 'rejected')  return 'rejected';
-            if (audit.status === 'editable')  return 'editable';
-            if (audit.status === 'pending')   return 'pending';
-        }
-
-        if (docsWasEverReviewed && ['pending', 'approved', 'verified', 'rejected'].includes(associateStatus)) {
-            // Files are always re-uploadable — treat as editable in the status chain
-            if (field.startsWith('files.')) return 'editable';
-
-            let saved: any;
-            if (field === 'membership_interest') {
-                saved = (initialAssociate?.membership_interest?.length ?? 0) > 0 ? true : null;
-            } else if (field === 'funds_origin_declaration') {
-                saved = initialAssociate?.funds_origin_declaration || null;
-            } else {
-                saved = initialAssociate?.[field];
-            }
-            const isUnsubmitted = saved === null || saved === undefined ||
-                (typeof saved === 'string' && saved.trim() === '');
-            if (isUnsubmitted) return 'editable';
-            return associateStatus;
-        }
-
-        return 'editable';
-    };
-
-    // ── Is locked ────────────────────────────────────────────────────────────
-    const isLocked = (field: string) => {
-        if (!isEditing) return true;
-        // Files can always be replaced (re-upload resets audit cycle)
-        if (field.startsWith('files.')) return false;
-        const status = fieldStatus(field);
-        const isRejectedGlobal = status === 'rejected' && auditLog[field]?.status !== 'rejected';
-        return status === 'approved' ||
-               status === 'change_requested' ||
-               status === 'pending' ||
-               status === 'verified' ||
-               isRejectedGlobal;
-    };
-
-    // ── Flash ────────────────────────────────────────────────────────────────
     useEffect(() => {
         if (flash?.draft_saved) setNotification({ type: 'draft', msg: `Borrador guardado · ${flash.draft_saved}` });
-        if (flash?.success) {
-            setNotification({ type: 'success', msg: flash.success });
-            setIsEditing(false);
-        }
-        if (flash?.error) setNotification({ type: 'error', msg: flash.error });
+        if (flash?.success)     setNotification({ type: 'success', msg: flash.success });
+        if (flash?.error)       setNotification({ type: 'error', msg: flash.error });
         if (flash) {
             const t = setTimeout(() => setNotification(null), 5000);
             return () => clearTimeout(t);
         }
     }, [flash]);
 
-    // ── Handlers ─────────────────────────────────────────────────────────────
-    const handleSubmit = () => {
-        post(route('associate.company.update.documentation'));
-    };
-
-    const handleSaveDraft = () => {
-        post(route('associate.company.save.documentation.draft'));
-    };
-
-    const handleRequestChange = useCallback((reason: string) => {
-        if (!changeRequestField) return;
-        setChangeRequesting(true);
-        router.post(route('associate.company.request.field.change'), { field: changeRequestField, reason }, {
-            onFinish: () => {
-                setChangeRequesting(false);
-                setChangeRequestField(null);
-            },
-        });
-    }, [changeRequestField]);
+    const handleSubmit    = () => post(route('associate.company.update.documentation'));
+    const handleSaveDraft = () => post(route('associate.company.save.documentation.draft'));
 
     const handleUploadClick = (key: string) => {
         setActiveDocKey(key);
@@ -343,20 +259,6 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
         );
     };
 
-    // ── Rejected fields list (detailed banner) ────────────────────────────────
-    const rejectedFields = Object.entries(auditLog)
-        .filter(([_, a]: [any, any]) => a.status === 'rejected')
-        .map(([key, a]: [any, any]) => ({
-            field:  key,
-            reason: a.reason,
-            label:  ({
-                funds_origin_declaration: 'Declaración de Fondos',
-                rep_name:                 'Representante Legal',
-                membership_interest:      'Intereses de Afiliación',
-            } as Record<string, string>)[key] || key.replace(/files\./g, 'Documento: ').replace(/_/g, ' '),
-        }));
-
-    // ── Doc item renderer ─────────────────────────────────────────────────────
     const renderDocItem = (doc: any) => {
         const hasLocal   = !!data.files[doc.name];
         const hasRemote  = !!fileUrls[doc.name];
@@ -434,16 +336,6 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
         <AppLayout>
             <Head title="Documentación Legal" />
 
-            {changeRequestField && (
-                <ChangeRequestModal
-                    field={changeRequestField}
-                    fieldLabel={FIELD_LABELS[changeRequestField]}
-                    onClose={() => setChangeRequestField(null)}
-                    onSubmit={handleRequestChange}
-                    isSubmitting={changeRequesting}
-                />
-            )}
-
             {previewDoc && (
                 <DocPreviewModal
                     url={previewDoc.url}
@@ -455,43 +347,21 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
             <div className="max-w-5xl mx-auto space-y-6 pb-20">
 
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-slate-400 mb-2">
-                            <Link href={route('dashboard')} className="hover:text-slate-900 transition-colors text-xs font-bold">Dashboard</Link>
-                            <ChevronLeft size={14} className="rotate-180" />
-                            <span className="text-slate-900 font-bold text-xs">Documentación</span>
-                        </div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Carga de Documentación</h1>
-                        <p className="text-slate-500 text-sm font-medium">Requisitos legales y declaraciones juradas para socios CAMEP.</p>
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-slate-400 mb-2">
+                        <Link href={route('dashboard')} className="hover:text-slate-900 transition-colors text-xs font-bold">Dashboard</Link>
+                        <ChevronLeft size={14} className="rotate-180" />
+                        <span className="text-slate-900 font-bold text-xs">Documentación</span>
                     </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                        {!isEditing ? (
-                            <Button
-                                onClick={() => setIsEditing(true)}
-                                className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center gap-2 px-6 h-12 shadow-lg shadow-slate-200 transition-all active:scale-95"
-                            >
-                                <Pencil size={16} /> Gestionar documentos
-                            </Button>
-                        ) : (
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsEditing(false)}
-                                className="border-slate-200 text-slate-600 rounded-xl h-12 px-6 hover:bg-slate-50 transition-all font-bold"
-                            >
-                                Cancelar
-                            </Button>
-                        )}
-                    </div>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Carga de Documentación</h1>
+                    <p className="text-slate-500 text-sm font-medium">Requisitos legales y declaraciones juradas para socios CAMEP.</p>
                 </div>
 
-                <AlertsForms
-                    isNew={false}
-                    associateStatus={associateStatus}
+                <SectionReviewBanner
+                    section="documentation"
+                    review={sectionReview}
                     notification={notification}
                     onCloseNotification={() => setNotification(null)}
-                    hasRejectedFields={false}
                 />
 
                 {/* Progress Bar */}
@@ -514,37 +384,6 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                         <span className="text-[13px] font-black text-slate-600">{score.pct}%</span>
                     </div>
                 </div>
-
-                {/* Detailed rejection banner */}
-                {rejectedFields.length > 0 && (
-                    <div className="rounded-2xl border border-red-200 bg-red-50/60 p-5">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="h-8 w-8 rounded-xl bg-red-100 flex items-center justify-center shrink-0 text-red-600"><AlertCircle size={16} /></div>
-                            <p className="text-sm font-black text-red-900 uppercase tracking-tight">{rejectedFields.length} observaciones de CAMEP</p>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {rejectedFields.map((rf, i) => (
-                                <div key={i} className="flex items-start gap-2.5 p-3 bg-white rounded-xl border border-red-100">
-                                    <MessageSquare size={12} className="text-red-400 mt-0.5 shrink-0" />
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-700 uppercase tracking-wide">{rf.label}</p>
-                                        <p className="text-[10px] text-slate-500 font-medium italic mt-0.5 leading-tight">"{rf.reason || 'Revise el documento cargado'}"</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Read-only hint */}
-                {!isEditing && (
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center gap-2.5">
-                        <Pencil size={13} className="text-slate-400 shrink-0" />
-                        <p className="text-xs text-slate-500 font-medium flex-1">
-                            Modo visualización · Haz clic en <strong>Gestionar documentos</strong> para subir o actualizar archivos.
-                        </p>
-                    </div>
-                )}
 
                 <div className="space-y-6">
                     {/* Archivos Obligatorios */}
@@ -575,20 +414,7 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                                 <SectionHeader
                                     icon={Target}
                                     title="Interés de Afiliación"
-                                    right={
-                                        <div className="flex items-center gap-2">
-                                            <StatusBadge status={fieldStatus('membership_interest') === 'editable' ? null : fieldStatus('membership_interest')} />
-                                            {fieldStatus('membership_interest') === 'approved' && isEditing && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setChangeRequestField('membership_interest')}
-                                                    className="flex items-center gap-1 text-[9px] font-black uppercase text-slate-400 hover:text-slate-700 border border-slate-200 rounded-lg px-2 py-0.5 transition-all bg-white"
-                                                >
-                                                    <RotateCcw size={9} /> Cambio
-                                                </button>
-                                            )}
-                                        </div>
-                                    }
+                                    right={<StatusBadge status={fieldStatus('membership_interest') === 'editable' ? null : fieldStatus('membership_interest')} />}
                                 />
                                 <div className="p-6 space-y-2">
                                     {INTERESTS.map(interest => (
@@ -618,15 +444,7 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between gap-2">
                                                 <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Representante Legal</Label>
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    <StatusBadge status={fieldStatus('rep_name') === 'editable' ? null : fieldStatus('rep_name')} />
-                                                    {fieldStatus('rep_name') === 'approved' && isEditing && (
-                                                        <button type="button" onClick={() => setChangeRequestField('rep_name')}
-                                                            className="flex items-center gap-1 text-[9px] font-black uppercase text-white/40 hover:text-white border border-white/10 hover:border-white/30 rounded-lg px-1.5 py-0.5 transition-all">
-                                                            <RotateCcw size={9} /> Cambio
-                                                        </button>
-                                                    )}
-                                                </div>
+                                                <StatusBadge status={fieldStatus('rep_name') === 'editable' ? null : fieldStatus('rep_name')} />
                                             </div>
                                             <Input
                                                 value={data.rep_name}
@@ -642,15 +460,7 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between gap-2">
                                                 <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Cédula de Ciudadanía</Label>
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    <StatusBadge status={fieldStatus('rep_doc') === 'editable' ? null : fieldStatus('rep_doc')} />
-                                                    {fieldStatus('rep_doc') === 'approved' && isEditing && (
-                                                        <button type="button" onClick={() => setChangeRequestField('rep_doc')}
-                                                            className="flex items-center gap-1 text-[9px] font-black uppercase text-white/40 hover:text-white border border-white/10 hover:border-white/30 rounded-lg px-1.5 py-0.5 transition-all">
-                                                            <RotateCcw size={9} /> Cambio
-                                                        </button>
-                                                    )}
-                                                </div>
+                                                <StatusBadge status={fieldStatus('rep_doc') === 'editable' ? null : fieldStatus('rep_doc')} />
                                             </div>
                                             <Input
                                                 value={data.rep_doc}
@@ -697,15 +507,7 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
 
                                     <div className="flex items-center justify-between opacity-30 px-2 pt-2 border-t border-white/5">
                                         <span className="text-[8px] font-black uppercase tracking-widest">Trust Identity V2.44</span>
-                                        <div className="flex items-center gap-2">
-                                            <StatusBadge status={fieldStatus('funds_origin_declaration') === 'editable' ? null : fieldStatus('funds_origin_declaration')} />
-                                            {fieldStatus('funds_origin_declaration') === 'approved' && isEditing && (
-                                                <button type="button" onClick={() => setChangeRequestField('funds_origin_declaration')}
-                                                    className="flex items-center gap-1 text-[9px] font-black uppercase text-white/60 hover:text-white border border-white/10 hover:border-white/30 rounded-lg px-1.5 py-0.5 transition-all">
-                                                    <RotateCcw size={9} /> Cambio
-                                                </button>
-                                            )}
-                                        </div>
+                                        <StatusBadge status={fieldStatus('funds_origin_declaration') === 'editable' ? null : fieldStatus('funds_origin_declaration')} />
                                     </div>
                                 </div>
                             </section>
@@ -713,39 +515,14 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                     </div>
                 </div>
 
-                {/* Sticky Save Bar */}
-                {isEditing && (
-                    <div className="sticky bottom-4 z-20 flex items-center justify-between p-4 bg-slate-900 rounded-2xl shadow-2xl shadow-slate-900/40 border border-white/10 backdrop-blur-md animate-in slide-in-from-bottom-5">
-                        <div className="hidden sm:flex items-center gap-3 pl-2">
-                            <div className="h-9 w-9 rounded-xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20">
-                                <ShieldCheck size={18} className="text-emerald-400" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Gestión Documental</p>
-                                <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">Sube archivos y firma antes de enviar</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-3 w-full sm:w-auto">
-                            <Button variant="ghost" onClick={() => setIsEditing(false)}
-                                className="flex-1 sm:flex-none text-white hover:bg-white/10 rounded-xl px-6 h-12 text-xs font-black uppercase">
-                                Cancelar
-                            </Button>
-                            <Button
-                                onClick={handleSaveDraft}
-                                disabled={processing}
-                                className="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 text-white font-black rounded-xl px-6 h-12 text-xs uppercase tracking-widest transition-all border border-white/10"
-                            >
-                                <Save size={14} className="mr-1.5" />
-                                {processing ? 'Guardando...' : 'Borrador'}
-                            </Button>
-                            <Button
-                                onClick={handleSubmit}
-                                disabled={processing || !data.funds_origin_declaration}
-                                className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl px-10 h-12 text-xs uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20"
-                            >
-                                {processing ? 'Subiendo...' : 'Confirmar y Enviar'}
-                            </Button>
-                        </div>
+                {canEdit && (
+                    <div className="sticky bottom-6 flex justify-end gap-3 z-30">
+                        <Button type="button" onClick={handleSaveDraft} disabled={processing} className="bg-white border border-slate-200 text-slate-700 rounded-xl px-6 shadow-lg hover:bg-slate-50">
+                            <Save size={16} className="mr-2" /> Guardar Borrador
+                        </Button>
+                        <Button type="button" onClick={handleSubmit} disabled={processing} className="bg-slate-900 text-white rounded-xl px-8 shadow-xl hover:bg-slate-800">
+                            <Send size={16} className="mr-2" /> {processing ? 'Enviando...' : 'Enviar a Revisión'}
+                        </Button>
                     </div>
                 )}
 

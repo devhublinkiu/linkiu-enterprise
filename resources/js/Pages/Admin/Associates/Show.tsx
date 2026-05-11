@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Head, router, useForm, Link } from '@inertiajs/react';
 import { Button } from '@/Components/ui/Button';
-import { Badge } from '@/Components/ui/Badge';
 import {
     Check,
     Building2,
@@ -26,6 +25,7 @@ import { TabContacts } from './Parts/TabContacts';
 import { TabServices } from './Parts/TabServices';
 import { TabDocumentation } from './Parts/TabDocumentation';
 import { TabGallery } from './Parts/TabGallery';
+import { SectionReviewData } from './Parts/SectionAuditPanel';
 
 interface Associate {
     id: number;
@@ -76,11 +76,7 @@ interface Associate {
     social_facebook: string;
     social_linkedin: string;
     social_other: string;
-    audit_log: Record<string, {
-        status: 'approved' | 'rejected' | 'pending' | 'editable' | 'draft' | 'change_requested' | 'verified',
-        reason?: string,
-        change_request?: { reason: string; requested_at: string; requested_by: string }
-    }>;
+    section_reviews: Record<string, SectionReviewData>;
     services: any[];
     files: any;
     membership_interest: string[];
@@ -92,12 +88,14 @@ interface Associate {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-    draft:    { label: 'Borrador',   className: 'bg-slate-100 text-slate-600' },
+    draft:    { label: 'Borrador',    className: 'bg-slate-100 text-slate-600' },
     pending:  { label: 'En Revisión', className: 'bg-amber-100 text-amber-700' },
-    verified: { label: 'Admitido',   className: 'bg-blue-100 text-blue-700' },
-    approved: { label: 'Activo',     className: 'bg-emerald-100 text-emerald-700' },
-    rejected: { label: 'Rechazado',  className: 'bg-red-100 text-red-700' },
+    verified: { label: 'Admitido',    className: 'bg-blue-100 text-blue-700' },
+    approved: { label: 'Activo',      className: 'bg-emerald-100 text-emerald-700' },
+    rejected: { label: 'Rechazado',   className: 'bg-red-100 text-red-700' },
 };
+
+const REVIEWABLE_SECTIONS = ['basicinfo', 'characterization', 'contacts', 'documentation', 'services'] as const;
 
 export default function Show({ associate, availableServices }: { associate: Associate; availableServices: any[] }) {
     const [activeTab, setActiveTab] = useState('overview');
@@ -105,35 +103,25 @@ export default function Show({ associate, availableServices }: { associate: Asso
         description: associate.description || '',
         service_ids: associate.services?.map(s => s.id) || []
     });
-    const [auditState, setAuditState] = useState(associate.audit_log || {});
     const [isEditingServices, setIsEditingServices] = useState(false);
 
-    // ── Handlers ─────────────────────────────────────────────────────────────
-    const handleAudit = (field: string, status: 'approved' | 'rejected' | 'reset', reason: string = '') => {
-        router.post(route('admin.associates.audit', associate.id),
-            { field, status, reason },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setAuditState(prev => {
-                        const next = { ...prev };
-                        if (status === 'reset') delete next[field];
-                        else next[field] = { status: status as any, reason };
-                        return next;
-                    });
-                }
-            }
+    // ── Section audit handler ─────────────────────────────────────────────────
+    const handleAuditSection = (section: string, status: 'approved' | 'rejected', reason: string = '') => {
+        router.post(route('admin.associates.audit-section', associate.id),
+            { section, action: status === 'approved' ? 'approve' : 'reject', reason },
+            { preserveScroll: true }
+        );
+    };
+
+    // ── Change request handler ────────────────────────────────────────────────
+    const handleAuditChangeRequest = (section: string, action: 'approve' | 'reject', reason: string = '') => {
+        router.post(route('admin.associates.audit-change-request', associate.id),
+            { section, action, reason },
+            { preserveScroll: true }
         );
     };
 
     const handleApproveAll = () => post(route('admin.associates.approve', associate.id));
-
-    const getFieldStatus = (field: string) => {
-        const status = auditState[field]?.status || 'pending';
-        return status === 'editable' ? 'pending' : status;
-    };
-
-    const getChangeRequest = (field: string) => auditState[field]?.change_request || null;
 
     const handleUpdate = () => put(route('admin.associates.update', associate.id), { preserveScroll: true });
 
@@ -145,54 +133,35 @@ export default function Show({ associate, availableServices }: { associate: Asso
         setData('service_ids', current);
     };
 
-    const getPendingCount = (fields: string[]) => fields.filter(f => auditState[f]?.status === 'pending').length;
+    // ── Section-level progress ────────────────────────────────────────────────
+    const sectionStats = REVIEWABLE_SECTIONS.reduce((acc, sec) => {
+        const s = associate.section_reviews?.[sec]?.status || 'draft';
+        if (s === 'approved') acc.approved++;
+        else if (s === 'rejected') acc.rejected++;
+        else if (s === 'pending' || s === 'change_pending') acc.pending++;
+        else acc.draft++;
+        return acc;
+    }, { approved: 0, rejected: 0, pending: 0, draft: 0 });
 
-    // ── Field groups ──────────────────────────────────────────────────────────
-    const basicFields = [
-        'company_name', 'nit', 'initials', 'legal_status', 'constitution_date',
-        'country_origin', 'phone', 'website', 'department', 'city', 'address',
-        'rep_name', 'rep_doc_type', 'rep_doc', 'rep_position'
-    ];
-    const charFields = [
-        'employees_direct_count', 'employees_tech', 'employees_prof', 'employees_admin',
-        'employees_exec', 'employees_other', 'employees_other_desc', 'company_classification',
-        'hydrocarbons_participation', 'hydrocarbons_level', 'private_income_pct', 'public_income_pct',
-        'pep_declaration', 'pep_name', 'pep_doc_type', 'pep_entity', 'capacitation_plan',
-        'capacitation_level', 'capacitation_no_reason', 'other_guilds'
-    ];
-    const contactFields = [
-        'contacts', 'references', 'billing_email', 'social_instagram', 'social_facebook',
-        'social_linkedin', 'social_other', 'main_ciiu', 'secondary_ciiu', 'company_type'
-    ];
-    const serviceFields = ['description', 'service_ids'];
-    const docNames = [
-        'Carta Solicitud Afiliación', 'Logo HD (JPG/PNG)', 'Brochure/Portafolio', 'RUT',
-        'Cámara y Comercio / Registro Mercantil', 'Estados financieros con notas',
-        'Fotocopia de la cédula del representante legal', 'Antecedentes del contador público (Balance anterior)',
-        'Composición Accionaria', 'Certificación Parafiscales', 'Declaración de aceptación del PTEEI',
-        'Compromiso de autoregulacion', 'Transferencia de datos', 'Acuerdo de Afiliación',
-        'Participación Accionaria', 'Certificado tamaño empresas', 'Carta de residencia del Representante Legal',
-        'Última planilla de seguridad social', 'Certificaciones de calidad'
-    ];
-    const docFields = [...docNames.map(n => `files.${n}`), 'funds_origin_declaration', 'membership_interest'];
-    const galleryFields = ['gallery_paths'];
+    const progressPct = Math.round((sectionStats.approved / REVIEWABLE_SECTIONS.length) * 100);
 
-    // ── Progress stats ────────────────────────────────────────────────────────
-    const totalFields   = basicFields.length + charFields.length + contactFields.length + serviceFields.length + docFields.length;
-    const approvedCount = Object.values(auditState).filter((v: any) => v.status === 'approved').length;
-    const rejectedCount = Object.values(auditState).filter((v: any) => v.status === 'rejected').length;
-    const pendingLeft   = totalFields - approvedCount - rejectedCount;
-    const progressPct   = Math.min(100, Math.round((approvedCount / totalFields) * 100));
+    const getSectionReview = (key: string): SectionReviewData =>
+        associate.section_reviews?.[key] ?? { status: 'draft' };
 
-    // ── Sidebar nav definition ────────────────────────────────────────────────
+    const sectionHasPending = (key: string) => {
+        const s = associate.section_reviews?.[key]?.status;
+        return s === 'pending' || s === 'change_pending';
+    };
+
+    // ── Sidebar nav ───────────────────────────────────────────────────────────
     const navItems = [
-        { value: 'overview',        label: 'Resumen',         icon: Layers,     fields: [] },
-        { value: 'basic',           label: 'Inf. Básica',     icon: Building2,  fields: basicFields },
-        { value: 'characterization',label: 'Caracterización', icon: Briefcase,  fields: charFields },
-        { value: 'contacts',        label: 'Contactos',       icon: Users,      fields: contactFields },
-        { value: 'services',        label: 'Servicios',       icon: Globe,      fields: serviceFields },
-        { value: 'docs',            label: 'Documentos',      icon: ScrollText, fields: docFields },
-        { value: 'gallery',         label: 'Galería',         icon: Camera,     fields: galleryFields },
+        { value: 'overview',         label: 'Resumen',         icon: Layers,     sectionKey: null },
+        { value: 'basic',            label: 'Inf. Básica',     icon: Building2,  sectionKey: 'basicinfo' },
+        { value: 'characterization', label: 'Caracterización', icon: Briefcase,  sectionKey: 'characterization' },
+        { value: 'contacts',         label: 'Contactos',       icon: Users,      sectionKey: 'contacts' },
+        { value: 'services',         label: 'Servicios',       icon: Globe,      sectionKey: 'services' },
+        { value: 'docs',             label: 'Documentos',      icon: ScrollText, sectionKey: 'documentation' },
+        { value: 'gallery',          label: 'Galería',         icon: Camera,     sectionKey: null },
     ];
 
     const statusCfg = STATUS_CONFIG[associate.status] ?? STATUS_CONFIG.pending;
@@ -211,7 +180,6 @@ export default function Show({ associate, availableServices }: { associate: Asso
 
                             {/* Company card */}
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                {/* Back link */}
                                 <div className="px-4 pt-4 pb-3 border-b border-slate-100">
                                     <Link
                                         href={route('admin.associates.index')}
@@ -222,7 +190,6 @@ export default function Show({ associate, availableServices }: { associate: Asso
                                 </div>
 
                                 <div className="p-4 space-y-3">
-                                    {/* Logo + name */}
                                     <div className="flex items-center gap-3">
                                         {associate.document_urls?.logo ? (
                                             <div className="h-11 w-11 rounded-xl border border-slate-200 bg-white overflow-hidden shrink-0 shadow-sm">
@@ -239,7 +206,6 @@ export default function Show({ associate, availableServices }: { associate: Asso
                                         </div>
                                     </div>
 
-                                    {/* Status + date */}
                                     <div className="flex items-center justify-between gap-2">
                                         <span className={cn("text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full", statusCfg.className)}>
                                             {statusCfg.label}
@@ -254,24 +220,24 @@ export default function Show({ associate, availableServices }: { associate: Asso
 
                             {/* Progress card */}
                             <div className="bg-slate-900 rounded-2xl p-4 space-y-3">
-                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Auditoría</p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Secciones</p>
                                 <div className="grid grid-cols-3 gap-1 text-center">
                                     <div className="bg-white/5 rounded-xl py-2">
-                                        <p className="text-base font-black text-emerald-400">{approvedCount}</p>
+                                        <p className="text-base font-black text-emerald-400">{sectionStats.approved}</p>
                                         <p className="text-[8px] font-bold uppercase text-slate-500 mt-0.5">Ok</p>
                                     </div>
                                     <div className="bg-white/5 rounded-xl py-2">
-                                        <p className="text-base font-black text-amber-400">{pendingLeft}</p>
+                                        <p className="text-base font-black text-amber-400">{sectionStats.pending}</p>
                                         <p className="text-[8px] font-bold uppercase text-slate-500 mt-0.5">Pend.</p>
                                     </div>
                                     <div className="bg-white/5 rounded-xl py-2">
-                                        <p className="text-base font-black text-red-400">{rejectedCount}</p>
+                                        <p className="text-base font-black text-red-400">{sectionStats.rejected}</p>
                                         <p className="text-[8px] font-bold uppercase text-slate-500 mt-0.5">Obs.</p>
                                     </div>
                                 </div>
                                 <div>
                                     <div className="flex justify-between mb-1">
-                                        <span className="text-[9px] text-slate-500 font-bold uppercase">Completitud</span>
+                                        <span className="text-[9px] text-slate-500 font-bold uppercase">Aprobadas</span>
                                         <span className="text-[9px] text-emerald-400 font-black">{progressPct}%</span>
                                     </div>
                                     <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -286,8 +252,8 @@ export default function Show({ associate, availableServices }: { associate: Asso
                             {/* Navigation */}
                             <nav className="bg-white rounded-2xl border border-slate-200 p-2 space-y-0.5">
                                 {navItems.map(item => {
-                                    const pending   = item.fields.length > 0 ? getPendingCount(item.fields) : 0;
-                                    const isActive  = activeTab === item.value;
+                                    const hasPending = item.sectionKey ? sectionHasPending(item.sectionKey) : false;
+                                    const isActive   = activeTab === item.value;
                                     return (
                                         <button
                                             key={item.value}
@@ -303,13 +269,11 @@ export default function Show({ associate, availableServices }: { associate: Asso
                                                 <item.icon size={13} />
                                                 {item.label}
                                             </span>
-                                            {pending > 0 && (
+                                            {hasPending && (
                                                 <span className={cn(
                                                     "text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center",
                                                     isActive ? "bg-white/20 text-white" : "bg-amber-100 text-amber-700"
-                                                )}>
-                                                    {pending}
-                                                </span>
+                                                )}>!</span>
                                             )}
                                         </button>
                                     );
@@ -331,38 +295,33 @@ export default function Show({ associate, availableServices }: { associate: Asso
                         <div className="flex-1 min-w-0">
                             <TabOverview
                                 associate={associate}
-                                auditState={auditState}
-                                fieldGroups={{ basicFields, charFields, contactFields, serviceFields, docFields }}
+                                sectionStats={sectionStats}
                                 handleApproveAll={handleApproveAll}
                                 processing={processing}
                             />
                             <TabBasicInfo
                                 associate={associate}
-                                auditState={auditState}
-                                getFieldStatus={getFieldStatus}
-                                getChangeRequest={getChangeRequest}
-                                handleAudit={handleAudit as any}
+                                sectionReview={getSectionReview('basicinfo')}
+                                onAuditSection={handleAuditSection}
+                                onAuditChangeRequest={handleAuditChangeRequest}
                             />
                             <TabCharacterization
                                 associate={associate}
-                                auditState={auditState}
-                                getFieldStatus={getFieldStatus}
-                                getChangeRequest={getChangeRequest}
-                                handleAudit={handleAudit as any}
+                                sectionReview={getSectionReview('characterization')}
+                                onAuditSection={handleAuditSection}
+                                onAuditChangeRequest={handleAuditChangeRequest}
                             />
                             <TabContacts
                                 associate={associate}
-                                auditState={auditState}
-                                getFieldStatus={getFieldStatus}
-                                getChangeRequest={getChangeRequest}
-                                handleAudit={handleAudit as any}
+                                sectionReview={getSectionReview('contacts')}
+                                onAuditSection={handleAuditSection}
+                                onAuditChangeRequest={handleAuditChangeRequest}
                             />
                             <TabServices
                                 associate={associate}
-                                auditState={auditState}
-                                getFieldStatus={getFieldStatus}
-                                getChangeRequest={getChangeRequest}
-                                handleAudit={handleAudit as any}
+                                sectionReview={getSectionReview('services')}
+                                onAuditSection={handleAuditSection}
+                                onAuditChangeRequest={handleAuditChangeRequest}
                                 isEditingServices={isEditingServices}
                                 setIsEditingServices={setIsEditingServices}
                                 data={data}
@@ -374,16 +333,12 @@ export default function Show({ associate, availableServices }: { associate: Asso
                             />
                             <TabDocumentation
                                 associate={associate}
-                                auditState={auditState}
-                                getFieldStatus={getFieldStatus}
-                                getChangeRequest={getChangeRequest}
-                                handleAudit={handleAudit as any}
-                                docNames={docNames}
+                                sectionReview={getSectionReview('documentation')}
+                                onAuditSection={handleAuditSection}
+                                onAuditChangeRequest={handleAuditChangeRequest}
                             />
                             <TabGallery
                                 associate={associate}
-                                auditState={auditState}
-                                handleAudit={handleAudit as any}
                             />
                         </div>
 

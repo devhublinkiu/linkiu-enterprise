@@ -14,8 +14,8 @@ class UserController extends Controller
     {
         $users = User::with('associate:id,company_name')
             ->orderBy('name')
-            ->get()
-            ->map(fn($u) => [
+            ->paginate(20)
+            ->through(fn($u) => [
                 'id'            => $u->id,
                 'name'          => $u->name,
                 'email'         => $u->email,

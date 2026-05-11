@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
-import { Head, useForm } from '@inertiajs/react';
-import { Card, CardContent } from '@/Components/ui/Card';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { Card } from '@/Components/ui/Card';
 import { Button } from '@/Components/ui/Button';
 import { Input } from '@/Components/ui/Input';
 import { Label } from '@/Components/ui/Label';
 import { Badge } from '@/Components/ui/Badge';
-import { Users, Phone, Building2, Shield, KeyRound, X, Eye, EyeOff } from 'lucide-react';
+import { Users, Phone, Building2, KeyRound, X, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface UserRow {
@@ -19,8 +19,24 @@ interface UserRow {
     associate_id: number | null;
 }
 
+interface PaginatorLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+interface Paginator {
+    data: UserRow[];
+    links: PaginatorLink[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    from: number;
+    to: number;
+}
+
 interface Props {
-    users: UserRow[];
+    users: Paginator;
 }
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
@@ -112,6 +128,74 @@ function ChangePasswordModal({ user, onClose }: { user: UserRow; onClose: () => 
     );
 }
 
+function Pagination({ paginator }: { paginator: Paginator }) {
+    if (paginator.last_page <= 1) return null;
+
+    // Strip the "Previous" and "Next" entries — we render our own arrows
+    const pageLinks = paginator.links.filter(l => {
+        const txt = l.label.replace(/&[a-z]+;/g, '').trim();
+        return txt !== '' && !/Previous|Next/i.test(txt);
+    });
+
+    const prevLink = paginator.links.find(l => /Previous|laquo/i.test(l.label));
+    const nextLink = paginator.links.find(l => /Next|raquo/i.test(l.label));
+
+    return (
+        <div className="flex items-center justify-between px-2">
+            <p className="text-[11px] text-slate-400 font-bold uppercase">
+                {paginator.from}–{paginator.to} de {paginator.total} usuarios
+            </p>
+
+            <div className="flex items-center gap-1">
+                {/* Prev */}
+                {prevLink?.url ? (
+                    <Link href={prevLink.url} preserveScroll
+                        className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                        <ChevronLeft size={14} />
+                    </Link>
+                ) : (
+                    <span className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">
+                        <ChevronLeft size={14} />
+                    </span>
+                )}
+
+                {/* Page numbers */}
+                {pageLinks.map((link, i) => {
+                    if (!link.url && !link.active) {
+                        return (
+                            <span key={i} className="h-8 min-w-[2rem] px-2 flex items-center justify-center text-[11px] font-bold text-slate-300">
+                                …
+                            </span>
+                        );
+                    }
+                    return link.active ? (
+                        <span key={i} className="h-8 min-w-[2rem] px-2 flex items-center justify-center rounded-lg bg-slate-900 text-white text-[11px] font-black">
+                            {link.label}
+                        </span>
+                    ) : (
+                        <Link key={i} href={link.url!} preserveScroll
+                            className="h-8 min-w-[2rem] px-2 flex items-center justify-center rounded-lg border border-slate-200 text-[11px] font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                            {link.label}
+                        </Link>
+                    );
+                })}
+
+                {/* Next */}
+                {nextLink?.url ? (
+                    <Link href={nextLink.url} preserveScroll
+                        className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                        <ChevronRight size={14} />
+                    </Link>
+                ) : (
+                    <span className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">
+                        <ChevronRight size={14} />
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+}
+
 export default function Index({ users }: Props) {
     const [passwordUser, setPasswordUser] = useState<UserRow | null>(null);
 
@@ -132,7 +216,7 @@ export default function Index({ users }: Props) {
                             Usuarios
                         </h1>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                            {users.length} usuario{users.length !== 1 ? 's' : ''} registrados
+                            {users.total} usuario{users.total !== 1 ? 's' : ''} registrados
                         </p>
                     </div>
                 </div>
@@ -146,14 +230,14 @@ export default function Index({ users }: Props) {
                     </div>
 
                     <div className="divide-y divide-slate-100/70">
-                        {users.length === 0 && (
+                        {users.data.length === 0 && (
                             <div className="text-center py-16">
                                 <Users size={40} className="mx-auto text-slate-200 mb-3" />
                                 <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">Sin usuarios registrados</p>
                             </div>
                         )}
 
-                        {users.map(user => {
+                        {users.data.map(user => {
                             const roleInfo = ROLE_LABELS[user.role] ?? { label: user.role, color: 'bg-slate-100 text-slate-600' };
                             return (
                                 <div key={user.id} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors group">
@@ -203,6 +287,12 @@ export default function Index({ users }: Props) {
                             );
                         })}
                     </div>
+
+                    {users.last_page > 1 && (
+                        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/30">
+                            <Pagination paginator={users} />
+                        </div>
+                    )}
                 </Card>
             </div>
         </AppLayout>

@@ -151,7 +151,7 @@ export default function Sidebar({ tenant, isOpen, setIsOpen }: SidebarProps) {
         {
             name: 'Usuarios',
             icon: Users,
-            href: '#',
+            href: route('admin.users.index'),
             show: isAdmin
         },
         {

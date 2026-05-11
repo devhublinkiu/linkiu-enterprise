@@ -206,6 +206,10 @@ Route::middleware('auth')->group(function () {
 
     // Admin Panel for CAMEP
     Route::name('admin.')->prefix('admin')->group(function () {
+        // Users
+        Route::get('users', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+        Route::post('users/{user}/password', [App\Http\Controllers\Admin\UserController::class, 'updatePassword'])->name('users.update-password');
+
         Route::get('associates', [App\Http\Controllers\AssociateController::class, 'index'])->name('associates.index');
         Route::get('associates/{associate}', [App\Http\Controllers\AssociateController::class, 'show'])->name('associates.show');
         Route::post('associates/{associate}/audit-section', [App\Http\Controllers\AssociateController::class, 'auditSection'])->name('associates.audit-section');

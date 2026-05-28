@@ -61,8 +61,22 @@ interface Props {
 
 const INTERESTS = ['Gestión Gremial', 'Información Sectorial', 'Comunidad de Negocios', 'Otro'];
 
+const MAX_FILE_MB = 10;
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+
 function acceptAttr(accepts: string[]): string {
     return accepts.map(a => `.${a}`).join(',');
+}
+
+function fileExtension(name: string): string {
+    const parts = name.split('.');
+    return parts.length > 1 ? parts.pop()!.toLowerCase() : '';
+}
+
+function humanSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function completionScore(data: any, fileUrls: any, mandatory: DocSpec[]) {
@@ -189,8 +203,18 @@ export default function Documentation({ auth, flash, initialAssociate, documentC
         }
     }, [flash]);
 
-    const handleSubmit    = () => post(route('associate.company.update.documentation'));
-    const handleSaveDraft = () => post(route('associate.company.save.documentation.draft'));
+    const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
+
+    const onSubmitError = () => {
+        setNotification({
+            type: 'error',
+            msg: 'No se pudo enviar. Revisa los documentos marcados en rojo y vuelve a intentar.',
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleSubmit    = () => post(route('associate.company.update.documentation'), { onError: onSubmitError });
+    const handleSaveDraft = () => post(route('associate.company.save.documentation.draft'), { onError: onSubmitError });
 
     const handleUploadClick = (key: string, accepts: string[]) => {
         setActiveDocKey(key);
@@ -201,10 +225,28 @@ export default function Documentation({ auth, flash, initialAssociate, documentC
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file && activeDocKey) {
-            setData('files', { ...data.files, [activeDocKey]: file });
-            if (e.target) e.target.value = '';
+        if (e.target) e.target.value = '';
+        if (!file || !activeDocKey) return;
+
+        const spec   = [...documentCatalog.mandatory, ...documentCatalog.optional].find(d => d.key === activeDocKey);
+        const ext    = fileExtension(file.name);
+        const nextErrors = { ...fileErrors };
+
+        if (spec && spec.accepts.length && !spec.accepts.includes(ext)) {
+            nextErrors[activeDocKey] = `Formato no permitido (.${ext}). Aceptado: ${spec.accepts.map(a => a.toUpperCase()).join(', ')}.`;
+            setFileErrors(nextErrors);
+            return;
         }
+
+        if (file.size > MAX_FILE_BYTES) {
+            nextErrors[activeDocKey] = `El archivo pesa ${humanSize(file.size)}. El máximo permitido es ${MAX_FILE_MB} MB. Comprímelo e intenta de nuevo.`;
+            setFileErrors(nextErrors);
+            return;
+        }
+
+        delete nextErrors[activeDocKey];
+        setFileErrors(nextErrors);
+        setData('files', { ...data.files, [activeDocKey]: file });
     };
 
     const handleDeleteDoc = (key: string, label: string) => {
@@ -234,6 +276,7 @@ export default function Documentation({ auth, flash, initialAssociate, documentC
         const fieldKey   = `files.${doc.key}`;
         const status     = fieldStatus(fieldKey);
         const required   = documentCatalog.mandatory.some(m => m.key === doc.key);
+        const docError   = fileErrors[doc.key] || (errors as any)[fieldKey];
 
         return (
             <div key={doc.key} className="flex flex-col gap-2">
@@ -241,9 +284,11 @@ export default function Documentation({ auth, flash, initialAssociate, documentC
                     onClick={() => !isLocked(fieldKey) && handleUploadClick(doc.key, doc.accepts)}
                     className={cn(
                         "relative group p-4 rounded-2xl border transition-all h-full flex flex-col justify-between",
-                        isUploaded
-                            ? "bg-emerald-50/30 border-emerald-100"
-                            : "bg-slate-50/50 border-slate-100 hover:border-slate-300",
+                        docError
+                            ? "bg-red-50/40 border-red-300"
+                            : isUploaded
+                                ? "bg-emerald-50/30 border-emerald-100"
+                                : "bg-slate-50/50 border-slate-100 hover:border-slate-300",
                         !isLocked(fieldKey) ? "cursor-pointer" : "cursor-default grayscale-[0.5]"
                     )}
                 >
@@ -275,6 +320,11 @@ export default function Documentation({ auth, flash, initialAssociate, documentC
                         <p className="text-[9px] text-slate-400 font-bold italic line-clamp-1">
                             {hasLocal ? data.files[doc.key].name : (hasRemote ? 'Documento válido cargado' : acceptAttr(doc.accepts))}
                         </p>
+                        {docError && (
+                            <p className="text-[9px] text-red-600 font-bold leading-tight flex items-start gap-1">
+                                <X size={11} className="shrink-0 mt-px" /> {docError}
+                            </p>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2 pt-2 border-t border-slate-100/50 mt-auto">
@@ -317,6 +367,21 @@ export default function Documentation({ auth, flash, initialAssociate, documentC
 
     const hasOtroInterest = (data.membership_interest || []).includes('Otro');
 
+    const allDocs = [...documentCatalog.mandatory, ...documentCatalog.optional];
+    const labelForKey = (key: string) => allDocs.find(d => d.key === key)?.label || key;
+
+    // Combined error list (client-side size/format + server-side validation).
+    const errorList: string[] = [];
+    Object.entries(fileErrors).forEach(([key, msg]) => errorList.push(`${labelForKey(key)}: ${msg}`));
+    Object.entries(errors as Record<string, string>).forEach(([field, msg]) => {
+        if (field.startsWith('files.')) {
+            const key = field.slice('files.'.length);
+            if (!fileErrors[key]) errorList.push(`${labelForKey(key)}: ${msg}`);
+        } else if (!['rep_name', 'rep_doc', 'membership_interest_other'].includes(field)) {
+            errorList.push(msg);
+        }
+    });
+
     return (
         <AppLayout>
             <Head title="Documentación Legal" />
@@ -348,6 +413,22 @@ export default function Documentation({ auth, flash, initialAssociate, documentC
                     notification={notification}
                     onCloseNotification={() => setNotification(null)}
                 />
+
+                {errorList.length > 0 && (
+                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <X size={16} className="text-red-600" />
+                            <p className="text-sm font-black text-red-900 uppercase tracking-tight">
+                                {errorList.length === 1 ? 'Hay 1 problema' : `Hay ${errorList.length} problemas`} que impiden enviar
+                            </p>
+                        </div>
+                        <ul className="list-disc list-inside space-y-0.5">
+                            {errorList.map((msg, i) => (
+                                <li key={i} className="text-xs text-red-700 font-medium">{msg}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
                 {/* Progress Bar */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 flex items-center gap-4">

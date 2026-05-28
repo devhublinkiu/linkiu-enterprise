@@ -477,6 +477,44 @@ class AssociateController extends Controller
     }
 
     /**
+     * Detect the case where PHP silently dropped the request body because it
+     * exceeded post_max_size. When that happens, $_POST/$_FILES come back empty
+     * even though the browser sent a payload (Content-Length > 0).
+     */
+    private function postMaxSizeExceeded(Request $request): bool
+    {
+        $contentLength = (int) $request->server('CONTENT_LENGTH', 0);
+
+        return $request->isMethod('post')
+            && $contentLength > 0
+            && empty($request->all())
+            && empty($_FILES);
+    }
+
+    private function maxUploadMb(): int
+    {
+        $toBytes = function (string $val): int {
+            $val  = trim($val);
+            $num  = (int) $val;
+            $unit = strtolower(substr($val, -1));
+            return match ($unit) {
+                'g'     => $num * 1024 * 1024 * 1024,
+                'm'     => $num * 1024 * 1024,
+                'k'     => $num * 1024,
+                default => $num,
+            };
+        };
+
+        $limits = array_filter([
+            $toBytes((string) ini_get('upload_max_filesize')),
+            $toBytes((string) ini_get('post_max_size')),
+            10 * 1024 * 1024, // our app-level cap
+        ]);
+
+        return (int) floor(min($limits) / (1024 * 1024));
+    }
+
+    /**
      * Build per-key MIME validation rules for the documents being uploaded.
      */
     private function buildFileValidationRules(Request $request): array
@@ -495,6 +533,18 @@ class AssociateController extends Controller
         }
 
         return $rules;
+    }
+
+    /**
+     * Spanish validation messages for the file rules.
+     */
+    private function fileValidationMessages(): array
+    {
+        return [
+            'files.*.mimes' => 'El formato del archivo ":input" no está permitido para este documento.',
+            'files.*.max'   => 'El archivo supera el tamaño máximo permitido (10 MB).',
+            'files.*.file'  => 'El archivo no es válido.',
+        ];
     }
 
     /**
@@ -525,13 +575,18 @@ class AssociateController extends Controller
         $user      = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
+        if ($this->postMaxSizeExceeded($request)) {
+            $max = $this->maxUploadMb();
+            return back()->with('error', "Los archivos superan el tamaño máximo que acepta el servidor ({$max} MB en total). Sube archivos más livianos o uno a la vez.");
+        }
+
         $request->validate(array_merge($this->buildFileValidationRules($request), [
             'rep_name'                  => 'nullable|string|max:255',
             'rep_doc'                   => 'nullable|string|max:255',
             'membership_interest'       => 'nullable|array',
             'membership_interest_other' => 'nullable|string|max:500',
             'funds_origin_declaration'  => 'nullable|boolean',
-        ]));
+        ], $this->fileValidationMessages()));
 
         $storedFiles = $associate->files ?? [];
 
@@ -567,13 +622,18 @@ class AssociateController extends Controller
             return back()->with('error', 'Esta sección no puede enviarse en su estado actual.');
         }
 
+        if ($this->postMaxSizeExceeded($request)) {
+            $max = $this->maxUploadMb();
+            return back()->with('error', "Los archivos superan el tamaño máximo que acepta el servidor ({$max} MB en total). Sube archivos más livianos o uno a la vez.");
+        }
+
         $request->validate(array_merge($this->buildFileValidationRules($request), [
             'funds_origin_declaration'  => 'accepted',
             'rep_name'                  => 'required|string|max:255',
             'rep_doc'                   => 'required|string|max:255',
             'membership_interest'       => 'required|array|min:1',
             'membership_interest_other' => 'nullable|string|max:500|required_if:membership_interest.*,Otro',
-        ]));
+        ], $this->fileValidationMessages()));
 
         $storedFiles = $associate->files ?? [];
 

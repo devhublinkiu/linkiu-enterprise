@@ -141,6 +141,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Authenticated download of associate documents (owner or admin only).
+    Route::get('/associate/documents/{associate}/{docKey}', [App\Http\Controllers\AssociateController::class, 'showDocument'])
+        ->name('associate.documents.show');
+
     // Associate Announcements (Protected by subscription)
     Route::middleware(['subscription.active'])->group(function () {
         Route::get('/my-announcements', [App\Http\Controllers\Associate\AnnouncementController::class, 'index'])->name('associate.announcements.index');
@@ -180,6 +184,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/documentation', [App\Http\Controllers\AssociateController::class, 'editDocumentation'])->name('documentation');
         Route::post('/documentation', [App\Http\Controllers\AssociateController::class, 'updateDocumentation'])->name('update.documentation');
         Route::post('/documentation/draft', [App\Http\Controllers\AssociateController::class, 'saveDocumentationDraft'])->name('save.documentation.draft');
+        Route::delete('/documentation/{docKey}', [App\Http\Controllers\AssociateController::class, 'deleteDocument'])->name('documentation.delete');
 
         Route::get('/gallery', [App\Http\Controllers\AssociateController::class, 'editGallery'])->name('gallery');
         Route::post('/gallery', [App\Http\Controllers\AssociateController::class, 'updateGallery'])->name('update.gallery');
@@ -234,6 +239,14 @@ Route::middleware('auth')->group(function () {
         Route::post('services', [App\Http\Controllers\Admin\ServiceController::class, 'store'])->name('services.store');
         Route::patch('services/{service}', [App\Http\Controllers\Admin\ServiceController::class, 'update'])->name('services.update');
         Route::delete('services/{service}', [App\Http\Controllers\Admin\ServiceController::class, 'destroy'])->name('services.destroy');
+
+        // Documentos requeridos (catálogo de docs que los asociados deben subir)
+        Route::get('document-requirements', [App\Http\Controllers\Admin\DocumentRequirementController::class, 'index'])->name('document-requirements.index');
+        Route::post('document-requirements', [App\Http\Controllers\Admin\DocumentRequirementController::class, 'store'])->name('document-requirements.store');
+        Route::post('document-requirements/reorder', [App\Http\Controllers\Admin\DocumentRequirementController::class, 'reorder'])->name('document-requirements.reorder');
+        Route::post('document-requirements/{documentRequirement}', [App\Http\Controllers\Admin\DocumentRequirementController::class, 'update'])->name('document-requirements.update');
+        Route::post('document-requirements/{documentRequirement}/toggle', [App\Http\Controllers\Admin\DocumentRequirementController::class, 'toggleActive'])->name('document-requirements.toggle');
+        Route::delete('document-requirements/{documentRequirement}', [App\Http\Controllers\Admin\DocumentRequirementController::class, 'destroy'])->name('document-requirements.destroy');
 
         // Blog
         Route::post('blog/upload-image', [App\Http\Controllers\Admin\BlogController::class, 'uploadImage'])->name('blog.upload-image');

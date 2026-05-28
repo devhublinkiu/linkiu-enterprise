@@ -28,7 +28,7 @@ class Associate extends Model
         'secondary_ciiu', 'billing_email', 'company_type',
         'social_instagram', 'social_facebook', 'social_linkedin', 'social_other',
         'capacitation_plan', 'capacitation_level', 'capacitation_no_reason',
-        'membership_interest', 'logo_path', 'cover_path', 'gallery_paths', 'files',
+        'membership_interest', 'membership_interest_other', 'logo_path', 'cover_path', 'gallery_paths', 'files',
         'section_reviews', 'status', 'is_public', 'is_verified', 'plan_id', 'plan_expires_at',
     ];
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Associate;
+use App\Models\DocumentRequirement;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
@@ -44,8 +45,8 @@ class AssociateController extends Controller
             $urls['cover'] = Storage::url($associate->cover_path);
         }
         if ($associate->files) {
-            foreach ($associate->files as $name => $path) {
-                $urls[$name] = Storage::url($path);
+            foreach ($associate->files as $key => $path) {
+                $urls[$key] = route('associate.documents.show', ['associate' => $associate->id, 'docKey' => $key]);
             }
         }
 
@@ -62,6 +63,33 @@ class AssociateController extends Controller
             }
         }
         $associate->gallery_urls = $gallery;
+    }
+
+    // ─── Document catalog helpers ─────────────────────────────────────────────
+
+    private function documentCatalog(): array
+    {
+        $docs = DocumentRequirement::active()->ordered()->get();
+
+        return [
+            'mandatory' => $docs->where('is_required', true)->values()
+                ->map(fn($d) => $d->toCatalogEntry())->all(),
+            'optional'  => $docs->where('is_required', false)->values()
+                ->map(fn($d) => $d->toCatalogEntry())->all(),
+        ];
+    }
+
+    /**
+     * Returns a flat map of key => spec for all ACTIVE docs.
+     * Inactive docs return null and are rejected by validation.
+     */
+    private function documentSpecsByKey(): array
+    {
+        return DocumentRequirement::active()
+            ->get()
+            ->keyBy('key')
+            ->map(fn($d) => $d->toCatalogEntry())
+            ->all();
     }
 
     // =========================================================================
@@ -443,8 +471,53 @@ class AssociateController extends Controller
         }
 
         return Inertia::render('Associate/Company/Documentation', [
-            'initialAssociate' => $associate,
+            'initialAssociate'  => $associate,
+            'documentCatalog'   => $this->documentCatalog(),
         ]);
+    }
+
+    /**
+     * Build per-key MIME validation rules for the documents being uploaded.
+     */
+    private function buildFileValidationRules(Request $request): array
+    {
+        $specs = $this->documentSpecsByKey();
+        $rules = ['files' => 'nullable|array'];
+
+        foreach ((array) $request->file('files', []) as $key => $file) {
+            if (!$file) continue;
+            if (!isset($specs[$key])) {
+                $rules["files.$key"] = 'file|max:0';
+                continue;
+            }
+            $mimes = implode(',', $specs[$key]['accepts']);
+            $rules["files.$key"] = "file|mimes:$mimes|max:10240";
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Store one uploaded document, removing the previous file (if any) so we
+     * don't leak orphans in storage.
+     */
+    private function storeAssociateDocument(Associate $associate, string $key, $file, array &$storedFiles): void
+    {
+        if (!empty($storedFiles[$key])) {
+            try {
+                Storage::disk(config('filesystems.default'))->delete($storedFiles[$key]);
+            } catch (\Throwable $e) {
+                Log::warning("No se pudo eliminar archivo anterior de {$key}: " . $e->getMessage());
+            }
+        }
+
+        $extension = $file->getClientOriginalExtension();
+        $fileName  = $key . '_' . now()->format('YmdHis') . '_' . Str::random(6) . '.' . $extension;
+        $storedFiles[$key] = $file->storeAs(
+            "associates/{$associate->id}/docs",
+            $fileName,
+            config('filesystems.default')
+        );
     }
 
     public function saveDocumentationDraft(Request $request)
@@ -452,24 +525,19 @@ class AssociateController extends Controller
         $user      = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
-        $request->validate([
-            'files'               => 'nullable|array',
-            'files.*'             => 'nullable|file|mimes:pdf,jpg,jpeg,png,svg,doc,docx|max:10240',
-            'rep_name'            => 'nullable|string|max:255',
-            'rep_doc'             => 'nullable|string|max:255',
-            'membership_interest' => 'nullable|array',
-        ]);
+        $request->validate(array_merge($this->buildFileValidationRules($request), [
+            'rep_name'                  => 'nullable|string|max:255',
+            'rep_doc'                   => 'nullable|string|max:255',
+            'membership_interest'       => 'nullable|array',
+            'membership_interest_other' => 'nullable|string|max:500',
+            'funds_origin_declaration'  => 'nullable|boolean',
+        ]));
 
         $storedFiles = $associate->files ?? [];
 
-        if ($request->hasFile('files')) {
-            foreach ($request->file('files') as $docName => $file) {
-                if (!$file) continue;
-                $extension = $file->getClientOriginalExtension();
-                $fileName  = Str::slug($docName) . '_' . time() . '.' . $extension;
-                $path      = $file->storeAs("associates/{$associate->id}/docs", $fileName, config('filesystems.default'));
-                $storedFiles[$docName] = $path;
-            }
+        foreach ((array) $request->file('files', []) as $key => $file) {
+            if (!$file) continue;
+            $this->storeAssociateDocument($associate, $key, $file, $storedFiles);
         }
 
         $sectionStatus = $associate->getSectionStatus('documentation');
@@ -477,13 +545,15 @@ class AssociateController extends Controller
             $associate->setSectionStatus('documentation', Associate::SEC_DRAFT);
         }
 
-        $associate->update([
-            'files'               => $storedFiles,
-            'rep_name'            => $request->rep_name ?? $associate->rep_name,
-            'rep_doc'             => $request->rep_doc  ?? $associate->rep_doc,
-            'membership_interest' => $request->membership_interest ?? $associate->membership_interest,
-            'section_reviews'     => $associate->section_reviews,
-        ]);
+        $associate->files                     = $storedFiles;
+        $associate->rep_name                  = $request->rep_name                  ?? $associate->rep_name;
+        $associate->rep_doc                   = $request->rep_doc                   ?? $associate->rep_doc;
+        $associate->membership_interest       = $request->membership_interest       ?? $associate->membership_interest;
+        $associate->membership_interest_other = $request->membership_interest_other ?? $associate->membership_interest_other;
+        if ($request->has('funds_origin_declaration')) {
+            $associate->funds_origin_declaration = (bool) $request->boolean('funds_origin_declaration');
+        }
+        $associate->save();
 
         return back()->with('draft_saved', now()->format('d/m/Y H:i:s'));
     }
@@ -497,39 +567,43 @@ class AssociateController extends Controller
             return back()->with('error', 'Esta sección no puede enviarse en su estado actual.');
         }
 
-        $request->validate([
-            'files'               => 'nullable|array',
-            'files.*'             => 'nullable|file|mimes:pdf,jpg,jpeg,png,svg,doc,docx|max:10240',
-            'funds_origin_declaration' => 'accepted',
-            'rep_name'            => 'required|string|max:255',
-            'rep_doc'             => 'required|string|max:255',
-            'membership_interest' => 'required|array|min:1',
-        ]);
+        $request->validate(array_merge($this->buildFileValidationRules($request), [
+            'funds_origin_declaration'  => 'accepted',
+            'rep_name'                  => 'required|string|max:255',
+            'rep_doc'                   => 'required|string|max:255',
+            'membership_interest'       => 'required|array|min:1',
+            'membership_interest_other' => 'nullable|string|max:500|required_if:membership_interest.*,Otro',
+        ]));
 
         $storedFiles = $associate->files ?? [];
 
-        if ($request->hasFile('files')) {
-            foreach ($request->file('files') as $docName => $file) {
-                if (!$file) continue;
-                $extension = $file->getClientOriginalExtension();
-                $fileName  = Str::slug($docName) . '_' . time() . '.' . $extension;
-                $path      = $file->storeAs("associates/{$associate->id}/docs", $fileName, config('filesystems.default'));
-                $storedFiles[$docName] = $path;
+        foreach ((array) $request->file('files', []) as $key => $file) {
+            if (!$file) continue;
+            $this->storeAssociateDocument($associate, $key, $file, $storedFiles);
+        }
+
+        // Mandatory docs must all be present (either freshly uploaded or already stored).
+        $missing = [];
+        foreach ($this->documentCatalog()['mandatory'] as $doc) {
+            if (empty($storedFiles[$doc['key']])) {
+                $missing[] = $doc['label'];
             }
+        }
+        if (!empty($missing)) {
+            return back()->with('error', 'Faltan documentos obligatorios: ' . implode(', ', $missing));
         }
 
         $associate->setSectionStatus('documentation', Associate::SEC_PENDING, [
             'submitted_at' => now()->toIso8601String(),
         ]);
 
-        $associate->update([
-            'files'                    => $storedFiles,
-            'rep_name'                 => $request->rep_name,
-            'rep_doc'                  => $request->rep_doc,
-            'membership_interest'      => $request->membership_interest,
-            'funds_origin_declaration' => true,
-            'section_reviews'          => $associate->section_reviews,
-        ]);
+        $associate->files                     = $storedFiles;
+        $associate->rep_name                  = $request->rep_name;
+        $associate->rep_doc                   = $request->rep_doc;
+        $associate->membership_interest       = $request->membership_interest;
+        $associate->membership_interest_other = $request->membership_interest_other;
+        $associate->funds_origin_declaration  = true;
+        $associate->save();
 
         try {
             Mail::to(config('mail.admin_recipient', env('ADMIN_EMAIL')))
@@ -539,6 +613,72 @@ class AssociateController extends Controller
         }
 
         return back()->with('success', 'Documentación enviada a revisión.');
+    }
+
+    public function deleteDocument(Request $request, string $docKey)
+    {
+        $user      = auth()->user();
+        $associate = Associate::findOrFail($user->associate_id);
+
+        if (!$associate->canEditSection('documentation')) {
+            return back()->with('error', 'No puedes modificar la documentación en su estado actual.');
+        }
+
+        $files = $associate->files ?? [];
+        if (empty($files[$docKey])) {
+            return back()->with('error', 'Documento no encontrado.');
+        }
+
+        try {
+            Storage::disk(config('filesystems.default'))->delete($files[$docKey]);
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo eliminar archivo {$docKey}: " . $e->getMessage());
+        }
+
+        unset($files[$docKey]);
+        $associate->files = $files;
+        $associate->save();
+
+        return back()->with('success', 'Documento eliminado.');
+    }
+
+    /**
+     * Serve an associate document with ownership / admin access control.
+     * For S3-compatible drivers (e.g. Minio) we issue a short-lived signed
+     * URL; for the local driver we stream the file from storage.
+     */
+    public function showDocument(Request $request, Associate $associate, string $docKey)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            abort(403);
+        }
+
+        $isOwner = $user->associate_id === $associate->id;
+        $isAdmin = $user->isAdmin();
+
+        if (!$isOwner && !$isAdmin) {
+            abort(403);
+        }
+
+        $files = $associate->files ?? [];
+        if (empty($files[$docKey])) {
+            abort(404);
+        }
+
+        $disk = config('filesystems.default');
+        $path = $files[$docKey];
+
+        $storage = Storage::disk($disk);
+        if (!$storage->exists($path)) {
+            abort(404);
+        }
+
+        if (in_array($disk, ['s3', 'minio'], true)) {
+            return redirect()->away($storage->temporaryUrl($path, now()->addMinutes(10)));
+        }
+
+        return $storage->response($path);
     }
 
     // =========================================================================
@@ -878,6 +1018,7 @@ class AssociateController extends Controller
 
         return Inertia::render('Admin/Associates/Show', [
             'associate'         => $associate,
+            'documentCatalog'   => $this->documentCatalog(),
             'availableServices' => \App\Models\ServiceCategory::with(['services' => function ($q) {
                 $q->where('is_active', true);
             }])->get(),

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import { Button } from '@/Components/ui/Button';
 import { Label } from '@/Components/ui/Label';
@@ -31,92 +31,45 @@ import {
     Save,
     Send,
     ExternalLink,
+    Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/Components/FieldWrapper';
 import SectionReviewBanner, { SectionReview } from '@/Components/SectionReviewBanner';
+import { getDocumentIcon } from '@/lib/documentIcons';
+
+interface DocSpec {
+    key: string;
+    label: string;
+    icon: string;
+    accepts: string[];
+    legend?: string;
+    template?: string;
+}
+
+interface DocumentCatalog {
+    mandatory: DocSpec[];
+    optional: DocSpec[];
+}
 
 interface Props {
     auth: any;
     flash: any;
     initialAssociate?: any;
+    documentCatalog: DocumentCatalog;
 }
-
-const MANDATORY_DOCS = [
-    { name: 'Carta Solicitud Afiliación', icon: FileText, required: true, accept: '.pdf' },
-    { name: 'Logo HD (JPG/PNG)', icon: ImageIcon, required: true, accept: '.jpg,.jpeg,.png' },
-    { name: 'Brochure/Portafolio', icon: FileSpreadsheet, required: true, accept: '.pdf' },
-    { name: 'RUT', icon: FileDigit, required: true, accept: '.pdf', legend: 'Del año más reciente' },
-    { name: 'Cámara y Comercio / Registro Mercantil', icon: Landmark, required: true, accept: '.pdf', legend: 'Del año más reciente' },
-    { name: 'Estados financieros con notas', icon: FileSpreadsheet, required: true, accept: '.pdf' },
-    { name: 'Fotocopia de la cédula del representante legal', icon: ShieldCheck, required: true, accept: '.pdf' },
-    { name: 'Antecedentes del contador público (Balance anterior)', icon: FileCheck, required: true, accept: '.pdf' },
-    { name: 'Composición Accionaria', icon: CheckCircle2, required: true, accept: '.pdf' },
-    { name: 'Certificación Parafiscales', icon: Check, required: true, accept: '.pdf' },
-    {
-        name: 'Declaración de aceptación del PTEEI',
-        icon: FileText,
-        required: true,
-        accept: '.pdf',
-        legend: 'Usa la plantilla oficial',
-        template: '/plantillas_docs/FR-PICAMEP-006_V01_FORMATO_DECLARACION_DE_ACEPTACION_Y_AUTORIZACION_DEL_PTEEI.pdf'
-    },
-    {
-        name: 'Compromiso de autoregulacion',
-        icon: Scale,
-        required: true,
-        accept: '.pdf',
-        legend: 'Usa la plantilla oficial',
-        template: '/plantillas_docs/FR-PICAMEP-005_FORMATO_COMPROMISO_DE_AUTOREGULACION.pdf'
-    },
-    {
-        name: 'Transferencia de datos',
-        icon: Share2,
-        required: true,
-        accept: '.pdf',
-        legend: 'Usa la plantilla oficial',
-        template: '/plantillas_docs/FR-PICAMEP-004_FORMATO_TRANSFERENCIA_DE_DATOS.pdf'
-    },
-    {
-        name: 'Acuerdo de Afiliación',
-        icon: FileText,
-        required: true,
-        accept: '.pdf',
-        legend: 'Usa la plantilla oficial',
-        template: '/plantillas_docs/FR-PICAMEP-003_FORMATO_ACUERDO_DE_AFILIACION.docx'
-    },
-    {
-        name: 'Participación Accionaria',
-        icon: Building2,
-        required: true,
-        accept: '.pdf',
-        legend: 'Usa la plantilla oficial',
-        template: '/plantillas_docs/FR-PICAMEP-007_FORMATO_PARTICIPACION_ACCIONARIA.docx'
-    },
-    {
-        name: 'Certificado tamaño empresas',
-        icon: Building,
-        required: true,
-        accept: '.pdf',
-        legend: 'Usa la plantilla oficial',
-        template: '/plantillas_docs/FR-PICAMEP-008_FORMATO_CERTIFICACION_DE_TAMAÑO_EMPRESA_JURIDICAS.docx'
-    },
-];
-
-const OPTIONAL_DOCS = [
-    { name: 'Carta de residencia del Representante Legal', icon: FileText, required: false, accept: '.pdf' },
-    { name: 'Última planilla de seguridad social', icon: FileCheck, required: false, accept: '.pdf' },
-    { name: 'Certificaciones de calidad', icon: ShieldCheck, required: false, accept: '.pdf' },
-];
 
 const INTERESTS = ['Gestión Gremial', 'Información Sectorial', 'Comunidad de Negocios', 'Otro'];
 
-function completionScore(data: any, fileUrls: any) {
-    const mandatoryKeys     = MANDATORY_DOCS.map(d => d.name);
-    const uploadedMandatory = mandatoryKeys.filter(key => data.files[key] || fileUrls[key]).length;
+function acceptAttr(accepts: string[]): string {
+    return accepts.map(a => `.${a}`).join(',');
+}
+
+function completionScore(data: any, fileUrls: any, mandatory: DocSpec[]) {
+    const uploadedMandatory = mandatory.filter(d => data.files[d.key] || fileUrls[d.key]).length;
 
     const checks = [
-        uploadedMandatory === mandatoryKeys.length,
+        uploadedMandatory === mandatory.length,
         data.rep_name?.trim().length > 0,
         data.rep_doc?.trim().length > 0,
         data.funds_origin_declaration === true,
@@ -129,7 +82,7 @@ function completionScore(data: any, fileUrls: any) {
         total:      checks.length,
         pct:        Math.round((filled / checks.length) * 100),
         docsFilled: uploadedMandatory,
-        docsTotal:  mandatoryKeys.length
+        docsTotal:  mandatory.length
     };
 }
 
@@ -199,7 +152,7 @@ function SectionHeader({ icon: Icon, title, right }: { icon: any; title: string;
     );
 }
 
-export default function Documentation({ auth, flash, initialAssociate }: Props) {
+export default function Documentation({ auth, flash, initialAssociate, documentCatalog }: Props) {
     const sectionReview: SectionReview = initialAssociate?.section_reviews?.documentation ?? { status: 'draft' };
     const sectionStatus = sectionReview.status;
     const canEdit = ['draft', 'rejected'].includes(sectionStatus);
@@ -208,18 +161,20 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
     const [previewDoc, setPreviewDoc]     = useState<{ url: string; name: string } | null>(null);
     const fileInputRef                    = useRef<HTMLInputElement>(null);
     const [activeDocKey, setActiveDocKey] = useState<string | null>(null);
+    const [activeAccept, setActiveAccept] = useState<string>('');
 
     const fileUrls = initialAssociate?.document_urls || {};
 
     const { data, setData, post, processing, errors } = useForm({
-        files:                    {} as any,
-        funds_origin_declaration: initialAssociate?.funds_origin_declaration || false,
-        rep_name:                 initialAssociate?.rep_name || '',
-        rep_doc:                  initialAssociate?.rep_doc || '',
-        membership_interest:      initialAssociate?.membership_interest || [] as string[],
+        files:                       {} as any,
+        funds_origin_declaration:    initialAssociate?.funds_origin_declaration || false,
+        rep_name:                    initialAssociate?.rep_name || '',
+        rep_doc:                     initialAssociate?.rep_doc || '',
+        membership_interest:         initialAssociate?.membership_interest || [] as string[],
+        membership_interest_other:   initialAssociate?.membership_interest_other || '',
     });
 
-    const score = completionScore(data, fileUrls);
+    const score = completionScore(data, fileUrls, documentCatalog.mandatory);
 
     const fieldStatus = (_field: string): string => canEdit ? 'editable' : sectionStatus;
     const isLocked    = (_field: string) => !canEdit;
@@ -237,9 +192,11 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
     const handleSubmit    = () => post(route('associate.company.update.documentation'));
     const handleSaveDraft = () => post(route('associate.company.save.documentation.draft'));
 
-    const handleUploadClick = (key: string) => {
+    const handleUploadClick = (key: string, accepts: string[]) => {
         setActiveDocKey(key);
-        fileInputRef.current?.click();
+        setActiveAccept(acceptAttr(accepts));
+        // Defer the click so the accept attr is applied before the dialog opens.
+        setTimeout(() => fileInputRef.current?.click(), 0);
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -250,26 +207,38 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
         }
     };
 
+    const handleDeleteDoc = (key: string, label: string) => {
+        if (!confirm(`¿Eliminar el documento "${label}"? Esta acción no se puede deshacer.`)) return;
+        router.delete(route('associate.company.documentation.delete', { docKey: key }), {
+            preserveScroll: true,
+        });
+    };
+
     const toggleInterest = (interest: string) => {
         if (isLocked('membership_interest')) return;
         const current = data.membership_interest || [];
-        setData('membership_interest', current.includes(interest)
+        const next = current.includes(interest)
             ? current.filter((i: string) => i !== interest)
-            : [...current, interest]
-        );
+            : [...current, interest];
+        setData('membership_interest', next);
+        if (interest === 'Otro' && current.includes('Otro')) {
+            setData('membership_interest_other', '');
+        }
     };
 
-    const renderDocItem = (doc: any) => {
-        const hasLocal   = !!data.files[doc.name];
-        const hasRemote  = !!fileUrls[doc.name];
+    const renderDocItem = (doc: DocSpec) => {
+        const Icon       = getDocumentIcon(doc.icon);
+        const hasLocal   = !!data.files[doc.key];
+        const hasRemote  = !!fileUrls[doc.key];
         const isUploaded = hasLocal || hasRemote;
-        const fieldKey   = `files.${doc.name}`;
+        const fieldKey   = `files.${doc.key}`;
         const status     = fieldStatus(fieldKey);
+        const required   = documentCatalog.mandatory.some(m => m.key === doc.key);
 
         return (
-            <div key={doc.name} className="flex flex-col gap-2">
+            <div key={doc.key} className="flex flex-col gap-2">
                 <div
-                    onClick={() => !isLocked(fieldKey) && handleUploadClick(doc.name)}
+                    onClick={() => !isLocked(fieldKey) && handleUploadClick(doc.key, doc.accepts)}
                     className={cn(
                         "relative group p-4 rounded-2xl border transition-all h-full flex flex-col justify-between",
                         isUploaded
@@ -283,10 +252,10 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                             "h-10 w-10 rounded-xl flex items-center justify-center transition-all shrink-0",
                             isUploaded ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/10" : "bg-white text-slate-300 group-hover:text-slate-500 border border-slate-50"
                         )}>
-                            {isUploaded ? <Check size={20} className="stroke-[3]" /> : <doc.icon size={20} />}
+                            {isUploaded ? <Check size={20} className="stroke-[3]" /> : <Icon size={20} />}
                         </div>
                         <div className="flex flex-col items-end gap-1">
-                            {doc.required && (
+                            {required && (
                                 <span className={cn(
                                     "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest",
                                     isUploaded ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"
@@ -297,16 +266,21 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                     </div>
 
                     <div className="space-y-1 mb-3">
-                        <h4 className="text-[10px] font-black uppercase text-slate-700 leading-tight tracking-tight">{doc.name}</h4>
+                        <h4 className="text-[10px] font-black uppercase text-slate-700 leading-tight tracking-tight">{doc.label}</h4>
+                        {doc.legend && (
+                            <p className="text-[9px] text-amber-700 font-bold leading-tight line-clamp-2">
+                                {doc.legend}
+                            </p>
+                        )}
                         <p className="text-[9px] text-slate-400 font-bold italic line-clamp-1">
-                            {hasLocal ? data.files[doc.name].name : (hasRemote ? 'Documento válido cargado' : doc.legend || doc.accept)}
+                            {hasLocal ? data.files[doc.key].name : (hasRemote ? 'Documento válido cargado' : acceptAttr(doc.accepts))}
                         </p>
                     </div>
 
                     <div className="flex items-center gap-2 pt-2 border-t border-slate-100/50 mt-auto">
                         {hasRemote && (
                             <button
-                                onClick={e => { e.stopPropagation(); setPreviewDoc({ url: fileUrls[doc.name], name: doc.name }); }}
+                                onClick={e => { e.stopPropagation(); setPreviewDoc({ url: fileUrls[doc.key], name: doc.label }); }}
                                 className="flex-1 h-8 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5 text-[9px] font-black uppercase"
                             >
                                 <Eye size={12} /> Ver
@@ -320,6 +294,15 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                                 <Upload size={12} /> {hasLocal ? 'Reemplazar' : 'Cargar'}
                             </button>
                         )}
+                        {!isLocked(fieldKey) && hasRemote && (
+                            <button
+                                onClick={e => { e.stopPropagation(); handleDeleteDoc(doc.key, doc.label); }}
+                                title="Eliminar documento"
+                                className="h-8 w-8 rounded-lg bg-red-50 border border-red-100 text-red-500 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center shrink-0"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        )}
                         {doc.template && (
                             <a href={doc.template} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
                                 className="h-8 w-8 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-500 hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center" title="Descargar plantilla">
@@ -331,6 +314,8 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
             </div>
         );
     };
+
+    const hasOtroInterest = (data.membership_interest || []).includes('Otro');
 
     return (
         <AppLayout>
@@ -393,7 +378,7 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                         } />
                         <div className="p-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {MANDATORY_DOCS.map(renderDocItem)}
+                                {documentCatalog.mandatory.map(renderDocItem)}
                             </div>
 
                             <div className="mt-10 pt-8 border-t border-slate-100">
@@ -401,7 +386,7 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                                     <Plus size={14} className="text-slate-300" /> Otros Documentos y Certificaciones
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {OPTIONAL_DOCS.map(renderDocItem)}
+                                    {documentCatalog.optional.map(renderDocItem)}
                                 </div>
                             </div>
                         </div>
@@ -429,6 +414,22 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                                             <span className={cn("text-[10px] font-black uppercase tracking-wide", data.membership_interest?.includes(interest) ? "text-slate-900" : "text-slate-400")}>{interest}</span>
                                         </button>
                                     ))}
+                                    {hasOtroInterest && (
+                                        <div className="pt-2">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">¿Cuál?</Label>
+                                            <Input
+                                                value={data.membership_interest_other}
+                                                onChange={e => setData('membership_interest_other', e.target.value)}
+                                                disabled={isLocked('membership_interest')}
+                                                placeholder="Describe tu interés"
+                                                className="h-10 rounded-xl text-sm"
+                                                maxLength={500}
+                                            />
+                                            {errors.membership_interest_other && (
+                                                <p className="text-[10px] text-red-500 font-bold mt-1">{errors.membership_interest_other}</p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </section>
                         </div>
@@ -526,7 +527,13 @@ export default function Documentation({ auth, flash, initialAssociate }: Props) 
                     </div>
                 )}
 
-                <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept={activeAccept}
+                    className="hidden"
+                    onChange={handleFileChange}
+                />
             </div>
         </AppLayout>
     );

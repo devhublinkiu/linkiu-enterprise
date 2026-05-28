@@ -1,15 +1,30 @@
 import React, { useState } from 'react';
-import { FileText, ShieldCheck, X, ExternalLink, Check, Eye, Download } from 'lucide-react';
+import { FileText, ShieldCheck, X, ExternalLink, Check, Eye, Download, Archive } from 'lucide-react';
 import { Card, CardContent } from '@/Components/ui/Card';
 import { TabsContent } from '@/Components/ui/Tabs';
 import { SectionAuditPanel, SectionReviewData } from './SectionAuditPanel';
 import { cn } from '@/lib/utils';
+
+interface DocSpec {
+    key: string;
+    label: string;
+    icon: string;
+    accepts: string[];
+    legend?: string;
+    template?: string;
+}
+
+interface DocumentCatalog {
+    mandatory: DocSpec[];
+    optional: DocSpec[];
+}
 
 interface TabDocumentationProps {
     associate: any;
     sectionReview: SectionReviewData;
     onAuditSection: (section: string, status: 'approved' | 'rejected', reason?: string) => void;
     onAuditChangeRequest: (section: string, action: 'approve' | 'reject', reason?: string) => void;
+    documentCatalog: DocumentCatalog;
 }
 
 function DocPreviewModal({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
@@ -48,20 +63,18 @@ function DocPreviewModal({ url, name, onClose }: { url: string; name: string; on
     );
 }
 
-const DOC_NAMES = [
-    'Carta Solicitud Afiliación', 'Logo HD (JPG/PNG)', 'Brochure/Portafolio', 'RUT',
-    'Cámara y Comercio / Registro Mercantil', 'Estados financieros con notas',
-    'Fotocopia de la cédula del representante legal', 'Antecedentes del contador público (Balance anterior)',
-    'Composición Accionaria', 'Certificación Parafiscales', 'Declaración de aceptación del PTEEI',
-    'Compromiso de autoregulacion', 'Transferencia de datos', 'Acuerdo de Afiliación',
-    'Participación Accionaria', 'Certificado tamaño empresas', 'Carta de residencia del Representante Legal',
-    'Última planilla de seguridad social', 'Certificaciones de calidad'
-];
-
-export function TabDocumentation({ associate, sectionReview, onAuditSection, onAuditChangeRequest }: TabDocumentationProps) {
+export function TabDocumentation({ associate, sectionReview, onAuditSection, onAuditChangeRequest, documentCatalog }: TabDocumentationProps) {
     const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null);
 
-    const uploadedDocs = DOC_NAMES.filter(d => !!associate.document_urls?.[d]);
+    const allDocs = [...documentCatalog.mandatory, ...documentCatalog.optional];
+    const catalogKeys = new Set(allDocs.map(d => d.key));
+    const uploadedDocs = allDocs.filter(d => !!associate.document_urls?.[d.key]);
+
+    // Files whose key is no longer in the active catalog — kept visible
+    // so the admin doesn't lose context when a requirement is deactivated.
+    const orphanDocs = Object.entries(associate.document_urls ?? {})
+        .filter(([key]) => !catalogKeys.has(key) && key !== 'logo' && key !== 'cover')
+        .map(([key, url]) => ({ key, url: url as string, label: key }));
 
     const handleDownload = (url: string, name: string) => {
         const a = document.createElement('a');
@@ -105,6 +118,11 @@ export function TabDocumentation({ associate, sectionReview, onAuditSection, onA
                                     ? associate.membership_interest.join(', ')
                                     : <span className="text-slate-300 font-normal italic text-xs">Sin registrar</span>}
                             </p>
+                            {associate.membership_interest_other && (
+                                <p className="text-xs text-slate-500 italic mt-1">
+                                    <span className="font-bold not-italic text-slate-400">Otro:</span> {associate.membership_interest_other}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </CardContent>
@@ -132,20 +150,20 @@ export function TabDocumentation({ associate, sectionReview, onAuditSection, onA
                         <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
                             {[uploadedDocs.slice(0, Math.ceil(uploadedDocs.length / 2)), uploadedDocs.slice(Math.ceil(uploadedDocs.length / 2))].map((col, ci) => (
                                 <div key={ci} className="divide-y divide-slate-100/60">
-                                    {col.map(docName => {
-                                        const fileUrl = associate.document_urls?.[docName];
+                                    {col.map(doc => {
+                                        const fileUrl = associate.document_urls?.[doc.key];
                                         return (
-                                            <div key={docName} className="px-4 py-2.5 hover:bg-slate-50/60 transition-colors">
+                                            <div key={doc.key} className="px-4 py-2.5 hover:bg-slate-50/60 transition-colors">
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-2 w-2 rounded-full shrink-0 bg-emerald-500" />
-                                                    <p className="text-[11px] font-bold text-slate-800 flex-1 min-w-0 truncate" title={docName}>{docName}</p>
+                                                    <p className="text-[11px] font-bold text-slate-800 flex-1 min-w-0 truncate" title={doc.label}>{doc.label}</p>
                                                     {fileUrl && (
                                                         <div className="flex items-center gap-1 shrink-0">
-                                                            <button onClick={() => setPreviewDoc({ url: fileUrl, name: docName })}
+                                                            <button onClick={() => setPreviewDoc({ url: fileUrl, name: doc.label })}
                                                                 className="h-6 w-6 rounded-md border border-slate-200 text-slate-400 hover:text-slate-900 hover:bg-white flex items-center justify-center transition-all">
                                                                 <Eye size={11} />
                                                             </button>
-                                                            <button onClick={() => handleDownload(fileUrl, docName)}
+                                                            <button onClick={() => handleDownload(fileUrl, doc.label)}
                                                                 className="h-6 w-6 rounded-md border border-slate-200 text-slate-400 hover:text-slate-900 hover:bg-white flex items-center justify-center transition-all">
                                                                 <Download size={11} />
                                                             </button>
@@ -166,6 +184,50 @@ export function TabDocumentation({ associate, sectionReview, onAuditSection, onA
                     )}
                 </CardContent>
             </Card>
+
+            {/* Documentos históricos: archivos cuya clave ya no está en el catálogo activo */}
+            {orphanDocs.length > 0 && (
+                <Card className="border-amber-200 rounded-2xl overflow-hidden bg-amber-50/30">
+                    <div className="px-5 py-3 border-b border-amber-100 bg-amber-50/60 flex items-center gap-2.5">
+                        <div className="h-7 w-7 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0 text-amber-600">
+                            <Archive size={13} />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-[11px] font-black uppercase text-amber-800 tracking-wider">Documentos históricos</h3>
+                            <p className="text-[9px] text-amber-700 font-medium mt-0.5">
+                                Archivos cuyo tipo de doc ya no está activo en el catálogo. Se preservan para referencia.
+                            </p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+                            {orphanDocs.length}
+                        </span>
+                    </div>
+                    <CardContent className="p-0">
+                        <div className="divide-y divide-amber-100/60">
+                            {orphanDocs.map(doc => (
+                                <div key={doc.key} className="px-4 py-2.5 hover:bg-amber-50/40 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-2 w-2 rounded-full shrink-0 bg-amber-400" />
+                                        <p className="text-[11px] font-bold text-amber-900 flex-1 min-w-0 truncate" title={doc.key}>
+                                            <code className="font-mono">{doc.key}</code>
+                                        </p>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <button onClick={() => setPreviewDoc({ url: doc.url, name: doc.key })}
+                                                className="h-6 w-6 rounded-md border border-amber-200 text-amber-600 hover:text-amber-900 hover:bg-white flex items-center justify-center transition-all">
+                                                <Eye size={11} />
+                                            </button>
+                                            <button onClick={() => handleDownload(doc.url, doc.key)}
+                                                className="h-6 w-6 rounded-md border border-amber-200 text-amber-600 hover:text-amber-900 hover:bg-white flex items-center justify-center transition-all">
+                                                <Download size={11} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </TabsContent>
     );
 }

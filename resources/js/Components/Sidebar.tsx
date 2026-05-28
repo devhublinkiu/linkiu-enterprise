@@ -29,7 +29,8 @@ import {
     Ticket,
     Crown,
     Clock,
-    AlertCircle
+    AlertCircle,
+    ListChecks
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/Components/ui/Separator';
@@ -170,6 +171,12 @@ export default function Sidebar({ tenant, isOpen, setIsOpen }: SidebarProps) {
             name: 'Servicios',
             icon: Layers,
             href: route('admin.services.index'),
+            show: isAdmin
+        },
+        {
+            name: 'Documentos Requeridos',
+            icon: ListChecks,
+            href: route('admin.document-requirements.index'),
             show: isAdmin
         },
         {

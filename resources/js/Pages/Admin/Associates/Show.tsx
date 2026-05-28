@@ -97,7 +97,21 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 
 const REVIEWABLE_SECTIONS = ['basicinfo', 'characterization', 'contacts', 'documentation', 'services'] as const;
 
-export default function Show({ associate, availableServices }: { associate: Associate; availableServices: any[] }) {
+interface DocSpec {
+    key: string;
+    label: string;
+    icon: string;
+    accepts: string[];
+    legend?: string;
+    template?: string;
+}
+
+interface DocumentCatalog {
+    mandatory: DocSpec[];
+    optional: DocSpec[];
+}
+
+export default function Show({ associate, availableServices, documentCatalog }: { associate: Associate; availableServices: any[]; documentCatalog: DocumentCatalog }) {
     const [activeTab, setActiveTab] = useState('overview');
     const { data, setData, put, post, processing } = useForm({
         description: associate.description || '',
@@ -336,6 +350,7 @@ export default function Show({ associate, availableServices }: { associate: Asso
                                 sectionReview={getSectionReview('documentation')}
                                 onAuditSection={handleAuditSection}
                                 onAuditChangeRequest={handleAuditChangeRequest}
+                                documentCatalog={documentCatalog}
                             />
                             <TabGallery
                                 associate={associate}

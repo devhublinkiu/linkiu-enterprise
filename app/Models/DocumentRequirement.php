@@ -34,7 +34,8 @@ class DocumentRequirement extends Model
      * Resolve template URL.
      * - Absolute http(s) URL → returned as-is
      * - Leading "/" → public asset (legacy /plantillas_docs/...)
-     * - Otherwise → stored in the 'public' disk under document_templates/
+     * - Otherwise → managed upload on the default disk (Minio/S3 →
+     *   short-lived signed URL; local → Storage::url()).
      */
     public function getTemplateUrlAttribute(): ?string
     {
@@ -46,7 +47,18 @@ class DocumentRequirement extends Model
             return $this->template_path;
         }
 
-        return Storage::disk('public')->url($this->template_path);
+        $disk    = config('filesystems.default');
+        $storage = Storage::disk($disk);
+
+        if (in_array($disk, ['s3', 'minio'], true)) {
+            try {
+                return $storage->temporaryUrl($this->template_path, now()->addHour());
+            } catch (\Throwable $e) {
+                return $storage->url($this->template_path);
+            }
+        }
+
+        return $storage->url($this->template_path);
     }
 
     /**

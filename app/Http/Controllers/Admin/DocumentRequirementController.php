@@ -56,7 +56,7 @@ class DocumentRequirementController extends Controller
 
         if ($request->hasFile('template_file')) {
             $data['template_path'] = $request->file('template_file')
-                ->store('document_templates', 'public');
+                ->store('document_templates', config('filesystems.default'));
         }
 
         DocumentRequirement::create($data);
@@ -72,7 +72,7 @@ class DocumentRequirementController extends Controller
             // Replace template — delete old if it was a managed upload
             $this->deleteManagedTemplate($documentRequirement);
             $data['template_path'] = $request->file('template_file')
-                ->store('document_templates', 'public');
+                ->store('document_templates', config('filesystems.default'));
         }
 
         if ($request->boolean('remove_template')) {
@@ -177,7 +177,7 @@ class DocumentRequirementController extends Controller
         }
 
         try {
-            Storage::disk('public')->delete($path);
+            Storage::disk(config('filesystems.default'))->delete($path);
         } catch (\Throwable $e) {
             Log::warning("No se pudo eliminar plantilla {$path}: " . $e->getMessage());
         }

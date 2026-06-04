@@ -32,15 +32,18 @@
             <p>Se ha publicado una nueva licitación en el portal de <strong>CAMEP</strong> que podría ser de su interés:</p>
             
             <div class="tender-box">
-                <p><strong>Título:</strong> {{ $tender->title }}</p>
-                <p><strong>Entidad:</strong> {{ $tender->entity }}</p>
-                <p><strong>Ubicación:</strong> {{ $tender->location }}</p>
+                <p><strong>Título:</strong> {{ $tender->titulo }}</p>
+                <p><strong>Entidad:</strong> {{ $tender->empresa->nombre ?? '—' }}</p>
+                <p><strong>Ubicación:</strong> {{ trim(($tender->empresa->ciudad ?? '') . ($tender->empresa->departamento ? ', ' . $tender->empresa->departamento : ''), ', ') ?: '—' }}</p>
+                @if($tender->fecha_cierre)
+                    <p><strong>Cierre:</strong> {{ $tender->fecha_cierre->format('d/m/Y') }}</p>
+                @endif
             </div>
 
             <p>Para ver todos los detalles y descargar los pliegos, ingrese a la sección de Licitaciones.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/business-services/tenders/' . $tender->id) }}" class="btn">Ver Detalles de Licitación</a>
+                <a href="{{ route('associate.company.bienes-servicios.tender', [$tender->empresa->slug, $tender->slug]) }}" class="btn">Ver Detalles de Licitación</a>
             </div>
         </div>
 

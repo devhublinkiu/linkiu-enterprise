@@ -38,7 +38,7 @@
             <p>Para evitar la interrupción de tus beneficios (visibilidad en el directorio, acceso a licitaciones y participación en la comunidad), te recomendamos renovar tu plan hoy mismo.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/billing/plans') }}" class="btn">Renovar Suscripción Ahora</a>
+                <a href="{{ route('associate.company.billing') }}" class="btn">Renovar Suscripción Ahora</a>
             </div>
             
             <p style="margin-top: 20px;">Si ya realizaste el pago, por favor ignora este mensaje o adjunta tu comprobante en el portal para su validación.</p>

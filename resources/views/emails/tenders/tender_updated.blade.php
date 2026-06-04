@@ -28,12 +28,12 @@
         
         <div class="content">
             <p>Hola,</p>
-            <p>Le informamos que se han realizado actualizaciones en la licitación <strong>"{{ $tender->title }}"</strong> (documentos, fechas o información adicional).</p>
+            <p>Le informamos que se han realizado actualizaciones en la licitación <strong>"{{ $tender->titulo }}"</strong> (documentos, fechas o información adicional).</p>
             
             <p>Si está siguiendo este proceso, le recomendamos revisar los cambios en el portal.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/business-services/tenders/' . $tender->id) }}" class="btn">Ver Actualizaciones en el Portal</a>
+                <a href="{{ route('associate.company.bienes-servicios.tender', [$tender->empresa->slug, $tender->slug]) }}" class="btn">Ver Actualizaciones en el Portal</a>
             </div>
         </div>
 

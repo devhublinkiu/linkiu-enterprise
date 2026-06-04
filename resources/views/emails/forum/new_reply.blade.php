@@ -38,7 +38,7 @@
             <p>Haz clic abajo para leer la respuesta completa y continuar la conversación.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/forum/topic/' . $reply->topic->id) }}" class="btn">Ir al Debate</a>
+                <a href="{{ route('forums.topic', [$reply->topic->category->slug, $reply->topic->slug]) }}" class="btn">Ir al Debate</a>
             </div>
         </div>
 

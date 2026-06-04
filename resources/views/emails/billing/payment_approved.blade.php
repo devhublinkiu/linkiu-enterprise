@@ -40,7 +40,7 @@
             <p>Su perfil ahora cuenta con todos los beneficios del plan adquirido y su visibilidad pública en el directorio ha sido habilitada.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/associate/dashboard') }}" class="btn">Ir al Panel de Socio</a>
+                <a href="{{ route('dashboard') }}" class="btn">Ir al Panel de Socio</a>
             </div>
         </div>
 

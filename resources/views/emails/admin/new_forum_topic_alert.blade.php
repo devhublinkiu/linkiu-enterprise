@@ -35,7 +35,7 @@
             <p>Por favor, revise el contenido para moderación preventiva.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/forum/topic/' . $topic->category->slug . '/' . $topic->slug) }}" class="btn">Revisar Debate</a>
+                <a href="{{ route('forums.topic', [$topic->category->slug, $topic->slug]) }}" class="btn">Revisar Debate</a>
             </div>
         </div>
 

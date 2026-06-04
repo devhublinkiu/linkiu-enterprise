@@ -39,7 +39,7 @@
             <p>Por favor, ingrese a su panel para realizar las correcciones necesarias y volver a enviar su perfil a revisión.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/associate/company/basic-info') }}" class="btn">Corregir Información</a>
+                <a href="{{ route('associate.company.basic') }}" class="btn">Corregir Información</a>
             </div>
         </div>
 

@@ -40,7 +40,7 @@
             <p>Puede descargar el documento completo y realizar el pago desde su panel administrativo.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/associate/company/billing') }}" class="btn">Gestionar Pago</a>
+                <a href="{{ route('associate.company.billing') }}" class="btn">Gestionar Pago</a>
             </div>
         </div>
 

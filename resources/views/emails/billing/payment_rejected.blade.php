@@ -39,7 +39,7 @@
             <p>Le invitamos a verificar la información de su pago y volver a adjuntar el comprobante correcto desde su panel de facturación.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/associate/company/billing') }}" class="btn">Subir Nuevo Comprobante</a>
+                <a href="{{ route('associate.company.billing') }}" class="btn">Subir Nuevo Comprobante</a>
             </div>
         </div>
 

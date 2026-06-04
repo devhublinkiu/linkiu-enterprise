@@ -33,7 +33,7 @@
             <p>Ustedes ya forman parte oficial de nuestra red. El siguiente paso para habilitar su visibilidad pública y acceder a todos los beneficios es seleccionar su plan de afiliación.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/associate/company/billing') }}" class="btn">Elegir Plan y Activar Cuenta</a>
+                <a href="{{ route('associate.company.billing') }}" class="btn">Elegir Plan y Activar Cuenta</a>
             </div>
         </div>
 

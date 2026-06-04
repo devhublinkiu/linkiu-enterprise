@@ -21,7 +21,7 @@ class NewForumTopicAlert extends Mailable
      */
     public function __construct($topic)
     {
-        $this->topic = $topic;
+        $this->topic = $topic->loadMissing(['user', 'category']);
     }
 
     /**

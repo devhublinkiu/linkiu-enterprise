@@ -21,7 +21,7 @@ class NewForumReply extends Mailable
      */
     public function __construct($reply)
     {
-        $this->reply = $reply;
+        $this->reply = $reply->loadMissing(['user', 'topic.category']);
     }
 
     /**

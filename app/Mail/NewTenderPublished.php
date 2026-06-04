@@ -21,7 +21,7 @@ class NewTenderPublished extends Mailable
      */
     public function __construct($tender)
     {
-        $this->tender = $tender;
+        $this->tender = $tender->loadMissing('empresa');
     }
 
     /**
@@ -30,7 +30,7 @@ class NewTenderPublished extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Nueva Licitación Publicada: ' . $this->tender->title,
+            subject: 'Nueva Licitación Publicada: ' . $this->tender->titulo,
         );
     }
 

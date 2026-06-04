@@ -34,7 +34,7 @@
             <p>Para comenzar, te invitamos a completar el perfil de tu empresa y subir la documentación requerida para el proceso de auditoría.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/associate/company/basic-info') }}" class="btn">Completar Perfil de Empresa</a>
+                <a href="{{ route('associate.company.basic') }}" class="btn">Completar Perfil de Empresa</a>
             </div>
         </div>
 

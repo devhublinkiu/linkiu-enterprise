@@ -38,7 +38,7 @@
             <p>No pierdas las oportunidades de negocio que la Red CAMEP ofrece. Renueva tu suscripción ahora para restaurar todos tus beneficios de inmediato.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/billing/plans') }}" class="btn">Reactivar mi Suscripción</a>
+                <a href="{{ route('associate.company.billing') }}" class="btn">Reactivar mi Suscripción</a>
             </div>
         </div>
 

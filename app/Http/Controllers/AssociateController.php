@@ -1067,6 +1067,57 @@ class AssociateController extends Controller
         return back()->with('success', 'Portada actualizada correctamente.');
     }
 
+    public function uploadLogo(Request $request)
+    {
+        $user      = auth()->user();
+        $associate = Associate::findOrFail($user->associate_id);
+
+        $request->validate([
+            'logo' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
+        ], [
+            'logo.image' => 'El archivo debe ser una imagen.',
+            'logo.mimes' => 'Solo se aceptan JPG, PNG o WEBP.',
+            'logo.max'   => 'El logo no puede superar 5 MB.',
+        ]);
+
+        $disk = config('filesystems.default');
+
+        if ($associate->logo_path) {
+            try {
+                Storage::disk($disk)->delete($associate->logo_path);
+            } catch (\Throwable $e) {
+                Log::warning("No se pudo borrar logo anterior {$associate->logo_path}: " . $e->getMessage());
+            }
+        }
+
+        $path = $request->file('logo')->store("associates/{$associate->id}/branding", $disk);
+        $associate->update(['logo_path' => $path]);
+
+        return back()->with('success', 'Logo actualizado correctamente.');
+    }
+
+    public function deleteLogo()
+    {
+        $user      = auth()->user();
+        $associate = Associate::findOrFail($user->associate_id);
+
+        if (!$associate->logo_path) {
+            return back()->with('error', 'No hay logo para eliminar.');
+        }
+
+        $disk = config('filesystems.default');
+
+        try {
+            Storage::disk($disk)->delete($associate->logo_path);
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo borrar logo {$associate->logo_path}: " . $e->getMessage());
+        }
+
+        $associate->update(['logo_path' => null]);
+
+        return back()->with('success', 'Logo eliminado.');
+    }
+
     // =========================================================================
     // ADMIN: show associate
     // =========================================================================

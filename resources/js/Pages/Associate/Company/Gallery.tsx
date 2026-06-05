@@ -3,19 +3,20 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Head, useForm, router } from '@inertiajs/react';
 import { Card, CardContent } from '@/Components/ui/Card';
 import { Button } from '@/Components/ui/Button';
-import { 
-    Image as ImageIcon, 
-    Upload, 
-    Trash2, 
-    Plus, 
-    X, 
+import {
+    Image as ImageIcon,
+    Upload,
+    Trash2,
+    Plus,
+    X,
     CheckCircle2,
     Loader2,
     Star,
     LayoutGrid,
     AlertCircle,
     Info,
-    ArrowRight
+    ArrowRight,
+    Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,16 +27,38 @@ interface Props {
 
 export default function Gallery({ auth, initialAssociate }: Props) {
     const [uploading, setUploading] = useState(false);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    
+    const logoInputRef = useRef<HTMLInputElement>(null);
+
     const images = initialAssociate?.gallery_urls || [];
     const limit = initialAssociate?.plan?.limit_gallery || 0;
     const used = images.length;
     const percentage = limit > 0 ? (used / limit) * 100 : 0;
+    const logoUrl = initialAssociate?.document_urls?.logo || null;
 
     const { delete: destroy, processing } = useForm({
         path: '',
     });
+
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        router.post(route('associate.company.upload.logo'), { logo: file }, {
+            forceFormData: true,
+            preserveScroll: true,
+            onStart: () => setUploadingLogo(true),
+            onFinish: () => {
+                setUploadingLogo(false);
+                if (logoInputRef.current) logoInputRef.current.value = '';
+            },
+        });
+    };
+
+    const handleDeleteLogo = () => {
+        if (!confirm('¿Eliminar el logo? Tu perfil público se mostrará sin imagen hasta que subas uno nuevo.')) return;
+        router.delete(route('associate.company.delete.logo'), { preserveScroll: true });
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -80,8 +103,67 @@ export default function Gallery({ auth, initialAssociate }: Props) {
             <Head title="Galería de la Empresa" />
 
             <div className="max-w-6xl mx-auto space-y-8 pb-20">
+                {/* Logo Section — separate from gallery */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 mt-4">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="h-10 w-10 bg-orange-600 rounded-lg flex items-center justify-center text-white shadow-lg">
+                            <Building2 size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Logo de la Empresa</h2>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Imagen principal de identidad — visible en tu perfil público</p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                        <div className="h-32 w-32 rounded-2xl bg-slate-50 border-2 border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                            {logoUrl ? (
+                                <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
+                            ) : (
+                                <Building2 size={48} className="text-slate-200" strokeWidth={1.5} />
+                            )}
+                        </div>
+
+                        <div className="flex-1 text-center sm:text-left space-y-3">
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                Sube una imagen cuadrada (JPG, PNG, WEBP). Máximo 5MB. Se mostrará en tu perfil público y en los listados de empresas asociadas.
+                            </p>
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                className="hidden"
+                                ref={logoInputRef}
+                                onChange={handleLogoChange}
+                            />
+                            <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                                <Button
+                                    onClick={() => logoInputRef.current?.click()}
+                                    disabled={uploadingLogo}
+                                    className="rounded-lg bg-slate-950 text-white hover:bg-orange-600 transition-all gap-2 h-10 px-5 font-black text-xs uppercase tracking-widest shadow-md"
+                                >
+                                    {uploadingLogo ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
+                                    {logoUrl ? 'Reemplazar Logo' : 'Subir Logo'}
+                                </Button>
+                                {logoUrl && (
+                                    <Button
+                                        onClick={handleDeleteLogo}
+                                        disabled={uploadingLogo}
+                                        className="rounded-lg bg-white text-red-600 border border-red-200 hover:bg-red-50 transition-all gap-2 h-10 px-5 font-black text-xs uppercase tracking-widest"
+                                    >
+                                        <Trash2 size={14} />
+                                        Eliminar
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Visual separator between Logo and Gallery */}
+                <div className="border-t border-dashed border-slate-200 my-2"></div>
+
                 {/* Section Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-xl border border-slate-200 shadow-sm mt-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
                     <div className="space-y-4 flex-1">
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 bg-slate-950 rounded-lg flex items-center justify-center text-white shadow-lg">

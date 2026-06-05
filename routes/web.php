@@ -190,6 +190,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/gallery', [App\Http\Controllers\AssociateController::class, 'updateGallery'])->name('update.gallery');
         Route::delete('/gallery/image', [App\Http\Controllers\AssociateController::class, 'deleteGalleryImage'])->name('delete.gallery.image');
         Route::post('/gallery/set-cover', [App\Http\Controllers\AssociateController::class, 'setCoverImage'])->name('set.cover.image');
+        Route::post('/gallery/logo', [App\Http\Controllers\AssociateController::class, 'uploadLogo'])->name('upload.logo');
+        Route::delete('/gallery/logo', [App\Http\Controllers\AssociateController::class, 'deleteLogo'])->name('delete.logo');
 
         // Mis Facturas
         Route::get('/mis-facturas', [App\Http\Controllers\Associate\InvoiceController::class, 'index'])->name('invoices.index');

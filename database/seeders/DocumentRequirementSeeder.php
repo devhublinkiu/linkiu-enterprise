@@ -11,7 +11,6 @@ class DocumentRequirementSeeder extends Seeder
     {
         $mandatory = [
             ['carta_solicitud_afiliacion',     'Carta Solicitud Afiliación',                       'FileText',        ['pdf']],
-            ['logo_hd',                        'Logo HD (JPG/PNG)',                                'Image',           ['jpg', 'jpeg', 'png']],
             ['brochure_portafolio',            'Brochure/Portafolio',                              'FileSpreadsheet', ['pdf']],
             ['rut',                            'RUT',                                              'FileDigit',       ['pdf'],          'Del año más reciente'],
             ['camara_comercio',                'Cámara y Comercio / Registro Mercantil',           'Landmark',        ['pdf'],          'Del año más reciente'],

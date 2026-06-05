@@ -1237,9 +1237,10 @@ class AssociateController extends Controller
             'images.*' => 'file|image|max:5120',
         ]);
 
+        $disk  = config('filesystems.default');
         $paths = $associate->gallery_paths ?? [];
         foreach ($request->file('images') as $file) {
-            $paths[] = $file->store('associates/' . $associate->id . '/gallery', 'public');
+            $paths[] = $file->store('associates/' . $associate->id . '/gallery', $disk);
         }
         $associate->update(['gallery_paths' => $paths]);
 
@@ -1251,7 +1252,7 @@ class AssociateController extends Controller
         $request->validate(['path' => 'required|string']);
 
         $paths = array_values(array_filter($associate->gallery_paths ?? [], fn($p) => $p !== $request->path));
-        Storage::disk('public')->delete($request->path);
+        Storage::disk(config('filesystems.default'))->delete($request->path);
 
         $associate->gallery_paths = $paths;
         if ($associate->cover_path === $request->path) {

@@ -47,6 +47,7 @@ interface Plan {
     is_active: boolean;
     is_popular: boolean;
     signup_fee: string;
+    signup_only_first_period: boolean;
 }
 
 export default function Index({ plans }: { plans: Plan[] }) {
@@ -140,7 +141,14 @@ export default function Index({ plans }: { plans: Plan[] }) {
                                 <div className="space-y-3 mb-8 bg-slate-50 p-6 rounded-xl border border-slate-100 shadow-inner">
                                     {parseFloat(plan.signup_fee) > 0 && (
                                         <div className="flex justify-between items-center px-1 pb-2 border-b border-indigo-200/30 mb-2">
-                                            <span className="text-[11px] font-black text-indigo-500 uppercase font-black">Inscripción</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] font-black text-indigo-500 uppercase">Inscripción</span>
+                                                {plan.signup_only_first_period && (
+                                                    <Badge className="bg-indigo-600 text-white border-none text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md">
+                                                        Solo mes 1
+                                                    </Badge>
+                                                )}
+                                            </div>
                                             <span className="text-base font-black text-indigo-700">{formatCurrency(plan.signup_fee)}</span>
                                         </div>
                                     )}

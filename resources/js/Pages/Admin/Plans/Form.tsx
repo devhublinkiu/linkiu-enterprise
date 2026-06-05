@@ -49,6 +49,7 @@ interface Plan {
     is_active: boolean;
     is_popular: boolean;
     signup_fee: number;
+    signup_only_first_period: boolean;
 }
 
 export default function Form({ plan }: { plan?: Plan }) {
@@ -74,6 +75,7 @@ export default function Form({ plan }: { plan?: Plan }) {
         is_active: plan?.is_active ?? true,
         is_popular: plan?.is_popular ?? false,
         signup_fee: plan?.signup_fee || 0,
+        signup_only_first_period: plan?.signup_only_first_period ?? false,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -264,7 +266,7 @@ export default function Form({ plan }: { plan?: Plan }) {
                                         Prórroga (Días)
                                         <Info size={12} className="text-slate-400" />
                                     </Label>
-                                    <Input 
+                                    <Input
                                         type="number"
                                         value={data.grace_days}
                                         onChange={e => setData('grace_days', parseInt(e.target.value) || 0)}
@@ -273,6 +275,26 @@ export default function Form({ plan }: { plan?: Plan }) {
                                     <InputError message={errors.grace_days} />
                                 </div>
                             </div>
+
+                            {data.signup_fee > 0 && (
+                                <div className="mt-8 flex items-start justify-between gap-6 p-5 bg-indigo-50/40 rounded-xl border border-indigo-100">
+                                    <div className="space-y-1">
+                                        <Label className="text-[11px] font-black uppercase text-indigo-700 block">
+                                            Solo cobrar inscripción el primer mes
+                                        </Label>
+                                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed max-w-xl">
+                                            Si está activo, el primer pago del asociado cubre <strong>solo la cuota inicial</strong>.
+                                            A los 30 días se genera automáticamente una cuenta de cobro para la primera mensualidad.
+                                            Si está apagado, el primer pago incluye la inscripción <strong>más</strong> el ciclo elegido.
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        checked={data.signup_only_first_period}
+                                        onCheckedChange={v => setData('signup_only_first_period', v)}
+                                        className="data-[state=checked]:bg-indigo-600 shrink-0"
+                                    />
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 

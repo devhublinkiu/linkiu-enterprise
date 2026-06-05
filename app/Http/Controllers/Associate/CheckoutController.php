@@ -25,37 +25,59 @@ class CheckoutController extends Controller
 
         $bankAccounts = BankAccount::where('is_active', true)->orderBy('order')->get();
 
+        $isFirstPayment = $user->associate && $user->associate->status === 'verified';
+
         return Inertia::render('Associate/Billing/Checkout', [
             'plan'            => $plan,
             'bankAccounts'    => $bankAccounts,
             'existingRequest' => $existingRequest,
             'associateStatus' => $user->associate?->status,
+            'isSignupOnly'    => $isFirstPayment && (bool) $plan->signup_only_first_period && $plan->signup_fee > 0,
         ]);
     }
 
     public function store(Request $request, Plan $plan)
     {
-        $request->validate([
-            'billing_cycle' => 'required|in:monthly,semiannual,annual',
-            'proof'         => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
-        ]);
+        $user      = auth()->user();
+        $associate = $user->associate;
 
-        $user = auth()->user();
+        $isFirstPayment    = $associate && $associate->status === 'verified';
+        $signupOnly        = $isFirstPayment && $plan->signup_only_first_period && $plan->signup_fee > 0;
+
+        $rules = [
+            'proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ];
+
+        if (!$signupOnly) {
+            $rules['billing_cycle'] = 'required|in:monthly,semiannual,annual';
+        }
+
+        $request->validate($rules);
 
         // Store proof file
         $path = $request->file('proof')->store('payment-proofs', 'public');
 
-        // Determine amount based on billing cycle
-        $amount = match ($request->billing_cycle) {
-            'semiannual' => $plan->price_semiannual,
-            'annual'     => $plan->price_annual,
-            default      => $plan->price_monthly,
-        };
+        // Compute amount based on flow:
+        //  - signup-only first payment: only inscripción
+        //  - first payment (bundled): cycle + inscripción
+        //  - renewal: cycle only
+        if ($signupOnly) {
+            $amount        = $plan->signup_fee;
+            $billingCycle  = 'signup';
+            $isSignup      = true;
+        } else {
+            $amount = match ($request->billing_cycle) {
+                'semiannual' => $plan->price_semiannual,
+                'annual'     => $plan->price_annual,
+                default      => $plan->price_monthly,
+            };
 
-        // Add signup fee if the associate is newly admitted (verified status)
-        $associate = $user->associate;
-        if ($associate && $associate->status === 'verified' && $plan->signup_fee > 0) {
-            $amount += $plan->signup_fee;
+            if ($isFirstPayment && $plan->signup_fee > 0) {
+                $amount += $plan->signup_fee;
+            }
+
+            $billingCycle = $request->billing_cycle;
+            $isSignup     = false;
         }
 
         // Cancel any previous pending request from this user
@@ -66,7 +88,8 @@ class CheckoutController extends Controller
         $paymentRequest = PaymentRequest::create([
             'user_id'       => $user->id,
             'plan_id'       => $plan->id,
-            'billing_cycle' => $request->billing_cycle,
+            'billing_cycle' => $billingCycle,
+            'is_signup'     => $isSignup,
             'amount'        => $amount,
             'proof_path'    => $path,
             'status'        => 'pending',

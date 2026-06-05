@@ -11,6 +11,7 @@ class PaymentRequest extends Model
         'user_id',
         'plan_id',
         'billing_cycle',
+        'is_signup',
         'amount',
         'proof_path',
         'status',
@@ -22,6 +23,7 @@ class PaymentRequest extends Model
     protected $casts = [
         'amount'      => 'decimal:2',
         'reviewed_at' => 'datetime',
+        'is_signup'   => 'boolean',
     ];
 
     public function user(): BelongsTo

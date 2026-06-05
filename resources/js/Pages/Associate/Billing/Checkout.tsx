@@ -6,7 +6,7 @@ import { Button } from '@/Components/ui/Button';
 import { Badge } from '@/Components/ui/Badge';
 import {
     ArrowLeft, Building2, Hash, User, CreditCard, Upload,
-    CheckCircle, Calendar, ChevronDown, X, FileText
+    CheckCircle, Calendar, ChevronDown, X, FileText, Info
 } from 'lucide-react';
 
 interface BankAccount {
@@ -36,6 +36,7 @@ interface Props {
     plan: Plan;
     bankAccounts: BankAccount[];
     associateStatus?: string;
+    isSignupOnly?: boolean;
 }
 
 const CYCLES = [
@@ -44,7 +45,7 @@ const CYCLES = [
     { value: 'annual', label: 'Anual (12 meses)', key: 'price_annual' as const },
 ];
 
-export default function Checkout({ plan, bankAccounts, associateStatus }: Props) {
+export default function Checkout({ plan, bankAccounts, associateStatus, isSignupOnly = false }: Props) {
     const [showModal, setShowModal] = useState(false);
     const [preview, setPreview] = useState<string | null>(null);
 
@@ -57,9 +58,23 @@ export default function Checkout({ plan, bankAccounts, associateStatus }: Props)
     });
 
     const selectedCycle = CYCLES.find(c => c.value === data.billing_cycle)!;
-    const basePrice = parseFloat(plan[selectedCycle.key]);
-    const signupFee = (associateStatus === 'verified') ? parseFloat(plan.signup_fee || '0') : 0;
-    const totalPrice = basePrice + signupFee;
+    const isFirstPayment = associateStatus === 'verified';
+    const signupFeeValue = parseFloat(plan.signup_fee || '0');
+
+    // Three-branch pricing
+    let basePrice: number;
+    let signupFee: number;
+    let totalPrice: number;
+
+    if (isSignupOnly) {
+        basePrice    = 0;
+        signupFee    = signupFeeValue;
+        totalPrice   = signupFeeValue;
+    } else {
+        basePrice    = parseFloat(plan[selectedCycle.key]);
+        signupFee    = (isFirstPayment && signupFeeValue > 0) ? signupFeeValue : 0;
+        totalPrice   = basePrice + signupFee;
+    }
 
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
@@ -111,40 +126,58 @@ export default function Checkout({ plan, bankAccounts, associateStatus }: Props)
                             </CardContent>
                         </Card>
 
-                        {/* Billing Cycle */}
-                        <Card className="border-slate-200 shadow-sm rounded-2xl">
-                            <CardContent className="p-6 space-y-3">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Periodo de facturación</p>
-                                {CYCLES.map(cycle => (
-                                    <label key={cycle.value} className={`flex items-center justify-between p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
-                                        data.billing_cycle === cycle.value
-                                            ? 'border-slate-900 bg-slate-50'
-                                            : 'border-slate-200 hover:border-slate-300'
-                                    }`}>
-                                        <div className="flex items-center gap-3">
-                                            <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
-                                                data.billing_cycle === cycle.value ? 'border-slate-900' : 'border-slate-300'
-                                            }`}>
-                                                {data.billing_cycle === cycle.value && (
-                                                    <div className="h-2 w-2 rounded-full bg-slate-900" />
-                                                )}
+                        {/* Billing Cycle — hidden in signup-only flow */}
+                        {!isSignupOnly && (
+                            <Card className="border-slate-200 shadow-sm rounded-2xl">
+                                <CardContent className="p-6 space-y-3">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Periodo de facturación</p>
+                                    {CYCLES.map(cycle => (
+                                        <label key={cycle.value} className={`flex items-center justify-between p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
+                                            data.billing_cycle === cycle.value
+                                                ? 'border-slate-900 bg-slate-50'
+                                                : 'border-slate-200 hover:border-slate-300'
+                                        }`}>
+                                            <div className="flex items-center gap-3">
+                                                <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
+                                                    data.billing_cycle === cycle.value ? 'border-slate-900' : 'border-slate-300'
+                                                }`}>
+                                                    {data.billing_cycle === cycle.value && (
+                                                        <div className="h-2 w-2 rounded-full bg-slate-900" />
+                                                    )}
+                                                </div>
+                                                <span className="font-bold text-sm text-slate-700">{cycle.label}</span>
                                             </div>
-                                            <span className="font-bold text-sm text-slate-700">{cycle.label}</span>
-                                        </div>
-                                        <span className="font-black text-sm text-slate-900">{formatCurrency(parseFloat(plan[cycle.key]))}</span>
-                                        <input type="radio" className="sr-only" value={cycle.value} checked={data.billing_cycle === cycle.value} onChange={() => setData('billing_cycle', cycle.value)} />
-                                    </label>
-                                ))}
-                            </CardContent>
-                        </Card>
+                                            <span className="font-black text-sm text-slate-900">{formatCurrency(parseFloat(plan[cycle.key]))}</span>
+                                            <input type="radio" className="sr-only" value={cycle.value} checked={data.billing_cycle === cycle.value} onChange={() => setData('billing_cycle', cycle.value)} />
+                                        </label>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Signup-only explainer */}
+                        {isSignupOnly && (
+                            <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 flex gap-3">
+                                <Info size={20} className="text-indigo-500 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-[11px] font-black text-indigo-700 uppercase tracking-widest mb-1">Pago inicial: solo inscripción</p>
+                                    <p className="text-xs text-indigo-900/70 leading-relaxed font-medium">
+                                        Este plan separa la inscripción del primer mes. Hoy pagas únicamente la cuota inicial.
+                                        A los 30 días recibirás automáticamente la cuenta de cobro de tu primera mensualidad.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Total */}
                         <div className="bg-slate-900 text-white rounded-2xl p-6 flex items-center justify-between">
                             <div>
                                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Total a pagar</p>
                                 <p className="text-slate-300 text-xs mt-0.5">
-                                    {selectedCycle.label} 
-                                    {signupFee > 0 && ' + Inscripción'}
+                                    {isSignupOnly
+                                        ? 'Inscripción'
+                                        : (signupFee > 0 ? `${selectedCycle.label} + Inscripción` : selectedCycle.label)
+                                    }
                                 </p>
                             </div>
                             <p className="text-2xl font-black">{formatCurrency(totalPrice)}</p>
@@ -251,9 +284,15 @@ export default function Checkout({ plan, bankAccounts, associateStatus }: Props)
                             {/* Summary */}
                             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-1.5 text-xs">
                                 <div className="flex justify-between font-bold text-slate-600"><span>Plan:</span><span className="text-slate-900">{plan.name}</span></div>
-                                <div className="flex justify-between font-bold text-slate-600"><span>Periodo:</span><span className="text-slate-900">{selectedCycle.label}</span></div>
-                                {signupFee > 0 && (
-                                    <div className="flex justify-between font-bold text-slate-600"><span>Inscripción:</span><span className="text-slate-900">{formatCurrency(signupFee)}</span></div>
+                                {isSignupOnly ? (
+                                    <div className="flex justify-between font-bold text-slate-600"><span>Concepto:</span><span className="text-slate-900">Inscripción</span></div>
+                                ) : (
+                                    <>
+                                        <div className="flex justify-between font-bold text-slate-600"><span>Periodo:</span><span className="text-slate-900">{selectedCycle.label}</span></div>
+                                        {signupFee > 0 && (
+                                            <div className="flex justify-between font-bold text-slate-600"><span>Inscripción:</span><span className="text-slate-900">{formatCurrency(signupFee)}</span></div>
+                                        )}
+                                    </>
                                 )}
                                 <div className="flex justify-between font-black text-slate-900 text-sm pt-1 border-t border-slate-200"><span>Total:</span><span>{formatCurrency(totalPrice)}</span></div>
                             </div>

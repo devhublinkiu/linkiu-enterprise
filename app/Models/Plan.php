@@ -28,6 +28,7 @@ class Plan extends Model
         'is_active',
         'is_popular',
         'signup_fee',
+        'signup_only_first_period',
     ];
 
     protected $casts = [
@@ -46,6 +47,7 @@ class Plan extends Model
         'limit_gallery' => 'integer',
         'grace_days' => 'integer',
         'signup_fee' => 'decimal:2',
+        'signup_only_first_period' => 'boolean',
     ];
 
     public function associates(): HasMany

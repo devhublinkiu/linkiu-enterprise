@@ -42,6 +42,7 @@ class PlanController extends Controller
             'color_hex' => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
             'grace_days' => 'required|integer|min:0',
             'signup_fee' => 'required|numeric|min:0',
+            'signup_only_first_period' => 'required|boolean',
             'is_active' => 'required|boolean',
             'is_popular' => 'required|boolean',
         ]);
@@ -80,6 +81,7 @@ class PlanController extends Controller
             'color_hex' => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
             'grace_days' => 'required|integer|min:0',
             'signup_fee' => 'required|numeric|min:0',
+            'signup_only_first_period' => 'required|boolean',
             'is_active' => 'required|boolean',
             'is_popular' => 'required|boolean',
         ]);

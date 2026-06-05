@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Events\PaymentRequestReviewed;
 use App\Http\Controllers\Controller;
 use App\Models\Associate;
+use App\Models\Invoice;
 use App\Models\PaymentRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -71,16 +73,8 @@ class PaymentRequestController extends Controller
             'billing_cycle' => 'sometimes|in:monthly,semiannual,annual',
         ]);
 
-        $user      = $paymentRequest->user;
-        $plan      = $paymentRequest->plan;
-        $cycle     = $request->billing_cycle ?? $paymentRequest->billing_cycle;
-
-        // Calculate expiration date
-        $expiresAt = match ($cycle) {
-            'semiannual' => now()->addMonths(6),
-            'annual'     => now()->addYear(),
-            default      => now()->addMonth(),
-        };
+        $user  = $paymentRequest->user;
+        $plan  = $paymentRequest->plan;
 
         // Find or create the associate record
         $associate = $user->associate_id
@@ -94,6 +88,18 @@ class PaymentRequestController extends Controller
                 'is_public'    => false,
             ]);
             $user->update(['associate_id' => $associate->id]);
+        }
+
+        // Expiration date: signup-only pays 30 días, cycle payments use cycle period
+        if ($paymentRequest->is_signup) {
+            $expiresAt = now()->addMonth();
+        } else {
+            $cycle = $request->billing_cycle ?? $paymentRequest->billing_cycle;
+            $expiresAt = match ($cycle) {
+                'semiannual' => now()->addMonths(6),
+                'annual'     => now()->addYear(),
+                default      => now()->addMonth(),
+            };
         }
 
         // Activate plan and associate status
@@ -114,6 +120,11 @@ class PaymentRequestController extends Controller
             'reviewed_by' => auth()->id(),
         ]);
 
+        // For signup-only payments, auto-generate the next month's invoice
+        if ($paymentRequest->is_signup) {
+            $this->generateFirstMonthlyInvoice($associate, $plan);
+        }
+
         // Notify associate via email
         try {
             \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\PaymentApproved($paymentRequest));
@@ -126,6 +137,36 @@ class PaymentRequestController extends Controller
 
         return redirect()->route('admin.payment-requests.index')
             ->with('success', "Plan {$plan->name} activado para {$user->name}.");
+    }
+
+    /**
+     * After a signup-only payment is approved, push a "cuenta de cobro" for
+     * the first monthly fee, dated to the month immediately following.
+     */
+    private function generateFirstMonthlyInvoice(Associate $associate, $plan): void
+    {
+        $nextPeriod = Carbon::now()->locale('es')->addMonth();
+        $periodLabel = 'Mensualidad - ' . ucfirst($nextPeriod->isoFormat('MMMM YYYY'));
+
+        $invoice = Invoice::create([
+            'associate_id'  => $associate->id,
+            'created_by'    => auth()->id(),
+            'type'          => 'cuenta_cobro',
+            'period'        => $periodLabel,
+            'amount'        => $plan->price_monthly,
+            'notes'         => 'Primera mensualidad posterior a la inscripción aprobada.',
+            'status'        => 'pendiente',
+        ]);
+
+        try {
+            $recipientEmail = $associate->users->first()?->email ?? $associate->billing_email ?? null;
+            if ($recipientEmail) {
+                \Illuminate\Support\Facades\Mail::to($recipientEmail)
+                    ->send(new \App\Mail\NewInvoiceGenerated($invoice));
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error enviando correo de primera mensualidad: ' . $e->getMessage());
+        }
     }
 
     public function reject(Request $request, PaymentRequest $paymentRequest)

@@ -8,6 +8,9 @@ class Associate extends Model
 {
     const REVIEWABLE_SECTIONS = ['basicinfo', 'characterization', 'contacts', 'documentation'];
 
+    // Día del mes en que vence la suscripción (corte de facturación que se llevaba manualmente)
+    const BILLING_DAY = 19;
+
     // Section status constants
     const SEC_DRAFT            = 'draft';
     const SEC_PENDING          = 'pending';

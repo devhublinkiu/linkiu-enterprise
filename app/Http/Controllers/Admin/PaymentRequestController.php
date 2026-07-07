@@ -102,6 +102,10 @@ class PaymentRequestController extends Controller
             };
         }
 
+        // Alinear el vencimiento al día de corte (19) para respetar la fecha
+        // que se venía manejando manualmente. Conserva el mes/año calculado.
+        $expiresAt = $expiresAt->day(Associate::BILLING_DAY);
+
         // Activate plan and associate status
         $associate->update([
             'plan_id'        => $plan->id,

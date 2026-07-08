@@ -85,7 +85,27 @@ class InvoiceController extends Controller
 
     public function markPaid(Invoice $invoice)
     {
+        $wasPaid = $invoice->status === 'pagada';
         $invoice->update(['status' => 'pagada']);
+
+        // Renovar el ciclo: al pagar una cuenta de cobro mensual, avanzar el
+        // vencimiento un mes (al siguiente día 19). Solo la primera vez que se
+        // marca pagada, para no acumular meses si se vuelve a guardar.
+        if (!$wasPaid && $invoice->type === 'cuenta_cobro') {
+            $associate = $invoice->associate;
+
+            if ($associate) {
+                $base = $associate->plan_expires_at ?? now();
+                $next = $base->copy()->addMonthNoOverflow()->day(Associate::BILLING_DAY);
+                $associate->update(['plan_expires_at' => $next]);
+
+                // Si estaba oculto por vencimiento y el pago lo pone al día, reactivar el perfil.
+                $associate->load('plan');
+                if (!$associate->is_public && $associate->isSubscriptionActive()) {
+                    $associate->update(['is_public' => true]);
+                }
+            }
+        }
 
         return back()->with('success', 'Factura marcada como pagada.');
     }

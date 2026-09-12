@@ -1,0 +1,21 @@
+# Registro de decisiones de arquitectura (ADR)
+
+Cada archivo de esta carpeta documenta **una decisión** que cambia la forma del sistema:
+el contexto que la motivó, las opciones que se consideraron, lo que se decidió y las
+consecuencias que acarrea.
+
+Un ADR no se edita para cambiar de opinión. Si una decisión deja de servir, se escribe un
+ADR nuevo que la sustituya y se marca la anterior como `Sustituida por ADR-XXXX`.
+
+## Índice
+
+| # | Decisión | Estado | Fecha |
+|---|---|---|---|
+| [0001](0001-motor-de-cobro-unificado.md) | Motor de cobro unificado: factura como documento, pago como transacción | Aceptada | 2026-08-06 |
+| [0002](0002-interruptores-de-modulo-por-plan.md) | Todo módulo se entrega con interruptor de plan | Aceptada | 2026-08-06 |
+
+## Cómo escribir uno nuevo
+
+Copia la estructura de cualquiera de los existentes. El número es correlativo y no se reutiliza.
+
+Estados posibles: `Propuesta` · `Aceptada` · `Sustituida por ADR-XXXX` · `Descartada`.

@@ -1,59 +1,100 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CAMEPG
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Plataforma B2B para las empresas asociadas de **CAMEP** (sector minero e hidrocarburos, Colombia).
+Cada empresa completa su perfil, un administrador lo revisa por secciones y, si se aprueba, la
+empresa aparece en el **directorio público**. Sobre eso se montan la membresía y el cobro, la Red
+CAMEP (foros), bienes y servicios, convocatorias y el blog.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Capa | Tecnología |
+|---|---|
+| Backend | Laravel 12 · PHP 8.2+ |
+| Frontend | Inertia.js 2 + React 18 + TypeScript · Tailwind 3 · Radix UI · Tiptap · Framer Motion |
+| Base de datos | MySQL (`camepg`) |
+| Archivos / media | Spatie MediaLibrary sobre Minio/S3 (`league/flysystem-aws-s3-v3`) |
+| Correo | Resend | 
+| Realtime / broadcast | Ably + Laravel Echo (notificaciones) |
+| Multi-tenant | stancl/tenancy (previsto para Vitrina Empresarial) |
+| Rutas en JS | Ziggy |
+| Pasarela de pago | Bold (botón de pagos) |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Módulos
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Asociados y perfil por secciones** — `basicinfo`, `characterization`, `contacts`,
+  `documentation`, `services`, cada una con flujo de revisión (`section_reviews`).
+- **Membresía y cobro** — motor unificado factura/pago, tres rieles (Bold, transferencia,
+  efectivo). Ver [`docs/adr/0001-motor-de-cobro-unificado.md`](docs/adr/0001-motor-de-cobro-unificado.md).
+- **Planes e interruptores de módulo** — catálogo `features` + `plan_feature`.
+  Ver [`docs/adr/0002-interruptores-de-modulo-por-plan.md`](docs/adr/0002-interruptores-de-modulo-por-plan.md).
+- **Directorio público**, **Red CAMEP (foros)**, **Bienes y Servicios**, **Convocatorias /
+  Licitaciones**, **Blog**.
 
-## Learning Laravel
+Toda la documentación de arquitectura vive en [`docs/`](docs/). Empieza por
+[`docs/adr/README.md`](docs/adr/README.md).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Puesta en marcha (desarrollo local, Windows + Laravel Herd)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+PHP lo sirve **Laravel Herd** (`php` ya está en el PATH). Usa **PowerShell** para `php`/`composer`.
+El sitio queda en `https://camepg.test/`.
 
-## Laravel Sponsors
+```powershell
+composer install
+npm install
+copy .env.example .env      # luego ajusta DB, Minio, Resend, Bold (ver abajo)
+php artisan key:generate
+php artisan migrate --seed
+npm run dev                 # o: npm run build
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Base de datos: MySQL `camepg` en `127.0.0.1:3306`. Ajusta `DB_*` en `.env`
+(el `.env.example` trae SQLite por defecto; en este proyecto se usa MySQL).
 
-### Premium Partners
+Permisos de storage (una vez, si hay problemas de escritura):
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```powershell
+icacls G:\Camepg\storage /grant Todos:(OI)(CI)F /T
+```
 
-## Contributing
+Crear un administrador:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```powershell
+php artisan create:admin "Nombre" correo@dominio.com "contraseña"
+```
 
-## Code of Conduct
+## Variables de entorno clave
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Además de las estándar de Laravel:
 
-## Security Vulnerabilities
+- `DB_*` → MySQL `camepg`.
+- `AWS_*` / `FILESYSTEM_DISK` → Minio/S3 para media y documentos.
+- `RESEND_KEY` / `MAIL_*` → envío de correo (Resend).
+- `ADMIN_EMAIL` → destino de los avisos de comprobantes por revisar.
+- `BOLD_API_KEY`, `BOLD_SECRET_KEY`, `BOLD_WEBHOOK_SECRET` → pasarela de pago. Sin las dos
+  primeras, el pago en línea no aparece y la plataforma cobra por transferencia/efectivo.
+  Detalles y matices de sandbox en [`.env.example`](.env.example) y
+  [`docs/bold-integracion.md`](docs/bold-integracion.md).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Tareas programadas
 
-## License
+Requieren el cron de Laravel en el servidor (`* * * * * php artisan schedule:run`). Definidas en
+[`routes/console.php`](routes/console.php):
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Comando | Cuándo | Qué hace |
+|---|---|---|
+| `invoices:generate-monthly` | día 15, 08:00 | Emite la cuenta de cobro (vence el 19) |
+| `billing:send-reminders` | diario 09:00 | Avisos escalonados de corte y mora |
+| `subscription:check-expiration` | diario | Oculta el perfil de quien pasó gracia |
+| `payments:reconcile-bold` | cada hora | Cierra intentos de pago colgados |
+
+## Pruebas y estilo
+
+```powershell
+php artisan test        # PHPUnit
+npm run lint            # ESLint + Prettier sobre resources/js
+./vendor/bin/pint       # formato PHP (Laravel Pint)
+```
+
+## Despliegue
+
+Checklist completo en [`docs/despliegue.md`](docs/despliegue.md).

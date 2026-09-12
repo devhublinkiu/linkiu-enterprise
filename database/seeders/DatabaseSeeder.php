@@ -15,11 +15,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Catálogo de módulos + siembra del pivote preservando el acceso actual.
+        // Idempotente: seguro de correr en producción. Ver ADR-0002.
+        $this->call(FeatureSeeder::class);
     }
 }

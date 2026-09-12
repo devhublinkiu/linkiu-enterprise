@@ -33,6 +33,7 @@ class Associate extends Model
         'capacitation_plan', 'capacitation_level', 'capacitation_no_reason',
         'membership_interest', 'membership_interest_other', 'logo_path', 'cover_path', 'gallery_paths', 'files',
         'section_reviews', 'status', 'is_public', 'is_verified', 'plan_id', 'plan_expires_at',
+        'billing_cycle',
     ];
 
     protected $casts = [

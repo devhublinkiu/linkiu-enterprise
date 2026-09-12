@@ -2,111 +2,150 @@
 
 namespace App\Http\Controllers\Associate;
 
-use App\Events\PaymentRequestSubmitted;
 use App\Http\Controllers\Controller;
+use App\Models\Associate;
 use App\Models\BankAccount;
-use App\Models\PaymentRequest;
+use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Plan;
+use App\Services\BillingService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
+/**
+ * Alta y cambio de plan.
+ *
+ * Desde el Corte 2 este flujo ya no escribe en `payment_requests`: emite una
+ * factura de inscripción o afiliación y manda al asociado a la pantalla de
+ * pago, la misma que usa para cualquier otra cuenta de cobro.
+ *
+ * Ver docs/adr/0001-motor-de-cobro-unificado.md
+ */
 class CheckoutController extends Controller
 {
+    public function __construct(private BillingService $billing)
+    {
+    }
+
     public function show(Plan $plan)
     {
-        $user = auth()->user();
+        $user      = auth()->user();
+        $associate = $user->associate;
 
-        // Check if there's already a pending request for this plan
-        $existingRequest = PaymentRequest::where('user_id', $user->id)
-            ->where('plan_id', $plan->id)
-            ->where('status', 'pending')
-            ->first();
+        // "Primer pago" sigue significando lo mismo: empresa admitida que
+        // todavía no ha activado ningún plan.
+        $isFirstPayment = $associate && $associate->status === 'verified';
 
-        $bankAccounts = BankAccount::where('is_active', true)->orderBy('order')->get();
-
-        $isFirstPayment = $user->associate && $user->associate->status === 'verified';
+        // Factura de este plan que ya esté esperando pago.
+        $openInvoice = $associate
+            ? Invoice::where('associate_id', $associate->id)
+                ->where('plan_id', $plan->id)
+                ->where('status', 'pendiente')
+                ->latest()
+                ->first()
+            : null;
 
         return Inertia::render('Associate/Billing/Checkout', [
             'plan'            => $plan,
-            'bankAccounts'    => $bankAccounts,
-            'existingRequest' => $existingRequest,
-            'associateStatus' => $user->associate?->status,
+            'bankAccounts'    => BankAccount::where('is_active', true)->orderBy('order')->get(),
+            'associateStatus' => $associate?->status,
             'isSignupOnly'    => $isFirstPayment && (bool) $plan->signup_only_first_period && $plan->signup_fee > 0,
+            'currentCycle'    => $associate?->billing_cycle ?? 'monthly',
+            'openInvoice'     => $openInvoice ? [
+                'id'      => $openInvoice->id,
+                'period'  => $openInvoice->period,
+                'amount'  => $openInvoice->amount,
+                'pay_url' => route('associate.invoice.pay', $openInvoice->id),
+            ] : null,
         ]);
     }
 
+    /**
+     * Emite la factura del plan elegido y lleva al asociado a pagarla.
+     */
     public function store(Request $request, Plan $plan)
     {
         $user      = auth()->user();
         $associate = $user->associate;
 
-        $isFirstPayment    = $associate && $associate->status === 'verified';
-        $signupOnly        = $isFirstPayment && $plan->signup_only_first_period && $plan->signup_fee > 0;
+        if (!$associate) {
+            return back()->with('error', 'Primero debes registrar los datos de tu empresa.');
+        }
 
-        $rules = [
-            'proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
-        ];
+        $isFirstPayment = $associate->status === 'verified';
+        $signupOnly     = $isFirstPayment && $plan->signup_only_first_period && $plan->signup_fee > 0;
 
+        $rules = [];
         if (!$signupOnly) {
             $rules['billing_cycle'] = 'required|in:monthly,semiannual,annual';
         }
-
         $request->validate($rules);
 
-        // Store proof file
-        $path = $request->file('proof')->store('payment-proofs', 'public');
-
-        // Compute amount based on flow:
-        //  - signup-only first payment: only inscripción
-        //  - first payment (bundled): cycle + inscripción
-        //  - renewal: cycle only
+        // El importe sigue las mismas tres reglas de siempre:
+        //   - inscripción sola: solo la cuota de inscripción
+        //   - primer pago normal: ciclo + inscripción
+        //   - renovación o cambio de plan: solo el ciclo
         if ($signupOnly) {
-            $amount        = $plan->signup_fee;
-            $billingCycle  = 'signup';
-            $isSignup      = true;
+            $amount = (float) $plan->signup_fee;
+            $cycle  = 'signup';
         } else {
-            $amount = match ($request->billing_cycle) {
-                'semiannual' => $plan->price_semiannual,
-                'annual'     => $plan->price_annual,
-                default      => $plan->price_monthly,
-            };
+            $cycle  = $request->billing_cycle;
+            $amount = BillingService::amountFor($plan, $cycle);
 
             if ($isFirstPayment && $plan->signup_fee > 0) {
-                $amount += $plan->signup_fee;
+                $amount += (float) $plan->signup_fee;
+            }
+        }
+
+        // Se cancela cualquier intento de pago en curso sobre facturas de
+        // afiliación anteriores: el asociado acaba de elegir otra cosa.
+        $this->cancelOpenSignupInvoices($associate, $plan);
+
+        $invoice = $this->billing->issueSignupInvoice($associate, $plan, $cycle, $amount, $signupOnly);
+
+        // Dejamos anotado el ciclo elegido para que la facturación recurrente
+        // cobre lo que corresponde.
+        if (!$signupOnly) {
+            $associate->update(['billing_cycle' => $cycle]);
+        }
+
+        return redirect()
+            ->route('associate.invoice.pay', $invoice->id)
+            ->with('success', 'Listo. Ahora elige cómo quieres pagar.');
+    }
+
+    /**
+     * Cierra facturas de afiliación pendientes de otros planes o ciclos, para
+     * que el asociado no acumule cobros que ya no va a pagar.
+     */
+    private function cancelOpenSignupInvoices(Associate $associate, Plan $chosen): void
+    {
+        $stale = Invoice::where('associate_id', $associate->id)
+            ->where('status', 'pendiente')
+            ->whereNotNull('plan_id')
+            ->where(function ($q) {
+                $q->where('period', 'like', 'Afiliación%')
+                  ->orWhere('period', 'like', 'Inscripción%');
+            })
+            ->get();
+
+        foreach ($stale as $invoice) {
+            // Si ya hay un comprobante esperando revisión no la tocamos: ese
+            // pago tiene que resolverlo un humano.
+            $hasPending = Payment::where('invoice_id', $invoice->id)
+                ->where('status', Payment::STATUS_PENDING)
+                ->where('method', Payment::METHOD_TRANSFER)
+                ->exists();
+
+            if ($hasPending) {
+                continue;
             }
 
-            $billingCycle = $request->billing_cycle;
-            $isSignup     = false;
+            Payment::where('invoice_id', $invoice->id)
+                ->where('status', Payment::STATUS_PENDING)
+                ->update(['status' => Payment::STATUS_CANCELLED]);
+
+            $invoice->delete();
         }
-
-        // Cancel any previous pending request from this user
-        PaymentRequest::where('user_id', $user->id)
-            ->where('status', 'pending')
-            ->update(['status' => 'cancelled']);
-
-        $paymentRequest = PaymentRequest::create([
-            'user_id'       => $user->id,
-            'plan_id'       => $plan->id,
-            'billing_cycle' => $billingCycle,
-            'is_signup'     => $isSignup,
-            'amount'        => $amount,
-            'proof_path'    => $path,
-            'status'        => 'pending',
-        ]);
-
-        // Notify admin via email
-        try {
-            \Illuminate\Support\Facades\Mail::to(config('mail.admin_recipient', env('ADMIN_EMAIL')))
-                ->send(new \App\Mail\PaymentProofSubmitted($paymentRequest));
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error enviando alerta de comprobante a admin: ' . $e->getMessage());
-        }
-
-        // Notify admin in real-time
-        event(new PaymentRequestSubmitted($paymentRequest));
-
-        return redirect()->route('associate.company.billing')
-            ->with('success', '¡Comprobante enviado! Tu solicitud está siendo revisada por CAMEP.');
     }
 }

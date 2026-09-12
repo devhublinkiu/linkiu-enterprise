@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+﻿import React from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/Card';
 import { Button } from '@/Components/ui/Button';
 import { Badge } from '@/Components/ui/Badge';
 import {
-    ArrowLeft, Building2, Hash, User, CreditCard, Upload,
-    CheckCircle, Calendar, ChevronDown, X, FileText, Info
+    ArrowLeft, ArrowRight, Building2, Hash, User, CreditCard,
+    CheckCircle, Info
 } from 'lucide-react';
 
 interface BankAccount {
@@ -32,11 +32,20 @@ interface Plan {
     signup_fee: string;
 }
 
+interface OpenInvoice {
+    id: number;
+    period: string;
+    amount: string | null;
+    pay_url: string;
+}
+
 interface Props {
     plan: Plan;
     bankAccounts: BankAccount[];
     associateStatus?: string;
     isSignupOnly?: boolean;
+    currentCycle?: string;
+    openInvoice?: OpenInvoice | null;
 }
 
 const CYCLES = [
@@ -45,16 +54,19 @@ const CYCLES = [
     { value: 'annual', label: 'Anual (12 meses)', key: 'price_annual' as const },
 ];
 
-export default function Checkout({ plan, bankAccounts, associateStatus, isSignupOnly = false }: Props) {
-    const [showModal, setShowModal] = useState(false);
-    const [preview, setPreview] = useState<string | null>(null);
-
-    const { data, setData, post, processing, errors } = useForm<{
-        billing_cycle: string;
-        proof: File | null;
-    }>({
-        billing_cycle: 'monthly',
-        proof: null,
+export default function Checkout({
+    plan,
+    bankAccounts,
+    associateStatus,
+    isSignupOnly = false,
+    currentCycle = 'monthly',
+    openInvoice = null,
+}: Props) {
+    // El checkout ya no recibe el comprobante: emite la cuenta de cobro y lleva
+    // a la pantalla de pago, donde el asociado elige cÃ³mo pagarla.
+    // Ver docs/adr/0001-motor-de-cobro-unificado.md
+    const { data, setData, post, processing } = useForm<{ billing_cycle: string }>({
+        billing_cycle: CYCLES.some(c => c.value === currentCycle) ? currentCycle : 'monthly',
     });
 
     const selectedCycle = CYCLES.find(c => c.value === data.billing_cycle)!;
@@ -79,27 +91,14 @@ export default function Checkout({ plan, bankAccounts, associateStatus, isSignup
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0] ?? null;
-        setData('proof', file);
-        if (file && file.type.startsWith('image/')) {
-            setPreview(URL.createObjectURL(file));
-        } else {
-            setPreview(null);
-        }
-    };
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('associate.checkout.store', plan.id), {
-            forceFormData: true,
-            onSuccess: () => setShowModal(false),
-        });
+        post(route('associate.checkout.store', plan.id));
     };
 
     return (
         <AppLayout>
-            <Head title={`Checkout — Plan ${plan.name}`} />
+            <Head title={`Checkout â€” Plan ${plan.name}`} />
 
             <div className="max-w-4xl mx-auto space-y-8">
                 {/* Header */}
@@ -126,11 +125,11 @@ export default function Checkout({ plan, bankAccounts, associateStatus, isSignup
                             </CardContent>
                         </Card>
 
-                        {/* Billing Cycle — hidden in signup-only flow */}
+                        {/* Billing Cycle â€” hidden in signup-only flow */}
                         {!isSignupOnly && (
                             <Card className="border-slate-200 shadow-sm rounded-2xl">
                                 <CardContent className="p-6 space-y-3">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Periodo de facturación</p>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Periodo de facturaciÃ³n</p>
                                     {CYCLES.map(cycle => (
                                         <label key={cycle.value} className={`flex items-center justify-between p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
                                             data.billing_cycle === cycle.value
@@ -160,10 +159,10 @@ export default function Checkout({ plan, bankAccounts, associateStatus, isSignup
                             <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 flex gap-3">
                                 <Info size={20} className="text-indigo-500 shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-[11px] font-black text-indigo-700 uppercase tracking-widest mb-1">Pago inicial: solo inscripción</p>
+                                    <p className="text-[11px] font-black text-indigo-700 uppercase tracking-widest mb-1">Pago inicial: solo inscripciÃ³n</p>
                                     <p className="text-xs text-indigo-900/70 leading-relaxed font-medium">
-                                        Este plan separa la inscripción del primer mes. Hoy pagas únicamente la cuota inicial.
-                                        A los 30 días recibirás automáticamente la cuenta de cobro de tu primera mensualidad.
+                                        Este plan separa la inscripciÃ³n del primer mes. Hoy pagas Ãºnicamente la cuota inicial.
+                                        A los 30 dÃ­as recibirÃ¡s automÃ¡ticamente la cuenta de cobro de tu primera mensualidad.
                                     </p>
                                 </div>
                             </div>
@@ -175,8 +174,8 @@ export default function Checkout({ plan, bankAccounts, associateStatus, isSignup
                                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Total a pagar</p>
                                 <p className="text-slate-300 text-xs mt-0.5">
                                     {isSignupOnly
-                                        ? 'Inscripción'
-                                        : (signupFee > 0 ? `${selectedCycle.label} + Inscripción` : selectedCycle.label)
+                                        ? 'InscripciÃ³n'
+                                        : (signupFee > 0 ? `${selectedCycle.label} + InscripciÃ³n` : selectedCycle.label)
                                     }
                                 </p>
                             </div>
@@ -186,10 +185,28 @@ export default function Checkout({ plan, bankAccounts, associateStatus, isSignup
 
                     {/* Right: Bank Accounts */}
                     <div className="lg:col-span-2 space-y-4">
+                        {openInvoice && (
+                            <div className="rounded-2xl border-2 border-amber-200 bg-amber-50/60 p-5 flex flex-wrap items-center gap-4">
+                                <Info size={20} className="text-amber-600 shrink-0" />
+                                <div className="flex-1 min-w-[200px]">
+                                    <p className="font-black text-sm uppercase text-amber-800">Ya tienes un cobro abierto de este plan</p>
+                                    <p className="text-xs font-medium text-amber-700 mt-0.5">{openInvoice.period}</p>
+                                </div>
+                                <Link href={openInvoice.pay_url}>
+                                    <Button className="h-10 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase px-5">
+                                        Ir a pagarlo
+                                    </Button>
+                                </Link>
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-2 mb-2">
                             <CreditCard size={18} className="text-slate-400" />
-                            <h3 className="font-black text-slate-900 uppercase tracking-tight text-sm">Realiza tu transferencia a alguna de estas cuentas</h3>
+                            <h3 className="font-black text-slate-900 uppercase tracking-tight text-sm">Cuentas bancarias de CAMEP</h3>
                         </div>
+                        <p className="text-xs font-medium text-slate-500 -mt-2">
+                            Si prefieres transferir, estas son las cuentas. TambiÃ©n podrÃ¡s pagar en lÃ­nea en el siguiente paso.
+                        </p>
 
                         {bankAccounts.map(account => (
                             <Card key={account.id} className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
@@ -222,93 +239,32 @@ export default function Checkout({ plan, bankAccounts, associateStatus, isSignup
 
                         {bankAccounts.length === 0 && (
                             <div className="py-12 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 text-center">
-                                <p className="text-slate-400 font-bold">No hay cuentas bancarias configuradas todavía.</p>
-                                <p className="text-slate-400 text-xs mt-1">Contacta a CAMEP para más información.</p>
+                                <p className="text-slate-400 font-bold">No hay cuentas bancarias configuradas todavÃ­a.</p>
+                                <p className="text-slate-400 text-xs mt-1">Contacta a CAMEP para mÃ¡s informaciÃ³n.</p>
                             </div>
                         )}
 
                         {/* CTA */}
-                        <Button
-                            onClick={() => setShowModal(true)}
-                            disabled={bankAccounts.length === 0}
-                            className="w-full h-14 rounded-2xl mt-4 font-black text-sm uppercase tracking-widest shadow-lg flex items-center justify-center gap-3"
-                            style={{ backgroundColor: plan.color_hex, color: '#fff' }}
-                        >
-                            <Upload size={20} />
-                            Ya realicé la transferencia — Subir Comprobante
-                        </Button>
+                        <form onSubmit={handleSubmit} className="pt-2">
+                            <Button
+                                type="submit"
+                                disabled={processing}
+                                className="w-full h-14 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg flex items-center justify-center gap-3"
+                                style={{ backgroundColor: plan.color_hex, color: '#fff' }}
+                            >
+                                <CheckCircle size={20} />
+                                {processing ? 'Generando tu cuenta de cobroâ€¦' : 'Continuar al pago'}
+                                <ArrowRight size={18} />
+                            </Button>
+                            <p className="text-center text-[11px] font-medium text-slate-400 mt-3">
+                                Generamos tu cuenta de cobro por {formatCurrency(totalPrice)} y eliges cÃ³mo pagarla:
+                                en lÃ­nea, por transferencia con comprobante, o coordinando con CAMEP.
+                            </p>
+                        </form>
                     </div>
                 </div>
             </div>
 
-            {/* Upload Modal */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
-                        <button onClick={() => setShowModal(false)} className="absolute top-5 right-5 h-8 w-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 transition-all">
-                            <X size={16} />
-                        </button>
-
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="h-12 w-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${plan.color_hex}20` }}>
-                                <FileText size={22} style={{ color: plan.color_hex }} />
-                            </div>
-                            <div>
-                                <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight">Subir Comprobante</h3>
-                                <p className="text-slate-400 text-xs font-medium">JPG, PNG o PDF — máx 5MB</p>
-                            </div>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            {/* File Upload Area */}
-                            <label className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${
-                                data.proof ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-slate-100'
-                            }`}>
-                                {preview ? (
-                                    <img src={preview} alt="preview" className="h-36 w-full object-contain rounded-xl p-1" />
-                                ) : data.proof ? (
-                                    <div className="flex flex-col items-center gap-2">
-                                        <CheckCircle size={32} className="text-emerald-500" />
-                                        <p className="text-emerald-700 font-bold text-sm">{data.proof.name}</p>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-2 text-slate-400">
-                                        <Upload size={28} />
-                                        <p className="font-bold text-sm">Arrastra o haz clic para subir</p>
-                                    </div>
-                                )}
-                                <input type="file" className="sr-only" accept=".jpg,.jpeg,.png,.pdf" onChange={handleFileChange} />
-                            </label>
-                            {errors.proof && <p className="text-red-600 text-xs font-bold">{errors.proof}</p>}
-
-                            {/* Summary */}
-                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-1.5 text-xs">
-                                <div className="flex justify-between font-bold text-slate-600"><span>Plan:</span><span className="text-slate-900">{plan.name}</span></div>
-                                {isSignupOnly ? (
-                                    <div className="flex justify-between font-bold text-slate-600"><span>Concepto:</span><span className="text-slate-900">Inscripción</span></div>
-                                ) : (
-                                    <>
-                                        <div className="flex justify-between font-bold text-slate-600"><span>Periodo:</span><span className="text-slate-900">{selectedCycle.label}</span></div>
-                                        {signupFee > 0 && (
-                                            <div className="flex justify-between font-bold text-slate-600"><span>Inscripción:</span><span className="text-slate-900">{formatCurrency(signupFee)}</span></div>
-                                        )}
-                                    </>
-                                )}
-                                <div className="flex justify-between font-black text-slate-900 text-sm pt-1 border-t border-slate-200"><span>Total:</span><span>{formatCurrency(totalPrice)}</span></div>
-                            </div>
-
-                            <Button
-                                type="submit"
-                                disabled={processing || !data.proof}
-                                className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-sm shadow-lg flex items-center justify-center gap-2"
-                                style={{ backgroundColor: plan.color_hex, color: '#fff' }}
-                            >
-                                {processing ? 'Enviando...' : '✅ Finalizar y Enviar Solicitud'}
-                            </Button>
-                        </form>
-                    </div>
-                </div>
-            )}
         </AppLayout>
     );
 }

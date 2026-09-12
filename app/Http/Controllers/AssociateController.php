@@ -959,10 +959,12 @@ class AssociateController extends Controller
             'service_ids.*' => 'exists:services,id',
         ]);
 
+        // Límite vía el catálogo de módulos (cae a limit_services si el plan aún
+        // no está migrado). null = ilimitado. Ver ADR-0002.
         $plan  = $associate->plan;
-        $limit = $plan ? $plan->limit_services : 0;
+        $limit = $plan?->limitFor('servicios');
 
-        if ($limit > 0 && count($data['service_ids']) > $limit) {
+        if ($limit !== null && count($data['service_ids']) > $limit) {
             return back()->with('error', "Tu plan ({$plan->name}) solo permite hasta {$limit} servicios.");
         }
 
@@ -1004,12 +1006,14 @@ class AssociateController extends Controller
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:5120',
         ]);
 
+        // Límite vía el catálogo de módulos (cae a limit_gallery si el plan aún
+        // no está migrado). null = ilimitado. Ver ADR-0002.
         $plan               = $associate->plan;
-        $limit              = $plan ? $plan->limit_gallery : 0;
+        $limit              = $plan?->limitFor('galeria');
         $currentImagesCount = count($associate->gallery_paths ?? []);
         $newImagesCount     = count($request->file('images') ?? []);
 
-        if ($limit > 0 && ($currentImagesCount + $newImagesCount) > $limit) {
+        if ($limit !== null && ($currentImagesCount + $newImagesCount) > $limit) {
             return back()->with('error', "Has alcanzado el límite de imágenes para tu plan ({$limit} fotos).");
         }
 
@@ -1370,14 +1374,43 @@ class AssociateController extends Controller
 
         $availablePlans = \App\Models\Plan::where('is_active', true)->orderBy('price_monthly')->get();
 
+        // Un asociado que venció y no tiene nada pendiente que pagar se queda
+        // sin salida: el cron dejó de emitirle y no hay documento que saldar.
+        // Se le emite la cuenta de reactivación en el acto.
+        // Ver docs/adr/0001-motor-de-cobro-unificado.md
+        $billing         = app(\App\Services\BillingService::class);
+        $pendingInvoices = $associate ? $billing->pendingInvoices($associate) : collect();
+
+        if ($associate
+            && in_array($subscriptionStatus, ['grace', 'expired'], true)
+            && $pendingInvoices->isEmpty()
+            && !$paymentRequest
+        ) {
+            $reactivation = $billing->issueReactivationInvoice($associate);
+
+            if ($reactivation) {
+                $billing->notify($reactivation);
+                $pendingInvoices = $billing->pendingInvoices($associate);
+            }
+        }
+
         return Inertia::render('Associate/Billing/Index', [
             'currentPlan'        => $associate?->plan,
             'subscriptionStatus' => $subscriptionStatus,
             'daysRemaining'      => $daysRemaining,
             'planExpiresAt'      => $associate?->plan_expires_at?->format('d/m/Y'),
+            'billingCycle'       => $associate?->billing_cycle ?? 'monthly',
             'usage'              => ['services' => $servicesCount, 'gallery' => $galleryCount],
             'availablePlans'     => $availablePlans,
             'paymentRequest'     => $paymentRequest,
+            'pendingInvoices'    => $pendingInvoices->map(fn ($inv) => [
+                'id'         => $inv->id,
+                'period'     => $inv->period,
+                'amount'     => $inv->amount,
+                'due_date'   => $inv->due_date?->format('d/m/Y'),
+                'is_overdue' => $inv->due_date ? $inv->due_date->isPast() : false,
+                'notes'      => $inv->notes,
+            ])->values(),
         ]);
     }
 }

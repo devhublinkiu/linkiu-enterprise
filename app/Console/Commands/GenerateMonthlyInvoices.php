@@ -2,13 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Mail\NewInvoiceGenerated;
 use App\Models\Associate;
-use App\Models\Invoice;
+use App\Services\BillingService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class GenerateMonthlyInvoices extends Command
 {
@@ -25,26 +22,35 @@ class GenerateMonthlyInvoices extends Command
      *
      * @var string
      */
-    protected $description = 'Genera la cuenta de cobro mensual (día 15) para los asociados con plan activo cuyo vencimiento cae este mes.';
+    protected $description = 'Genera la cuenta de cobro (día 15) de los asociados que deben: los que vencen este mes y los que ya venían vencidos.';
+
+    public function __construct(private BillingService $billing)
+    {
+        parent::__construct();
+    }
 
     /**
      * Execute the console command.
      */
     public function handle(): int
     {
-        $dryRun      = (bool) $this->option('dry-run');
-        $now         = Carbon::now();
-        $periodLabel = 'Mensualidad - ' . ucfirst($now->locale('es')->isoFormat('MMMM YYYY'));
+        $dryRun = (bool) $this->option('dry-run');
+        $now    = Carbon::now();
 
-        $this->info(($dryRun ? '[DRY-RUN] ' : '') . "Generando cuentas de cobro para: {$periodLabel}");
+        $this->info(($dryRun ? '[DRY-RUN] ' : '') . 'Generando cuentas de cobro para: ' . BillingService::periodLabel($now));
         $this->newLine();
 
-        // Asociados con plan activo cuyo vencimiento (día 19) cae en el mes/año actual.
+        // Se factura a quien DEBE, no solo a quien vence justo este mes.
+        //
+        // El filtro anterior (whereMonth == mes actual) dejaba de emitirle al
+        // moroso: si no pagaba, su vencimiento se quedaba en el mes anterior y
+        // nunca volvía a coincidir. El sistema dejaba de cobrarle justo a quien
+        // debía. Ver docs/adr/0001-motor-de-cobro-unificado.md
         $associates = Associate::with(['plan', 'users'])
             ->whereNotNull('plan_id')
             ->whereNotNull('plan_expires_at')
-            ->whereMonth('plan_expires_at', $now->month)
-            ->whereYear('plan_expires_at', $now->year)
+            ->where('plan_expires_at', '<=', $now->copy()->endOfMonth())
+            ->orderBy('plan_expires_at')
             ->get();
 
         if ($associates->isEmpty()) {
@@ -57,46 +63,45 @@ class GenerateMonthlyInvoices extends Command
         $rows    = [];
 
         foreach ($associates as $associate) {
-            // Evitar duplicados si el comando corre más de una vez en el mes.
-            $exists = Invoice::where('associate_id', $associate->id)
-                ->where('period', $periodLabel)
-                ->exists();
-
-            if ($exists) {
-                $skipped++;
-                $rows[] = [$associate->id, $associate->company_name, '—', 'ya existe'];
-                continue;
-            }
-
-            $amount = $associate->plan?->price_monthly ?? 0;
+            $overdue = $associate->plan_expires_at->isPast();
 
             if ($dryRun) {
+                $cycle       = $associate->billing_cycle ?: 'monthly';
+                $periodLabel = BillingService::periodLabel($now, $this->prefixLabel($cycle));
+
+                if ($this->billing->periodAlreadyBilled($associate, $periodLabel)) {
+                    $skipped++;
+                    $rows[] = [$associate->id, $associate->company_name, '—', 'ya existe'];
+                    continue;
+                }
+
                 $created++;
-                $rows[] = [$associate->id, $associate->company_name, number_format($amount, 2), 'se crearía'];
+                $rows[] = [
+                    $associate->id,
+                    $associate->company_name,
+                    number_format(BillingService::amountFor($associate->plan, $cycle), 2),
+                    $overdue ? 'se crearía (en mora)' : 'se crearía',
+                ];
                 continue;
             }
 
-            $invoice = Invoice::create([
-                'associate_id' => $associate->id,
-                'created_by'   => null, // generada por el sistema
-                'type'         => 'cuenta_cobro',
-                'period'       => $periodLabel,
-                'amount'       => $amount,
-                'notes'        => 'Cuenta de cobro mensual generada automáticamente. Fecha de pago: día ' . Associate::BILLING_DAY . '.',
-                'status'       => 'pendiente',
-            ]);
+            $invoice = $this->billing->issuePeriodInvoice($associate, $now);
 
-            $recipient = $associate->users->first()?->email ?? $associate->billing_email ?? null;
-            if ($recipient) {
-                try {
-                    Mail::to($recipient)->send(new NewInvoiceGenerated($invoice));
-                } catch (\Exception $e) {
-                    Log::error("Error enviando cuenta de cobro mensual (asociado {$associate->id}): " . $e->getMessage());
-                }
+            if (!$invoice) {
+                $skipped++;
+                $rows[] = [$associate->id, $associate->company_name, '—', 'ya existe o sin plan'];
+                continue;
             }
 
+            $sent = $this->billing->notify($invoice);
+
             $created++;
-            $rows[] = [$associate->id, $associate->company_name, number_format($amount, 2), $recipient ? 'creada + correo' : 'creada (sin correo)'];
+            $rows[] = [
+                $associate->id,
+                $associate->company_name,
+                number_format((float) $invoice->amount, 2),
+                ($sent ? 'creada + correo' : 'creada (sin correo)') . ($overdue ? ' · en mora' : ''),
+            ];
         }
 
         $this->table(['ID', 'Asociado', 'Monto', 'Resultado'], $rows);
@@ -109,5 +114,14 @@ class GenerateMonthlyInvoices extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function prefixLabel(?string $cycle): string
+    {
+        return match ($cycle) {
+            'semiannual' => 'Semestralidad',
+            'annual'     => 'Anualidad',
+            default      => 'Mensualidad',
+        };
     }
 }

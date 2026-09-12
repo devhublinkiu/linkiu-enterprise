@@ -202,12 +202,15 @@ export default function Sidebar({ tenant, isOpen, setIsOpen }: SidebarProps) {
             children: [
                 { name: 'Datos bancarios', href: route('admin.bank-accounts.index') },
                 {
-                    name: 'Solicitudes de pago',
-                    href: route('admin.payment-requests.index'),
+                    name: 'Pagos',
+                    href: route('admin.payments.index'),
                     count: pendingPayments || undefined,
                     countColor: 'bg-amber-600'
                 },
                 { name: 'Facturación', href: route('admin.invoices.index') },
+                // Tabla congelada: solo queda para consultar el histórico
+                // anterior al motor de cobro unificado.
+                { name: 'Solicitudes (histórico)', href: route('admin.payment-requests.index') },
             ]
         },
         {

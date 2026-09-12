@@ -108,6 +108,11 @@ Route::get('/red-camep/{slug}', [\App\Http\Controllers\ForumController::class, '
 Route::get('/red-camep/{categorySlug}/{topicSlug}', [\App\Http\Controllers\ForumController::class, 'showTopic'])->name('forums.topic');
 
 // Auth Routes (Login / Register)
+// Avisos de la pasarela: sin sesión ni token CSRF, se autentican por firma.
+// La exclusión de CSRF está en bootstrap/app.php.
+Route::post('/webhooks/bold', App\Http\Controllers\Webhooks\BoldWebhookController::class)
+    ->name('webhooks.bold');
+
 Route::middleware('guest')->group(function () {
     Route::get('login', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])
         ->name('login');
@@ -145,8 +150,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/associate/documents/{associate}/{docKey}', [App\Http\Controllers\AssociateController::class, 'showDocument'])
         ->name('associate.documents.show');
 
-    // Associate Announcements (Protected by subscription)
-    Route::middleware(['subscription.active'])->group(function () {
+    // Documentos de facturación: comprobantes y facturas, solo dueño o admin.
+    Route::get('/billing/proof/{paymentRequest}', [App\Http\Controllers\BillingDocumentController::class, 'proof'])
+        ->name('billing.proof');
+    Route::get('/billing/payment/{payment}/proof', [App\Http\Controllers\BillingDocumentController::class, 'paymentProof'])
+        ->name('billing.payment-proof');
+    Route::get('/billing/invoice/{invoice}/document', [App\Http\Controllers\BillingDocumentController::class, 'invoice'])
+        ->name('billing.invoice.document');
+
+    // Associate Announcements (suscripción activa + módulo de plan)
+    Route::middleware(['subscription.active', 'feature:anuncios'])->group(function () {
         Route::get('/my-announcements', [App\Http\Controllers\Associate\AnnouncementController::class, 'index'])->name('associate.announcements.index');
         Route::get('/my-announcements/{slug}', [App\Http\Controllers\Associate\AnnouncementController::class, 'show'])->name('associate.announcements.show');
     });
@@ -159,6 +172,12 @@ Route::middleware('auth')->group(function () {
         // Checkout (accessible even when expired so they can pay)
         Route::get('/my-company/checkout/{plan}', [App\Http\Controllers\Associate\CheckoutController::class, 'show'])->name('associate.checkout.show');
         Route::post('/my-company/checkout/{plan}', [App\Http\Controllers\Associate\CheckoutController::class, 'store'])->name('associate.checkout.store');
+
+        // Pago de una cuenta de cobro. Siempre accesible, incluso vencido:
+        // es la puerta que faltaba. Ver docs/adr/0001-motor-de-cobro-unificado.md
+        Route::get('/my-company/facturas/{invoice}/pagar', [App\Http\Controllers\Associate\InvoicePaymentController::class, 'show'])->name('associate.invoice.pay');
+        Route::post('/my-company/facturas/{invoice}/comprobante', [App\Http\Controllers\Associate\InvoicePaymentController::class, 'submitProof'])->name('associate.invoice.proof');
+        Route::get('/my-company/facturas/{invoice}/pago-en-linea', [App\Http\Controllers\Associate\InvoicePaymentController::class, 'online'])->name('associate.invoice.online');
     });
 
     // Associate Profile Management (New independent pages) - Protected by onboarding status
@@ -196,15 +215,18 @@ Route::middleware('auth')->group(function () {
         // Mis Facturas
         Route::get('/mis-facturas', [App\Http\Controllers\Associate\InvoiceController::class, 'index'])->name('invoices.index');
 
-        // Bienes y Servicios (Associate)
-        Route::get('/bienes-y-servicios', [App\Http\Controllers\Associate\BienesServiciosController::class, 'index'])->name('bienes-servicios.index');
-        Route::get('/bienes-y-servicios/{company}', [App\Http\Controllers\Associate\BienesServiciosController::class, 'showCompany'])->name('bienes-servicios.company');
-        Route::get('/bienes-y-servicios/{company}/{tender}', [App\Http\Controllers\Associate\BienesServiciosController::class, 'showTender'])->name('bienes-servicios.tender');
+        // Bienes y Servicios (Associate) — beneficio de plan: se corta al vencer
+        Route::middleware(['subscription.active'])->group(function () {
+            Route::get('/bienes-y-servicios', [App\Http\Controllers\Associate\BienesServiciosController::class, 'index'])->name('bienes-servicios.index');
+            Route::get('/bienes-y-servicios/{company}', [App\Http\Controllers\Associate\BienesServiciosController::class, 'showCompany'])->name('bienes-servicios.company');
+            Route::get('/bienes-y-servicios/{company}/{tender}', [App\Http\Controllers\Associate\BienesServiciosController::class, 'showTender'])->name('bienes-servicios.tender');
+        });
 
     });
 
-    // Red CAMEP Actions (Accessible to any authenticated user with active subscription)
-    Route::name('forums.')->prefix('red-camep')->middleware(['associate.onboarding'])->group(function () {
+    // Red CAMEP Actions — participar exige estar al día y que el plan incluya foros;
+    // leer sigue siendo público
+    Route::name('forums.')->prefix('red-camep')->middleware(['associate.onboarding', 'subscription.active', 'feature:foros'])->group(function () {
         Route::post('/{category}/topic', [\App\Http\Controllers\ForumController::class, 'storeTopic'])->name('topic.store');
         Route::post('/topic/{topic}/reply', [\App\Http\Controllers\ForumController::class, 'storeReply'])->name('reply.store');
         Route::post('/react/{type}/{id}', [\App\Http\Controllers\ForumController::class, 'react'])->name('react');
@@ -291,9 +313,16 @@ Route::middleware('auth')->group(function () {
         Route::patch('payment-requests/{paymentRequest}/reject', [App\Http\Controllers\Admin\PaymentRequestController::class, 'reject'])->name('payment-requests.reject');
 
         // Facturación
+        // Bandeja de pagos: comprobantes por revisar y todo lo cobrado.
+        Route::get('payments', [App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');
+        Route::patch('payments/{payment}/approve', [App\Http\Controllers\Admin\PaymentController::class, 'approve'])->name('payments.approve');
+        Route::patch('payments/{payment}/reject', [App\Http\Controllers\Admin\PaymentController::class, 'reject'])->name('payments.reject');
+
         Route::get('invoices', [App\Http\Controllers\Admin\InvoiceController::class, 'index'])->name('invoices.index');
         Route::post('invoices', [App\Http\Controllers\Admin\InvoiceController::class, 'store'])->name('invoices.store');
         Route::patch('invoices/{invoice}/mark-paid', [App\Http\Controllers\Admin\InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
+        // Riel 3: pago en efectivo u otro canal que la plataforma no ve.
+        Route::post('invoices/{invoice}/register-payment', [App\Http\Controllers\Admin\InvoiceController::class, 'registerPayment'])->name('invoices.register-payment');
         Route::delete('invoices/{invoice}', [App\Http\Controllers\Admin\InvoiceController::class, 'destroy'])->name('invoices.destroy');
         // Solicitudes / Contacto
         Route::get('contacts', [App\Http\Controllers\Admin\ContactController::class, 'index'])->name('contacts.index');

@@ -1,13 +1,13 @@
 import React from 'react';
 import AppLayout from '@/Layouts/AppLayout';
+import { Link } from '@inertiajs/react';
 import { Card } from '@/Components/ui/Card';
 import {
     Receipt,
     FileText,
     ExternalLink,
     Download,
-    CheckCircle2,
-    Clock,
+    CreditCard,
     Inbox,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -130,6 +130,15 @@ export default function AssociateInvoicesIndex({ invoices }: Props) {
 
                                     {/* Actions */}
                                     <div className="flex items-center gap-2 shrink-0">
+                                        {inv.status !== 'pagada' && (
+                                            <Link
+                                                href={route('associate.invoice.pay', inv.id)}
+                                                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-all"
+                                            >
+                                                <CreditCard size={13} />
+                                                Pagar
+                                            </Link>
+                                        )}
                                         {inv.external_link && (
                                             <a
                                                 href={inv.external_link}

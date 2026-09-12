@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Feature;
 use App\Models\Plan;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,7 +20,9 @@ class PlanController extends Controller
 
     public function create()
     {
-        return Inertia::render('Admin/Plans/Form');
+        return Inertia::render('Admin/Plans/Form', [
+            'features' => $this->featureCatalog(),
+        ]);
     }
 
     public function store(Request $request)
@@ -49,15 +52,28 @@ class PlanController extends Controller
 
         $data['slug'] = Str::slug($data['name']);
 
-        Plan::create($data);
+        $featureInput = $this->validateFeatures($request);
+
+        $plan = Plan::create($data);
+        $this->syncFeatures($plan, $featureInput);
 
         return redirect()->route('admin.plans.index')->with('success', 'Plan creado exitosamente.');
     }
 
     public function edit(Plan $plan)
     {
+        $plan->load('features');
+
         return Inertia::render('Admin/Plans/Form', [
-            'plan' => $plan
+            'plan'         => $plan,
+            'features'     => $this->featureCatalog(),
+            // Valores actuales del pivote para este plan, por clave de módulo.
+            'planFeatures' => $plan->features->mapWithKeys(fn ($f) => [
+                $f->key => [
+                    'enabled'     => (bool) $f->pivot->enabled,
+                    'limit_value' => $f->pivot->limit_value,
+                ],
+            ]),
         ]);
     }
 
@@ -88,9 +104,90 @@ class PlanController extends Controller
 
         $data['slug'] = Str::slug($data['name']);
 
+        $featureInput = $this->validateFeatures($request);
+
         $plan->update($data);
+        $this->syncFeatures($plan, $featureInput);
 
         return redirect()->route('admin.plans.index')->with('success', 'Plan actualizado exitosamente.');
+    }
+
+    // ─── Módulos por plan ─────────────────────────────────────────────────────
+    // Ver docs/adr/0002-interruptores-de-modulo-por-plan.md
+
+    private function featureCatalog()
+    {
+        return Feature::orderBy('sort')->get(['id', 'key', 'name', 'description', 'type', 'group', 'is_enabled']);
+    }
+
+    /**
+     * @return array<string, array{enabled:bool, limit_value:?int}>
+     */
+    private function validateFeatures(Request $request): array
+    {
+        $keys = Feature::pluck('key')->all();
+
+        $validated = $request->validate([
+            'features'                 => 'sometimes|array',
+            'features.*.enabled'       => 'required|boolean',
+            'features.*.limit_value'   => 'nullable|integer|min:0',
+        ]);
+
+        $input = $validated['features'] ?? [];
+
+        // Solo aceptamos claves que existen en el catálogo.
+        return array_filter(
+            $input,
+            fn ($key) => in_array($key, $keys, true),
+            ARRAY_FILTER_USE_KEY
+        );
+    }
+
+    /**
+     * Persiste el pivote y sincroniza las columnas booleanas/límite históricas,
+     * para que el fallback y un eventual rollback sigan siendo coherentes.
+     */
+    private function syncFeatures(Plan $plan, array $featureInput): void
+    {
+        if (empty($featureInput)) {
+            return;
+        }
+
+        $features = Feature::whereIn('key', array_keys($featureInput))->get()->keyBy('key');
+        $legacyUpdates = [];
+
+        foreach ($featureInput as $key => $values) {
+            $feature = $features->get($key);
+            if (!$feature) {
+                continue;
+            }
+
+            $enabled = (bool) ($values['enabled'] ?? false);
+            $limit   = $feature->isLimit()
+                ? (isset($values['limit_value']) && $values['limit_value'] !== null && $values['limit_value'] !== ''
+                    ? (int) $values['limit_value']
+                    : null)
+                : null;
+
+            $plan->features()->syncWithoutDetaching([
+                $feature->id => ['enabled' => $enabled, 'limit_value' => $limit],
+            ]);
+
+            // Sincroniza la columna histórica si el módulo tiene una.
+            $column = Feature::legacyColumnFor($key);
+            if ($column) {
+                if ($feature->isLimit()) {
+                    // 0 en la columna = ilimitado (convención histórica).
+                    $legacyUpdates[$column] = $enabled ? ($limit ?? 0) : 0;
+                } else {
+                    $legacyUpdates[$column] = $enabled;
+                }
+            }
+        }
+
+        if (!empty($legacyUpdates)) {
+            $plan->forceFill($legacyUpdates)->save();
+        }
     }
 
     public function destroy(Plan $plan)

@@ -7,13 +7,17 @@ use App\Http\Controllers\Controller;
 use App\Models\Associate;
 use App\Models\Invoice;
 use App\Models\PaymentRequest;
+use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class PaymentRequestController extends Controller
 {
+    public function __construct(private SubscriptionService $subscriptions)
+    {
+    }
+
     public function index()
     {
         $requests = PaymentRequest::with(['user', 'plan', 'reviewer'])
@@ -55,7 +59,7 @@ class PaymentRequestController extends Controller
                 'amount'       => $paymentRequest->amount,
                 'status'       => $paymentRequest->status,
                 'admin_notes'  => $paymentRequest->admin_notes,
-                'proof_url'    => Storage::disk('public')->url($paymentRequest->proof_path),
+                'proof_url'    => route('billing.proof', $paymentRequest->id),
                 'created_at'   => $paymentRequest->created_at->format('d/m/Y H:i'),
                 'reviewed_at'  => $paymentRequest->reviewed_at?->format('d/m/Y H:i'),
                 'reviewer_name'=> $paymentRequest->reviewer?->name,
@@ -90,29 +94,22 @@ class PaymentRequestController extends Controller
             $user->update(['associate_id' => $associate->id]);
         }
 
-        // Expiration date: signup-only pays 30 días, cycle payments use cycle period
-        if ($paymentRequest->is_signup) {
-            $expiresAt = now()->addMonth();
-        } else {
-            $cycle = $request->billing_cycle ?? $paymentRequest->billing_cycle;
-            $expiresAt = match ($cycle) {
-                'semiannual' => now()->addMonths(6),
-                'annual'     => now()->addYear(),
-                default      => now()->addMonth(),
-            };
+        // La inscripción otorga un mes; los demás pagos, lo que dure su ciclo.
+        $cycle = $paymentRequest->is_signup
+            ? 'signup'
+            : ($request->billing_cycle ?? $paymentRequest->billing_cycle);
+
+        // Toda la aritmética (incluido el anclaje al día 19 y el respeto de los
+        // días que le quedaban al renovar) vive en el servicio.
+        // Ver docs/adr/0001-motor-de-cobro-unificado.md
+        $associate->status    = 'approved';
+        $associate->is_public = true;
+        if (!$paymentRequest->is_signup) {
+            $associate->billing_cycle = $cycle;
         }
+        $associate->save();
 
-        // Alinear el vencimiento al día de corte (19) para respetar la fecha
-        // que se venía manejando manualmente. Conserva el mes/año calculado.
-        $expiresAt = $expiresAt->day(Associate::BILLING_DAY);
-
-        // Activate plan and associate status
-        $associate->update([
-            'plan_id'        => $plan->id,
-            'plan_expires_at'=> $expiresAt,
-            'status'         => 'approved',
-            'is_public'      => true,
-        ]);
+        $expiresAt = $this->subscriptions->activate($associate, $plan->id, $cycle);
 
         // Mark user as having a verified profile (legacy flag if needed)
         $user->update(['has_verified_profile' => true]);
@@ -140,7 +137,7 @@ class PaymentRequestController extends Controller
         event(new PaymentRequestReviewed($paymentRequest->fresh()));
 
         return redirect()->route('admin.payment-requests.index')
-            ->with('success', "Plan {$plan->name} activado para {$user->name}.");
+            ->with('success', "Plan {$plan->name} activado para {$user->name}. Vigente hasta el {$expiresAt->format('d/m/Y')}.");
     }
 
     /**
@@ -155,9 +152,12 @@ class PaymentRequestController extends Controller
         $invoice = Invoice::create([
             'associate_id'  => $associate->id,
             'created_by'    => auth()->id(),
+            'plan_id'       => $plan->id,
             'type'          => 'cuenta_cobro',
             'period'        => $periodLabel,
+            'cycle'         => 'monthly',
             'amount'        => $plan->price_monthly,
+            'due_date'      => $nextPeriod->copy()->day(Associate::BILLING_DAY),
             'notes'         => 'Primera mensualidad posterior a la inscripción aprobada.',
             'status'        => 'pendiente',
         ]);

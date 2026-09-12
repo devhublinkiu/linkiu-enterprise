@@ -21,6 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
             'subscription.active' => \App\Http\Middleware\CheckSubscription::class,
             'associate.onboarding' => \App\Http\Middleware\HandleAssociateOnboarding::class,
+            'feature' => \App\Http\Middleware\CheckFeature::class,
+        ]);
+
+        // Los avisos de la pasarela no traen sesión ni token: se autentican por
+        // firma. Ver App\Http\Controllers\Webhooks\BoldWebhookController.
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

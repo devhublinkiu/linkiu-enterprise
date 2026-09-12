@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Associate;
 use App\Http\Controllers\Controller;
 use App\Models\Associate;
 use App\Models\Invoice;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class InvoiceController extends Controller
@@ -34,8 +33,9 @@ class InvoiceController extends Controller
                 'external_link' => $inv->external_link,
                 'notes'         => $inv->notes,
                 'document_url'  => $inv->document_path
-                    ? Storage::disk('public')->url($inv->document_path)
+                    ? route('billing.invoice.document', $inv->id)
                     : null,
+                'due_date'      => $inv->due_date?->format('d/m/Y'),
                 'created_at'    => $inv->created_at->format('d/m/Y'),
                 'is_unread'     => $inv->isUnread(),
             ]);

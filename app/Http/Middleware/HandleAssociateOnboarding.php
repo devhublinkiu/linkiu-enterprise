@@ -103,6 +103,12 @@ class HandleAssociateOnboarding
                     'associate.company.request.section.change',
                     'associate.checkout.show',
                     'associate.checkout.store',
+                    // Pantalla de pago de la factura de inscripción. Sin estas
+                    // rutas, el asociado recién admitido genera su cuenta de
+                    // cobro pero no podría llegar a pagarla.
+                    'associate.invoice.pay',
+                    'associate.invoice.proof',
+                    'associate.invoice.online',
                 ];
                 if (!in_array($routeName, $allowedVerified)) {
                     return redirect()->route('associate.company.billing')->with('info', '¡Felicidades! Has sido admitido. Por favor, elige un plan para activar tu cuenta.');

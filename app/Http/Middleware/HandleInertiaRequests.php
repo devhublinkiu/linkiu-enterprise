@@ -87,8 +87,14 @@ class HandleInertiaRequests extends Middleware
                 'inactive' => \App\Models\Associate::where('status', 'inactive')->count(),
             ]
             : null,
+            // Comprobantes esperando revisión: los del motor nuevo más los que
+            // queden en la tabla congelada mientras se termina la transición.
+            // Ver docs/adr/0001-motor-de-cobro-unificado.md
             'pending_payment_requests' => $user && ($user->is_superadmin || $user->role === 'admin')
-                ? \App\Models\PaymentRequest::where('status', 'pending')->count()
+                ? \App\Models\Payment::where('status', \App\Models\Payment::STATUS_PENDING)
+                    ->where('method', '!=', \App\Models\Payment::METHOD_BOLD)
+                    ->count()
+                  + \App\Models\PaymentRequest::where('status', 'pending')->count()
                 : null,
             'auth' => [
                 'user'         => $user,
@@ -105,6 +111,10 @@ class HandleInertiaRequests extends Middleware
                 : null,
             ],
             'subscription'       => $subscription,
+            // Módulos que incluye el plan del asociado. Cortesía para que la UI
+            // oculte lo que el plan no trae; la comprobación real vive en el
+            // servidor (middleware feature:*). Ver ADR-0002.
+            'plan_features'      => $this->planFeatures($user),
             'unread_invoices'    => $user && $user->associate_id
                 ? \App\Models\Invoice::where('associate_id', $user->associate_id)->whereNull('read_at')->count()
                 : null,
@@ -130,5 +140,30 @@ class HandleInertiaRequests extends Middleware
                 'draft_saved' => $request->session()->get('draft_saved'),
             ],
         ];
+    }
+
+    /**
+     * Mapa {clave-de-módulo: bool} de lo que incluye el plan del asociado.
+     * Solo para asociados; para admin y visitantes devuelve un mapa vacío.
+     */
+    private function planFeatures(?\App\Models\User $user): array
+    {
+        if (!$user || !$user->associate_id || $user->isAdmin()) {
+            return [];
+        }
+
+        $associate = \App\Models\Associate::with('plan.features')->find($user->associate_id);
+        $plan      = $associate?->plan;
+
+        if (!$plan) {
+            return [];
+        }
+
+        $map = [];
+        foreach (\App\Models\Feature::orderBy('sort')->pluck('key') as $key) {
+            $map[$key] = $plan->allows($key);
+        }
+
+        return $map;
     }
 }

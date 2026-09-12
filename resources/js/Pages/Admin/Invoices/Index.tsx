@@ -3,16 +3,12 @@ import { Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card } from '@/Components/ui/Card';
 import {
-    FileText,
     Receipt,
     Plus,
-    Download,
     ExternalLink,
     CheckCircle2,
-    Clock,
+    Banknote,
     Trash2,
-    ChevronDown,
-    ChevronUp,
     Building2,
     X,
 } from 'lucide-react';
@@ -24,11 +20,17 @@ interface InvoiceRow {
     associate_name: string;
     type: string;
     period: string;
+    cycle: string | null;
     amount: number | null;
+    due_date: string | null;
     status: string;
     has_document: boolean;
     external_link: string | null;
     creator_name: string;
+    payment_method: string | null;
+    payment_reference: string | null;
+    paid_at: string | null;
+    payer_name: string | null;
     created_at: string;
     read_at: string | null;
 }
@@ -43,17 +45,36 @@ const TYPE_LABELS: Record<string, string> = {
     cuenta_cobro: 'Cuenta de Cobro',
 };
 
+const METHOD_LABELS: Record<string, string> = {
+    efectivo: 'Efectivo',
+    transferencia: 'Transferencia',
+    consignacion: 'Consignación',
+    otro: 'Otro',
+};
+
+const today = () => new Date().toISOString().slice(0, 10);
+
 export default function InvoicesIndex({ invoices, associates }: Props) {
     const [showForm, setShowForm] = useState(false);
+    const [payingInvoice, setPayingInvoice] = useState<InvoiceRow | null>(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         associate_id: '',
         type: 'factura',
         period: '',
+        cycle: 'monthly',
         amount: '',
         document: null as File | null,
         external_link: '',
         notes: '',
+    });
+
+    // Riel 3: el asociado pagó por fuera de la plataforma y el admin lo asienta.
+    const payment = useForm({
+        payment_method: 'efectivo',
+        paid_at: today(),
+        payment_reference: '',
+        payment_notes: '',
     });
 
     const formatCurrency = (v: number | null) =>
@@ -69,10 +90,19 @@ export default function InvoicesIndex({ invoices, associates }: Props) {
         });
     };
 
-    const handleMarkPaid = (id: number) => {
-        if (confirm('¿Marcar esta factura como pagada?')) {
-            useForm({}).patch(route('admin.invoices.mark-paid', id));
-        }
+    const openPayment = (invoice: InvoiceRow) => {
+        payment.reset();
+        payment.clearErrors();
+        setPayingInvoice(invoice);
+    };
+
+    const submitPayment = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!payingInvoice) return;
+        payment.post(route('admin.invoices.register-payment', payingInvoice.id), {
+            preserveScroll: true,
+            onSuccess: () => setPayingInvoice(null),
+        });
     };
 
     return (
@@ -135,6 +165,27 @@ export default function InvoicesIndex({ invoices, associates }: Props) {
                                     <option value="cuenta_cobro">Cuenta de Cobro</option>
                                 </select>
                             </div>
+
+                            {/* Cycle — solo una cuenta de cobro renueva la suscripción */}
+                            {data.type === 'cuenta_cobro' && (
+                                <div>
+                                    <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                                        Ciclo que renueva
+                                    </label>
+                                    <select
+                                        value={data.cycle}
+                                        onChange={e => setData('cycle', e.target.value)}
+                                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                                    >
+                                        <option value="monthly">Mensual (+1 mes)</option>
+                                        <option value="semiannual">Semestral (+6 meses)</option>
+                                        <option value="annual">Anual (+12 meses)</option>
+                                    </select>
+                                    <p className="text-[11px] font-medium text-slate-400 mt-1">
+                                        Al marcarse pagada, la vigencia avanza este periodo hasta el día 19.
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Period */}
                             <div>
@@ -256,7 +307,14 @@ export default function InvoicesIndex({ invoices, associates }: Props) {
                                                 {TYPE_LABELS[inv.type] ?? inv.type}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3.5 font-medium text-slate-600">{inv.period}</td>
+                                        <td className="px-4 py-3.5 font-medium text-slate-600">
+                                            {inv.period}
+                                            {inv.due_date && (
+                                                <span className="block text-[10px] font-bold text-slate-400 mt-0.5">
+                                                    Vence {inv.due_date}
+                                                </span>
+                                            )}
+                                        </td>
                                         <td className="px-4 py-3.5 font-bold text-slate-800">{formatCurrency(inv.amount)}</td>
                                         <td className="px-4 py-3.5">
                                             <span className={cn(
@@ -265,6 +323,13 @@ export default function InvoicesIndex({ invoices, associates }: Props) {
                                             )}>
                                                 {inv.status}
                                             </span>
+                                            {inv.status === 'pagada' && inv.payment_method && (
+                                                <span className="block text-[10px] font-bold text-slate-400 mt-1">
+                                                    {METHOD_LABELS[inv.payment_method] ?? inv.payment_method}
+                                                    {inv.paid_at && ` · ${inv.paid_at}`}
+                                                    {inv.payer_name && ` · ${inv.payer_name}`}
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-4 py-3.5 text-slate-500 text-xs">{inv.created_at}</td>
                                         <td className="px-4 py-3.5">
@@ -276,15 +341,25 @@ export default function InvoicesIndex({ invoices, associates }: Props) {
                                                     </a>
                                                 )}
                                                 {inv.status !== 'pagada' && (
-                                                    <Link
-                                                        href={route('admin.invoices.mark-paid', inv.id)}
-                                                        method="patch"
-                                                        as="button"
-                                                        className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                                                        title="Marcar como pagada"
-                                                    >
-                                                        <CheckCircle2 size={14} />
-                                                    </Link>
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openPayment(inv)}
+                                                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                                                            title="Registrar pago (efectivo u otro medio)"
+                                                        >
+                                                            <Banknote size={14} />
+                                                        </button>
+                                                        <Link
+                                                            href={route('admin.invoices.mark-paid', inv.id)}
+                                                            method="patch"
+                                                            as="button"
+                                                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                                                            title="Marcar como pagada sin detalle"
+                                                        >
+                                                            <CheckCircle2 size={14} />
+                                                        </Link>
+                                                    </>
                                                 )}
                                                 <Link
                                                     href={route('admin.invoices.destroy', inv.id)}
@@ -304,6 +379,133 @@ export default function InvoicesIndex({ invoices, associates }: Props) {
                         </table>
                     )}
                 </Card>
+
+                {/* Registrar pago manual — riel 3 del motor de cobro */}
+                {payingInvoice && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="registrar-pago-titulo"
+                    >
+                        <Card className="w-full max-w-lg rounded-2xl border-slate-200 shadow-xl overflow-hidden">
+                            <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-slate-100">
+                                <div>
+                                    <h2 id="registrar-pago-titulo" className="text-lg font-black text-slate-900">Registrar pago</h2>
+                                    <p className="text-xs font-medium text-slate-500 mt-1">
+                                        {payingInvoice.associate_name} · {payingInvoice.period} · {formatCurrency(payingInvoice.amount)}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setPayingInvoice(null)}
+                                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
+                                    aria-label="Cerrar"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={submitPayment} className="px-6 py-5 space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label htmlFor="payment_method" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                                            Medio de pago
+                                        </label>
+                                        <select
+                                            id="payment_method"
+                                            value={payment.data.payment_method}
+                                            onChange={e => payment.setData('payment_method', e.target.value)}
+                                            className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                                        >
+                                            {Object.entries(METHOD_LABELS).map(([value, label]) => (
+                                                <option key={value} value={value}>{label}</option>
+                                            ))}
+                                        </select>
+                                        {payment.errors.payment_method && (
+                                            <p className="text-[11px] font-bold text-red-600 mt-1">{payment.errors.payment_method}</p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="paid_at" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                                            Fecha real del pago
+                                        </label>
+                                        <input
+                                            id="paid_at"
+                                            type="date"
+                                            max={today()}
+                                            value={payment.data.paid_at}
+                                            onChange={e => payment.setData('paid_at', e.target.value)}
+                                            className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                                        />
+                                        {payment.errors.paid_at && (
+                                            <p className="text-[11px] font-bold text-red-600 mt-1">{payment.errors.paid_at}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="payment_reference" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                                        Número de recibo o referencia <span className="text-slate-300">(opcional)</span>
+                                    </label>
+                                    <input
+                                        id="payment_reference"
+                                        type="text"
+                                        value={payment.data.payment_reference}
+                                        onChange={e => payment.setData('payment_reference', e.target.value)}
+                                        placeholder="Ej. Recibo 00123"
+                                        className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                                    />
+                                    {payment.errors.payment_reference && (
+                                        <p className="text-[11px] font-bold text-red-600 mt-1">{payment.errors.payment_reference}</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label htmlFor="payment_notes" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                                        Observaciones <span className="text-slate-300">(opcional)</span>
+                                    </label>
+                                    <textarea
+                                        id="payment_notes"
+                                        rows={2}
+                                        value={payment.data.payment_notes}
+                                        onChange={e => payment.setData('payment_notes', e.target.value)}
+                                        placeholder="Quién entregó el dinero, dónde se recibió…"
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                                    />
+                                    {payment.errors.payment_notes && (
+                                        <p className="text-[11px] font-bold text-red-600 mt-1">{payment.errors.payment_notes}</p>
+                                    )}
+                                </div>
+
+                                {payingInvoice.type === 'cuenta_cobro' && (
+                                    <p className="text-[11px] font-bold text-slate-500 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100">
+                                        Al registrar el pago se extenderá la vigencia del asociado y, si su perfil
+                                        estaba oculto por vencimiento, volverá a publicarse.
+                                    </p>
+                                )}
+
+                                <div className="flex justify-end gap-2 pt-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPayingInvoice(null)}
+                                        className="px-4 py-2 text-sm font-bold text-slate-600 rounded-xl hover:bg-slate-100 transition-all"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={payment.processing}
+                                        className="px-5 py-2 text-sm font-bold text-white bg-slate-900 rounded-xl hover:bg-slate-700 transition-all disabled:opacity-50"
+                                    >
+                                        {payment.processing ? 'Registrando…' : 'Registrar pago'}
+                                    </button>
+                                </div>
+                            </form>
+                        </Card>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

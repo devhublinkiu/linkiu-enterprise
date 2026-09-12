@@ -22,6 +22,9 @@ import {
     TrendingUp,
     Hourglass,
     XOctagon,
+    CreditCard,
+    Receipt,
+    RefreshCw,
 } from 'lucide-react';
 
 interface Plan {
@@ -57,17 +60,28 @@ interface PaymentRequestInfo {
     created_at: string;
 }
 
+interface PendingInvoice {
+    id: number;
+    period: string;
+    amount: string | null;
+    due_date: string | null;
+    is_overdue: boolean;
+    notes: string | null;
+}
+
 interface Props {
     currentPlan: Plan | null;
     subscriptionStatus: 'none' | 'active' | 'grace' | 'expired';
     daysRemaining: number | null;
     planExpiresAt: string | null;
+    billingCycle: string;
     usage: {
         services: number;
         gallery: number;
     };
     availablePlans: Plan[];
     paymentRequest: PaymentRequestInfo | null;
+    pendingInvoices: PendingInvoice[];
 }
 
 export default function BillingIndex({
@@ -75,9 +89,11 @@ export default function BillingIndex({
     subscriptionStatus,
     daysRemaining,
     planExpiresAt,
+    billingCycle,
     usage,
     availablePlans,
     paymentRequest,
+    pendingInvoices = [],
 }: Props) {
     const formatCurrency = (value: string) => {
         return new Intl.NumberFormat('es-CO', {
@@ -122,6 +138,11 @@ export default function BillingIndex({
 
     const statusConfig = getStatusConfig();
     const StatusIcon = statusConfig.icon;
+
+    // Vencido o en gracia, el asociado tiene que poder pagar sin buscar dónde.
+    const needsPayment = subscriptionStatus === 'expired' || subscriptionStatus === 'grace';
+    const hasPendingRequest = paymentRequest?.status === 'pending';
+    const payUrl = currentPlan ? route('associate.checkout.show', currentPlan.id) : null;
 
     const [hidePendingBanner, setHidePendingBanner] = useState(false);
     const [hideRejectedBanner, setHideRejectedBanner] = useState(false);
@@ -175,7 +196,80 @@ export default function BillingIndex({
                                     : 'Tu plan venció pero aún tienes acceso temporal. Renueva antes de que expire para evitar la desactivación de tu perfil.'}
                             </p>
                         </div>
+                        {payUrl && !hasPendingRequest && (
+                            <Link href={payUrl} className="shrink-0 self-center">
+                                <Button
+                                    className={`h-10 rounded-xl font-bold text-xs uppercase px-5 flex items-center gap-2 text-white ${
+                                        subscriptionStatus === 'expired'
+                                            ? 'bg-red-600 hover:bg-red-700'
+                                            : 'bg-amber-600 hover:bg-amber-700'
+                                    }`}
+                                >
+                                    <CreditCard size={14} />
+                                    Pagar ahora
+                                    <ArrowRight size={14} />
+                                </Button>
+                            </Link>
+                        )}
                     </div>
+                )}
+
+                {/* Cuentas de cobro pendientes */}
+                {pendingInvoices.length > 0 && (
+                    <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-black text-slate-900 uppercase flex items-center gap-2">
+                                <Receipt size={16} className="text-slate-400" />
+                                Cuentas de cobro pendientes
+                            </CardTitle>
+                            <CardDescription className="text-xs font-medium text-slate-500">
+                                Realiza la transferencia y sube el comprobante para ponerte al día.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                            <div className="divide-y divide-slate-100">
+                                {pendingInvoices.map((invoice) => (
+                                    <div key={invoice.id} className="py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                                        <div className="flex-1 min-w-[180px]">
+                                            <p className="text-sm font-black text-slate-900">{invoice.period}</p>
+                                            <p className={`text-[11px] font-bold mt-0.5 ${invoice.is_overdue ? 'text-red-500' : 'text-slate-400'}`}>
+                                                {invoice.due_date
+                                                    ? `${invoice.is_overdue ? 'Venció el' : 'Vence el'} ${invoice.due_date}`
+                                                    : 'Sin fecha de vencimiento'}
+                                            </p>
+                                        </div>
+                                        {invoice.amount && (
+                                            <span className="text-base font-black text-slate-900 tabular-nums">
+                                                {formatCurrency(invoice.amount)}
+                                            </span>
+                                        )}
+                                        {invoice.is_overdue && (
+                                            <Badge className="bg-red-50 text-red-700 border-red-200 text-[9px] font-black uppercase">
+                                                En mora
+                                            </Badge>
+                                        )}
+                                        {/* Cada cobro se paga por su cuenta: en línea, por
+                                            transferencia o coordinando con CAMEP. */}
+                                        <Link href={route('associate.invoice.pay', invoice.id)}>
+                                            <Button className="h-9 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] uppercase px-4 flex items-center gap-1.5">
+                                                <CreditCard size={13} />
+                                                Pagar
+                                                <ArrowRight size={13} />
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-4 pt-4 border-t border-slate-100">
+                                <Link href={route('associate.company.invoices.index')}>
+                                    <Button variant="outline" className="h-10 rounded-xl font-bold text-xs uppercase px-5">
+                                        Ver todas mis facturas
+                                    </Button>
+                                </Link>
+                            </div>
+                        </CardContent>
+                    </Card>
                 )}
 
                 {/* Payment Request Status Banner */}
@@ -443,7 +537,21 @@ export default function BillingIndex({
 
                                         {/* CTA */}
                                         <div className="mt-auto pt-4 border-t border-slate-100">
-                                            {isCurrent ? (
+                                            {isCurrent && needsPayment ? (
+                                                // Estando vencido o en gracia, el plan actual es
+                                                // justamente el que hay que pagar. Antes este botón
+                                                // salía deshabilitado y dejaba al asociado sin salida.
+                                                <Link href={route('associate.checkout.show', plan.id)} className="w-full">
+                                                    <Button
+                                                        className="w-full h-10 rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-2 text-white"
+                                                        style={{ backgroundColor: plan.color_hex }}
+                                                    >
+                                                        <RefreshCw size={14} />
+                                                        Renovar mi plan
+                                                        <ArrowRight size={14} />
+                                                    </Button>
+                                                </Link>
+                                            ) : isCurrent ? (
                                                 <Button disabled className="w-full h-10 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs uppercase cursor-default">
                                                     Plan Vigente
                                                 </Button>

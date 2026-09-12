@@ -8,20 +8,11 @@ import { Label } from '@/Components/ui/Label';
 import { Textarea } from '@/Components/ui/Textarea';
 import { Switch } from '@/Components/ui/Switch';
 import { Separator } from '@/Components/ui/Separator';
-import { 
-    Save, 
-    ArrowLeft, 
-    Layers, 
-    Image as ImageIcon, 
-    ShieldCheck, 
-    Download, 
-    Briefcase, 
-    Network, 
-    Star, 
-    Headphones,
+import {
+    ArrowLeft,
+    Layers,
     Settings,
     LayoutDashboard,
-    AlertCircle,
     Info,
     CheckCircle2
 } from 'lucide-react';
@@ -52,8 +43,47 @@ interface Plan {
     signup_only_first_period: boolean;
 }
 
-export default function Form({ plan }: { plan?: Plan }) {
+interface FeatureCatalogItem {
+    id: number;
+    key: string;
+    name: string;
+    description: string | null;
+    type: 'boolean' | 'limit';
+    group: string | null;
+    is_enabled: boolean;
+}
+
+type FeatureValues = Record<string, { enabled: boolean; limit_value: number | null }>;
+
+const GROUP_LABELS: Record<string, string> = {
+    visibilidad: 'Visibilidad',
+    contenido: 'Contenido',
+    comunidad: 'Comunidad',
+    servicio: 'Servicio',
+    facturacion: 'Facturación',
+    futuro: 'Próximamente',
+};
+
+export default function Form({
+    plan,
+    features = [],
+    planFeatures = {},
+}: {
+    plan?: Plan;
+    features?: FeatureCatalogItem[];
+    planFeatures?: FeatureValues;
+}) {
     const isEditing = !!plan;
+
+    // Estado inicial de los módulos: en edición desde el pivote; en creación,
+    // apagados (el admin decide). Ver ADR-0002.
+    const initialFeatures: FeatureValues = {};
+    features.forEach(f => {
+        const current = planFeatures[f.key];
+        initialFeatures[f.key] = current
+            ? { enabled: current.enabled, limit_value: current.limit_value }
+            : { enabled: false, limit_value: null };
+    });
 
     const { data, setData, post, patch, processing, errors } = useForm({
         name: plan?.name || '',
@@ -62,6 +92,9 @@ export default function Form({ plan }: { plan?: Plan }) {
         price_semiannual: plan?.price_semiannual || 0,
         price_annual: plan?.price_annual || 0,
         currency: plan?.currency || 'COP',
+        // Campos legacy: se mantienen para que la validación del servidor pase.
+        // El servidor los sincroniza desde el pivote (features) al guardar, así
+        // que su valor aquí es solo el punto de partida. Ver ADR-0002.
         limit_services: plan?.limit_services || 0,
         limit_gallery: plan?.limit_gallery || 1,
         has_priority_directory: plan?.has_priority_directory ?? false,
@@ -76,6 +109,21 @@ export default function Form({ plan }: { plan?: Plan }) {
         is_popular: plan?.is_popular ?? false,
         signup_fee: plan?.signup_fee || 0,
         signup_only_first_period: plan?.signup_only_first_period ?? false,
+        features: initialFeatures,
+    });
+
+    const setFeature = (key: string, patchValues: Partial<{ enabled: boolean; limit_value: number | null }>) => {
+        setData('features', {
+            ...data.features,
+            [key]: { ...data.features[key], ...patchValues },
+        });
+    };
+
+    // Módulos agrupados para el render.
+    const grouped: Record<string, FeatureCatalogItem[]> = {};
+    features.forEach(f => {
+        const g = f.group || 'otros';
+        (grouped[g] = grouped[g] || []).push(f);
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -298,100 +346,71 @@ export default function Form({ plan }: { plan?: Plan }) {
                         </CardContent>
                     </Card>
 
-                    {/* Operational Limits */}
+                    {/* Módulos del plan — interruptores por catálogo (ADR-0002) */}
                     <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
                         <CardHeader className="bg-slate-50/50 pb-8 border-b border-slate-100">
                             <div className="flex items-center gap-3">
                                 <Layers size={20} className="text-slate-950" />
-                                <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-950">Límites Operativos</CardTitle>
+                                <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-950">Módulos incluidos en el plan</CardTitle>
                             </div>
+                            <CardDescription className="text-[11px] font-bold text-slate-400 uppercase pt-1">
+                                Enciende lo que trae este plan. Los límites vacíos significan ilimitado.
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-10">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                <div className="space-y-4">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500">Capacidad de Servicios</Label>
-                                    <div className="flex items-center gap-4">
-                                        <Input 
-                                            type="number"
-                                            value={data.limit_services}
-                                            onChange={e => setData('limit_services', parseInt(e.target.value) || 0)}
-                                            className="h-12 border-slate-200 rounded-lg focus:ring-slate-950 font-black bg-slate-50/30"
-                                        />
-                                        <div className="bg-slate-100 px-3 py-1.5 rounded-lg shrink-0">
-                                             <span className="text-[10px] text-slate-500 font-black uppercase">0 = Ilimitado</span>
-                                        </div>
-                                    </div>
-                                    <InputError message={errors.limit_services} />
-                                </div>
-                                <div className="space-y-4">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500">Capacidad Galería (Fotos)</Label>
-                                    <Input 
-                                        type="number"
-                                        value={data.limit_gallery}
-                                        onChange={e => setData('limit_gallery', parseInt(e.target.value) || 1)}
-                                        className="h-12 border-slate-200 rounded-lg focus:ring-slate-950 font-black bg-slate-50/30"
-                                    />
-                                    <InputError message={errors.limit_gallery} />
-                                </div>
-                            </div>
-                            
-                            <Separator className="bg-slate-100" />
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                    <div className="flex items-center gap-4">
-                                        <div className={cn("h-10 w-10 flex items-center justify-center rounded-lg transition-all", data.has_priority_directory ? "bg-emerald-600 text-white shadow-lg" : "bg-slate-200 text-slate-400 opacity-50")}>
-                                            <ShieldCheck size={20} />
-                                        </div>
-                                        <div className="space-y-0.5">
-                                            <Label className="text-[11px] font-black uppercase text-slate-950">Prioridad Directorio</Label>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase">Posicionamiento VIP</p>
-                                        </div>
-                                    </div>
-                                    <Switch checked={data.has_priority_directory} onCheckedChange={v => setData('has_priority_directory', v)} />
-                                </div>
+                        <CardContent className="p-8 space-y-8">
+                            {features.length === 0 && (
+                                <p className="text-sm font-bold text-slate-400">
+                                    Aún no hay catálogo de módulos. Corre <code className="font-mono">php artisan db:seed --class=FeatureSeeder</code>.
+                                </p>
+                            )}
 
-                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                    <div className="flex items-center gap-4">
-                                        <div className={cn("h-10 w-10 flex items-center justify-center rounded-lg transition-all", data.can_download_tenders ? "bg-emerald-600 text-white shadow-lg" : "bg-slate-200 text-slate-400 opacity-50")}>
-                                            <Download size={20} />
-                                        </div>
-                                        <div className="space-y-0.5">
-                                            <Label className="text-[11px] font-black uppercase text-slate-950">Descarga Licitaciones</Label>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase">Acceso a Anuncios Públicos</p>
-                                        </div>
-                                    </div>
-                                    <Switch checked={data.can_download_tenders} onCheckedChange={v => setData('can_download_tenders', v)} />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            {Object.entries(grouped).map(([group, items]) => (
+                                <div key={group} className="space-y-4">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                        {GROUP_LABELS[group] ?? group}
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {items.map(f => {
+                                            const val = data.features[f.key] ?? { enabled: false, limit_value: null };
+                                            return (
+                                                <div key={f.key} className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div className="space-y-0.5">
+                                                            <Label className="text-[11px] font-black uppercase text-slate-950">{f.name}</Label>
+                                                            {!f.is_enabled && (
+                                                                <p className="text-[10px] text-amber-600 font-black uppercase">Apagado en la plataforma</p>
+                                                            )}
+                                                            {f.description && (
+                                                                <p className="text-[10px] text-slate-400 font-bold">{f.description}</p>
+                                                            )}
+                                                        </div>
+                                                        <Switch
+                                                            checked={val.enabled}
+                                                            onCheckedChange={v => setFeature(f.key, { enabled: v })}
+                                                        />
+                                                    </div>
 
-                    {/* Future Modules */}
-                    <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-slate-50/50">
-                        <CardHeader className="pb-8 border-b border-white">
-                            <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 bg-slate-950 rounded-lg flex items-center justify-center text-white shadow-lg">
-                                    <AlertCircle size={16} />
-                                </div>
-                                <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-950">Roadmap Operativo (Próximamente)</CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            {[
-                                { id: 'has_job_board', label: 'Bolsa de Empleo', icon: Briefcase },
-                                { id: 'has_network', label: 'Red de Negocios', icon: Network },
-                                { id: 'has_reviews', label: 'Sistema Reseñas', icon: Star },
-                                { id: 'has_priority_support', label: 'Soporte VIP', icon: Headphones },
-                            ].map((item) => (
-                                <div key={item.id} className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center transition-all", (data as any)[item.id] ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-300 opacity-50")}>
-                                            <item.icon size={16} />
-                                        </div>
-                                        <Label className="text-[11px] font-black uppercase text-slate-800">{item.label}</Label>
+                                                    {f.type === 'limit' && val.enabled && (
+                                                        <div className="flex items-center gap-3 pt-1">
+                                                            <Input
+                                                                type="number"
+                                                                min={0}
+                                                                placeholder="Ilimitado"
+                                                                value={val.limit_value ?? ''}
+                                                                onChange={e => setFeature(f.key, {
+                                                                    limit_value: e.target.value === '' ? null : (parseInt(e.target.value) || 0),
+                                                                })}
+                                                                className="h-10 border-slate-200 rounded-lg font-black bg-white"
+                                                            />
+                                                            <div className="bg-slate-100 px-3 py-1.5 rounded-lg shrink-0">
+                                                                <span className="text-[10px] text-slate-500 font-black uppercase">Vacío = ∞</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                    <Switch checked={(data as any)[item.id]} onCheckedChange={v => setData(item.id as any, v)} />
                                 </div>
                             ))}
                         </CardContent>

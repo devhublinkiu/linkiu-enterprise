@@ -105,8 +105,16 @@ for (const f of changed) {
     } catch {
         continue;
     }
+    // Las vistas de correo en resources/views/emails/ son GENERADAS por
+    // scripts/build-emails.ts (markup de tablas de react-email, muy verboso) y
+    // no se editan a mano: la Regla 6 no aplica.
+    const isGeneratedEmail = /^resources\/views\/emails\/.*\.blade\.php$/.test(f);
     const lines = text.split('\n').length;
-    if (/\.(ts|tsx|js|jsx|php)$/.test(f) && lines > LINE_LIMIT) {
+    if (
+        !isGeneratedEmail &&
+        /\.(ts|tsx|js|jsx|php)$/.test(f) &&
+        lines > LINE_LIMIT
+    ) {
         warnings.push(
             `Regla 6: ${f} tiene ${lines} líneas (umbral ${LINE_LIMIT}). Considera partir en parts/.`,
         );

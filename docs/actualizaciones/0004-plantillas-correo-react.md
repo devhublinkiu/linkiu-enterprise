@@ -150,8 +150,33 @@ es infra, §10.)*
     §5.3, sólido neutro; reemplaza al `.btn` degradado) y adoptado también en `_preview.tsx`.
     Render del Mailable OK (nombre, `route('associate.company.basic')`, título). Preflight verde.
     *(La parte de texto plano NO se añadió aquí; va en el corte 4K de entregabilidad.)*
-  - Resto: 4E `billing/` (5) · 4F `associate/` (4) · 4G `admin/` (resto) · 4H `contact/` (2) ·
-    4I `forum/` (1) · 4J `tenders/` (2).
+  - **4E `billing/` (6)** ✅ **HECHO** (2026-09-13): `new_invoice`, `payment_approved`,
+    `payment_rejected`, `payment_settled` (con `@if` de factura/referencia), `subscription_expired`,
+    `subscription_expiring`. Creado componente reutilizable `EmailInfoBox` (porta las cajas
+    `.plan-box`/`.invoice-box`/`.reason-box`/`.alert-box`/`.error-box` con sus colores). Botón de
+    marca aplicado. `payment_settled` deja de usar `@extends`. Las 6 vistas renderizadas OK con datos
+    ficticios (incl. `payment_settled` con y sin factura). Preflight afinado: las vistas generadas de
+    correo quedan exentas de la Regla 6 (líneas), por ser markup de tablas de react-email.
+  - **4F `associate/` (4)** ✅ **HECHO** (2026-09-13): `approved`, `audit_approved` (título y
+    párrafo condicionales por `$isChangeRequest`, caja verde), `audit_rejected` (caja roja),
+    `field_change_requested` (admin-facing, caja ámbar). Botón de marca. Las 4 renderizadas OK
+    (audit_approved en sus dos ramas). Nota: `audit_approved` y `field_change_requested` tenían el
+    footer legal recortado; al unificar al `EmailFooter` quedan con el aviso legal íntegro (§5.4).
+    Texto de contenido portado literal (incl. el typo "aprobrar" del original, para no cambiar copy).
+  - **4G `admin/` (6)** ✅ **HECHO** (2026-09-13): `associate_docs_submitted`, `forum_report_alert`
+    (sin botón), `new_forum_topic_alert`, `new_registration` (era `@extends`), `payment_proof_submitted`,
+    `payment_proof_uploaded` (era `@extends`, con `@if` de factura/notas, caja `warn-box`). Las 6
+    renderizadas OK. **Ya ninguna plantilla usa `@extends('emails._layout')`** → el `_layout.blade.php`
+    heredado queda listo para retirar en 4Z.
+  - **4H `contact/` (2)** ✅ **HECHO** (2026-09-13): `admin` (estilo formulario `.field/.label/.value`,
+    ternario `is_array($submission->types)`), `user_confirmation` (con `blockquote`). Se conserva el
+    acento de contenido `#DD301B` (no es botón/enlace). Renderizadas OK (incl. rama `types` string).
+  - **4I `forum/new_reply`** ✅ **HECHO** (2026-09-13): contenido con `{!! nl2br(e(Str::limit(...))) !!}`
+    (vía `bladeRaw`), caja de cita con borde izquierdo teal. Renderizada OK (escapa HTML del contenido).
+  - **4J `tenders/` (2)** ✅ **HECHO** (2026-09-13): `new_tender` (caja neutra, expresión de ubicación
+    compleja verbatim, `@if` de `fecha_cierre`) y `tender_updated`. Renderizadas OK (new_tender con y
+    sin cierre).
+  - **✅ Todos los cuerpos migrados.** Restan solo 4K (entregabilidad) y 4Z (cierre).
   - En cada uno: portar cuerpo a React, aplicar botón/enlaces de marca (§5), regenerar Blade,
     **comparar HTML** contra el original. El texto plano (§6) se centraliza en 4K.
 - **Corte 4K · Entregabilidad de código.** `List-Unsubscribe` + `Reply-To` transversal en los
@@ -170,12 +195,12 @@ dejar diffs Blade sin commitear.
 | ----------- | ----------------------------------------------------------------------- | ------ |
 | chrome      | EmailLayout, EmailHeader, EmailFooter                                    | ✅ hecho (4B) |
 | auth        | otp_code, welcome                                                        | ✅ hecho (4C + 4D) |
-| billing     | new_invoice, payment_approved, payment_rejected, payment_settled, subscription_expired, subscription_expiring | 🔴 pendiente (4E) |
-| associate   | approved, audit_approved, audit_rejected, field_change_requested         | 🔴 pendiente (4F) |
-| admin       | associate_docs_submitted, forum_report_alert, new_forum_topic_alert, new_registration, payment_proof_submitted, payment_proof_uploaded | 🔴 pendiente (4G) |
-| contact     | admin, user_confirmation                                                 | 🔴 pendiente (4H) |
-| forum       | new_reply                                                                | 🔴 pendiente (4I) |
-| tenders     | new_tender, tender_updated                                               | 🔴 pendiente (4J) |
+| billing     | new_invoice, payment_approved, payment_rejected, payment_settled, subscription_expired, subscription_expiring | ✅ hecho (4E) |
+| associate   | approved, audit_approved, audit_rejected, field_change_requested         | ✅ hecho (4F) |
+| admin       | associate_docs_submitted, forum_report_alert, new_forum_topic_alert, new_registration, payment_proof_submitted, payment_proof_uploaded | ✅ hecho (4G) |
+| contact     | admin, user_confirmation                                                 | ✅ hecho (4H) |
+| forum       | new_reply                                                                | ✅ hecho (4I) |
+| tenders     | new_tender, tender_updated                                               | ✅ hecho (4J) |
 
 ## 8. Accesibilidad / correo
 

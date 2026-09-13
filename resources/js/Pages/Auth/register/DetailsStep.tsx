@@ -42,7 +42,10 @@ export function DetailsStep({ email }: { email: string }) {
                     Define tus datos de acceso.
                 </CardDescription>
             </CardHeader>
-            <form onSubmit={submit}>
+            <form
+                onSubmit={submit}
+                className="flex flex-col gap-[var(--card-spacing)]"
+            >
                 <CardContent>
                     <FieldGroup>
                         <Field>

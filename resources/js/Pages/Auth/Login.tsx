@@ -67,7 +67,10 @@ export default function Login({
                             Solo personal autorizado.
                         </CardDescription>
                     </CardHeader>
-                    <form onSubmit={submit}>
+                    <form
+                        onSubmit={submit}
+                        className="flex flex-col gap-[var(--card-spacing)]"
+                    >
                         <CardContent>
                             <FieldGroup>
                                 {status && (

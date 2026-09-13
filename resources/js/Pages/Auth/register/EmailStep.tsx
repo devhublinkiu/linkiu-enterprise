@@ -71,7 +71,10 @@ export function EmailStep({ onSent }: { onSent: (email: string) => void }) {
                     Escribe tu correo para iniciar tu afiliación.
                 </CardDescription>
             </CardHeader>
-            <form onSubmit={submit}>
+            <form
+                onSubmit={submit}
+                className="flex flex-col gap-[var(--card-spacing)]"
+            >
                 <CardContent>
                     <Field>
                         <FieldLabel htmlFor="email">

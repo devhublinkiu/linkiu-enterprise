@@ -74,6 +74,14 @@ Leyenda: 🔴 crítico · 🟠 importante · 🟡 conviene · ⬜ pendiente · �
       Convocatorias/Licitaciones, Directorio público.
 - [ ] 🟡 **Resolver los modelos huérfanos `Ticket`/`TicketReply`** (sin controlador ni rutas):
       documentarlos como módulo previsto o retirarlos.
+- [ ] 🟡 **Patrón `<form>` dentro de `Card` (gap).** El `Card` es `flex flex-col
+      gap-[var(--card-spacing)]` y separa a sus hijos directos (Header/Content/Footer). Al
+      envolver `CardContent` + `CardFooter` en un `<form>`, el hijo directo pasa a ser el `<form>`
+      y la separación se pierde (el footer se pega). Remedio (patrón shadcn): el `<form>` lleva
+      `className="flex flex-col gap-[var(--card-spacing)]"`. Aplicado ya en `Auth/Login`,
+      `Auth/ForgotPassword` y `Auth/register/{Email,Otp,Details}Step`. **Pendiente opcional:**
+      crear un componente `CardForm` en `Components/base/` que incorpore ese gap para no repetir
+      la clase ni olvidarla en futuros formularios (cambio de base → su propio `#plan`).
 
 ---
 

@@ -85,7 +85,10 @@ export function OtpStep({
                     <span className="font-medium">{email}</span>.
                 </CardDescription>
             </CardHeader>
-            <form onSubmit={verify}>
+            <form
+                onSubmit={verify}
+                className="flex flex-col gap-[var(--card-spacing)]"
+            >
                 <CardContent>
                     <Field>
                         <InputOTP

@@ -86,7 +86,10 @@ export default function ForgotPassword() {
                                 Escribe tu correo y te enviaremos un código.
                             </CardDescription>
                         </CardHeader>
-                        <form onSubmit={sendCode}>
+                        <form
+                            onSubmit={sendCode}
+                            className="flex flex-col gap-[var(--card-spacing)]"
+                        >
                             <CardContent>
                                 <Field>
                                     <FieldLabel htmlFor="email">
@@ -126,7 +129,10 @@ export default function ForgotPassword() {
                             <CardTitle>Restablece tu contraseña</CardTitle>
                             <CardDescription>{notice}</CardDescription>
                         </CardHeader>
-                        <form onSubmit={reset}>
+                        <form
+                            onSubmit={reset}
+                            className="flex flex-col gap-[var(--card-spacing)]"
+                        >
                             <CardContent>
                                 <FieldGroup>
                                     <Field>

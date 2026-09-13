@@ -21,6 +21,7 @@ use App\Http\Controllers\Associate\InvoiceController;
 use App\Http\Controllers\Associate\InvoicePaymentController;
 use App\Http\Controllers\AssociateController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BillingDocumentController;
 use App\Http\Controllers\ForumController;
@@ -164,6 +165,14 @@ Route::middleware('guest')->group(function () {
         ->name('register.otp')->middleware('throttle:10,1');
     Route::post('register/otp/verify', [RegisteredUserController::class, 'verifyOtp'])
         ->name('register.otp.verify')->middleware('throttle:20,1');
+
+    // Recuperación de contraseña por OTP (Corte 3E).
+    Route::get('forgot-password', [PasswordResetController::class, 'create'])
+        ->name('password.request');
+    Route::post('forgot-password', [PasswordResetController::class, 'sendOtp'])
+        ->name('password.email')->middleware('throttle:6,1');
+    Route::post('reset-password', [PasswordResetController::class, 'reset'])
+        ->name('password.update')->middleware('throttle:6,1');
 });
 
 // Protected CAMEP Routes

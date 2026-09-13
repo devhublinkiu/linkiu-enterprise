@@ -34,7 +34,8 @@ function changedFiles() {
         const up = git('diff --name-only @{upstream}..HEAD');
         if (up) for (const f of up.split('\n')) if (f) set.add(f);
     }
-    return [...set];
+    // Excluye archivos borrados: no se pueden formatear/analizar y romperían Pint/ESLint.
+    return [...set].filter((f) => existsSync(f));
 }
 
 const isPhp = (f) => /^(app|routes|database|config|tests)\/.*\.php$/.test(f);

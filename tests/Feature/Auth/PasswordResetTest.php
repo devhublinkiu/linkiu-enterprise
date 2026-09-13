@@ -2,72 +2,85 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Mail\OtpCode;
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_reset_password_link_screen_can_be_rendered(): void
+    public function test_forgot_password_screen_can_be_rendered(): void
     {
-        $response = $this->get('/forgot-password');
-
-        $response->assertStatus(200);
+        $this->get('/forgot-password')->assertStatus(200);
     }
 
-    public function test_reset_password_link_can_be_requested(): void
+    public function test_reset_code_is_sent_to_existing_user(): void
     {
-        Notification::fake();
-
+        Mail::fake();
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $this->postJson(route('password.email'), ['email' => $user->email])->assertOk();
 
-        Notification::assertSentTo($user, ResetPassword::class);
-    }
-
-    public function test_reset_password_screen_can_be_rendered(): void
-    {
-        Notification::fake();
-
-        $user = User::factory()->create();
-
-        $this->post('/forgot-password', ['email' => $user->email]);
-
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
-            $response = $this->get('/reset-password/'.$notification->token);
-
-            $response->assertStatus(200);
-
-            return true;
+        Mail::assertSent(OtpCode::class, function (OtpCode $mail) use ($user) {
+            return $mail->hasTo($user->email) && $mail->purpose === 'password_reset';
         });
     }
 
-    public function test_password_can_be_reset_with_valid_token(): void
+    public function test_unknown_email_gets_generic_response_without_sending(): void
     {
-        Notification::fake();
+        Mail::fake();
 
+        $this->postJson(route('password.email'), ['email' => 'desconocido@example.com'])
+            ->assertOk()
+            ->assertJsonStructure(['message']);
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_password_can_be_reset_with_valid_code(): void
+    {
+        Mail::fake();
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $this->postJson(route('password.email'), ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
-            $response = $this->post('/reset-password', [
-                'token' => $notification->token,
-                'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
-            ]);
+        $code = null;
+        Mail::assertSent(OtpCode::class, function (OtpCode $mail) use (&$code, $user) {
+            if ($mail->hasTo($user->email)) {
+                $code = $mail->code;
 
-            $response
-                ->assertSessionHasNoErrors()
-                ->assertRedirect(route('login'));
+                return true;
+            }
 
-            return true;
+            return false;
         });
+
+        $response = $this->post(route('password.update'), [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => 'nueva-clave-123',
+            'password_confirmation' => 'nueva-clave-123',
+        ]);
+
+        $response->assertSessionHasNoErrors()->assertRedirect(route('login'));
+        $this->assertTrue(Hash::check('nueva-clave-123', $user->fresh()->password));
+    }
+
+    public function test_reset_fails_with_invalid_code(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->post(route('password.update'), [
+            'email' => $user->email,
+            'code' => '000000',
+            'password' => 'nueva-clave-123',
+            'password_confirmation' => 'nueva-clave-123',
+        ]);
+
+        $response->assertSessionHasErrors('code');
     }
 }

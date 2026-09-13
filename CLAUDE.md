@@ -3,6 +3,12 @@
 Guía para agentes de IA y personas que trabajan en CAMEPG. Lee también el
 [`README.md`](README.md) y, para el motor de cobro, los ADRs en [`docs/`](docs/).
 
+> **Forma de trabajo y reglas del proyecto:** [`agents.md`](agents.md) (fuente de verdad) y
+> [`design.md`](design.md) (sistema visual). Son de cumplimiento al 100%. En resumen: se trabaja
+> por secciones; **no se modifica código** salvo con `#go` sobre un `#plan` aprobado; `#commit`
+> crea commit local (nunca push); `#push` sube solo al remoto `apolo`. Cada sección lleva su plan
+> en [`docs/actualizaciones/`](docs/actualizaciones/).
+
 ## Qué es
 
 Plataforma B2B (Laravel 12 + Inertia/React/TS) para las empresas asociadas de CAMEP (minería e

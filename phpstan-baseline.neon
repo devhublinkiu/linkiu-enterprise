@@ -1,0 +1,889 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Parameter \#1 \$current of method App\\Console\\Commands\\AlignExpirationToDay19\:\:targetFor\(\) expects Illuminate\\Support\\Carbon, Carbon\\Carbon\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Console/Commands/AlignExpirationToDay19.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$associate_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/BackfillPaymentRequests.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Console/Commands/BackfillPaymentRequests.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 5
+			path: app/Console/Commands/BackfillPaymentRequests.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/GenerateMonthlyInvoices.php
+
+		-
+			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Console/Commands/GenerateMonthlyInvoices.php
+
+		-
+			message: '#^Relation ''users'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Console/Commands/GenerateMonthlyInvoices.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$company_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/ReconcileBoldPayments.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>company_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/ReconcileBoldPayments.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$users\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/SendBillingReminders.php
+
+		-
+			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Console/Commands/SendBillingReminders.php
+
+		-
+			message: '#^Relation ''users'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Console/Commands/SendBillingReminders.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/SendBillingReminders.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$color_hex\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Events/PaymentRequestReviewed.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Events/PaymentRequestReviewed.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$color_hex\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Events/PaymentRequestSubmitted.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Events/PaymentRequestSubmitted.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Announcement\:\:\$author\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AnnouncementController.php
+
+		-
+			message: '#^Relation ''author'' is not found in App\\Models\\Announcement model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/AnnouncementController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\BlogPost\:\:\$cover_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/BlogController.php
+
+		-
+			message: '#^Relation ''author'' is not found in App\\Models\\BlogPost model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/BlogController.php
+
+		-
+			message: '#^Relation ''category'' is not found in App\\Models\\BlogPost model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/Admin/BlogController.php
+
+		-
+			message: '#^Relation ''posts'' is not found in App\\Models\\BlogCategory model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/BlogController.php
+
+		-
+			message: '#^Relation ''tags'' is not found in App\\Models\\BlogPost model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/Admin/BlogController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$billing_email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/InvoiceController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$company_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/InvoiceController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Admin/InvoiceController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$plan_expires_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/InvoiceController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$users\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/InvoiceController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Invoice\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Admin/InvoiceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>company_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/InvoiceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/InvoiceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/InvoiceController.php
+
+		-
+			message: '#^Relation ''associate'' is not found in App\\Models\\User model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/Admin/LicitacionController.php
+
+		-
+			message: '#^Relation ''empresa'' is not found in App\\Models\\Licitacion model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/LicitacionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$company_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Admin/PaymentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$period\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$plan_expires_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Payment\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>company_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>period" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$users\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentRequestController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$associate_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentRequestController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$color_hex\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentRequestController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Http/Controllers/Admin/PaymentRequestController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentRequestController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 8
+			path: app/Http/Controllers/Admin/PaymentRequestController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\PaymentRequest\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentRequestController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/PaymentRequestController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$key\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/PlanController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$pivot\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Admin/PlanController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Admin/PlanController.php
+
+		-
+			message: '#^Relation ''associates'' is not found in App\\Models\\Service model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/ServiceController.php
+
+		-
+			message: '#^Relation ''category'' is not found in App\\Models\\Service model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/ServiceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$associate\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/UserController.php
+
+		-
+			message: '#^Relation ''associate'' is not found in App\\Models\\User model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/UserController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Announcement\:\:\$author\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/AnnouncementController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/AnnouncementController.php
+
+		-
+			message: '#^Relation ''author'' is not found in App\\Models\\Announcement model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Associate/AnnouncementController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>can_download_tenders" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Associate/AnnouncementController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$associate\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Associate/CheckoutController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>billing_cycle" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Associate/CheckoutController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$plan\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/InvoicePaymentController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>currency" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Associate/InvoicePaymentController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$cover_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$document_urls\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$gallery_urls\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$users\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 2
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Relation ''category'' is not found in App\\Models\\Service model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Relation ''contacts'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 5
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Relation ''references'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 5
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 6
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Relation ''services'' is not found in App\\Models\\ServiceCategory model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Relation ''users'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''approved''\|''pending''\|''rejected'' and ''draft'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>billing_cycle" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 3
+			path: app/Http/Controllers/AssociateController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$associate\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Auth/AuthenticatedSessionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/ForumController.php
+
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 2
+			path: app/Http/Controllers/ForumController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Announcement\:\:\$author\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicAnnouncementController.php
+
+		-
+			message: '#^Relation ''author'' is not found in App\\Models\\Announcement model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/PublicAnnouncementController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\BlogPost\:\:\$category\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/PublicBlogController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\BlogPost\:\:\$cover_url\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/PublicBlogController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\BlogPost\:\:\$tags\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicBlogController.php
+
+		-
+			message: '#^Relation ''author'' is not found in App\\Models\\BlogPost model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/PublicBlogController.php
+
+		-
+			message: '#^Relation ''category'' is not found in App\\Models\\BlogPost model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/PublicBlogController.php
+
+		-
+			message: '#^Relation ''posts'' is not found in App\\Models\\BlogCategory model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/PublicBlogController.php
+
+		-
+			message: '#^Relation ''tags'' is not found in App\\Models\\BlogPost model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/PublicBlogController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$services\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\|Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\Associate\>\:\:\$services\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Service\:\:\$associates\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Service\:\:\$category\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\ServiceCategory\:\:\$services\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Associate\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''associates'' is not found in App\\Models\\Service model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''category'' is not found in App\\Models\\Service model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''contacts'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''references'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 4
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''services'' is not found in App\\Models\\ServiceCategory model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 1
+			path: app/Http/Controllers/PublicContactController.php
+
+		-
+			message: '#^Offset ''event'' does not exist on array\{reference\: ''''\|''0''\|null, outcome\: string, payment_id\: string\|null, amount\: float\|null, payload\: array\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Http/Controllers/Webhooks/BoldWebhookController.php
+
+		-
+			message: '#^Offset ''event'' does not exist on array\{reference\: non\-falsy\-string, outcome\: ''rejected'', payment_id\: string\|null, amount\: float\|null, payload\: array\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Http/Controllers/Webhooks/BoldWebhookController.php
+
+		-
+			message: '#^Offset ''event'' does not exist on array\{reference\: non\-falsy\-string, outcome\: string, payment_id\: string\|null, amount\: float\|null, payload\: array\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Http/Controllers/Webhooks/BoldWebhookController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Middleware/CheckFeature.php
+
+		-
+			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Middleware/CheckFeature.php
+
+		-
+			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Middleware/CheckSubscription.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$associate\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Middleware/HandleAssociateOnboarding.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$associate\.$#'
+			identifier: property.notFound
+			count: 6
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Relation ''services'' is not found in App\\Models\\ServiceCategory model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$company_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mail/PaymentProofUploaded.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>company_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Mail/PaymentProofUploaded.php
+
+		-
+			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:performOnCollections\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Models/Announcement.php
+
+		-
+			message: '#^Deprecated in PHP 8\.4\: Parameter \#1 \$media \(Spatie\\MediaLibrary\\MediaCollections\\Models\\Media\) is implicitly nullable via default value null\.$#'
+			identifier: parameter.implicitlyNullable
+			count: 1
+			path: app/Models/Announcement.php
+
+		-
+			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:performOnCollections\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/BienesServiciosEmpresa.php
+
+		-
+			message: '#^Deprecated in PHP 8\.4\: Parameter \#1 \$media \(Spatie\\MediaLibrary\\MediaCollections\\Models\\Media\) is implicitly nullable via default value null\.$#'
+			identifier: parameter.implicitlyNullable
+			count: 1
+			path: app/Models/BienesServiciosEmpresa.php
+
+		-
+			message: '#^Deprecated in PHP 8\.4\: Parameter \#1 \$media \(Spatie\\MediaLibrary\\MediaCollections\\Models\\Media\) is implicitly nullable via default value null\.$#'
+			identifier: parameter.implicitlyNullable
+			count: 1
+			path: app/Models/BlogPost.php
+
+		-
+			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:performOnCollections\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Models/Licitacion.php
+
+		-
+			message: '#^Deprecated in PHP 8\.4\: Parameter \#1 \$media \(Spatie\\MediaLibrary\\MediaCollections\\Models\\Media\) is implicitly nullable via default value null\.$#'
+			identifier: parameter.implicitlyNullable
+			count: 1
+			path: app/Models/Licitacion.php
+
+		-
+			message: '#^Method App\\Models\\Plan\:\:resolveFeature\(\) should return App\\Models\\Feature\|null but returns \(Illuminate\\Database\\Eloquent\\Model&object\{pivot\: Illuminate\\Database\\Eloquent\\Relations\\Pivot\}\)\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/Plan.php
+
+		-
+			message: '#^Method App\\Models\\Plan\:\:resolveFeature\(\) should return App\\Models\\Feature\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/Plan.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\User\:\:\$appends is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$appends\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/BillingService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$billing_email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/BillingService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$users\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/BillingService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/BillingService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$period\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Bold/BoldGateway.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>period" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Bold/BoldGateway.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$billing_email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/PaymentService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$plan\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/PaymentService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$users\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/PaymentService.php
+
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 1
+			path: app/Services/PaymentService.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: app/Services/PaymentService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''approved''\|''pending''\|''rejected'' and ''verified'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/PaymentService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>currency" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 3
+			path: app/Services/PaymentService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/PaymentService.php
+
+		-
+			message: '#^Parameter \#1 \$currentExpiration of static method App\\Services\\SubscriptionService\:\:nextExpiration\(\) expects Illuminate\\Support\\Carbon\|null, Carbon\\Carbon\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/SubscriptionService.php
+
+		-
+			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Services/SubscriptionService.php

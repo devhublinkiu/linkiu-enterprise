@@ -40,17 +40,9 @@ class LoginRequest extends FormRequest
      */
     public function authenticate(): void
     {
-        file_put_contents(base_path('login_debug.txt'), "Authenticating: " . $this->email . "\n", FILE_APPEND);
         $this->ensureIsNotRateLimited();
 
-        \Illuminate\Support\Facades\Log::info('Login attempt', [
-            'email' => $this->email,
-            'connection' => \Illuminate\Support\Facades\DB::getDefaultConnection(),
-            'db' => \Illuminate\Support\Facades\DB::connection()->getDatabaseName()
-        ]);
-
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            \Illuminate\Support\Facades\Log::warning('Login failed', ['email' => $this->email]);
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

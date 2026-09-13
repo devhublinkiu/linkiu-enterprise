@@ -42,6 +42,21 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_failed_login_shows_spanish_error_message(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ]);
+
+        $response->assertSessionHasErrors([
+            'email' => 'Estas credenciales no coinciden con nuestros registros.',
+        ]);
+        $this->assertGuest();
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();

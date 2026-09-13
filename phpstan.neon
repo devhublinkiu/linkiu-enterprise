@@ -1,0 +1,9 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon   # 222 hallazgos legacy congelados; triaje por módulo
+
+parameters:
+    level: 5
+    paths:
+        - app
+    # Nivel inicial conservador. Subir gradualmente. No bloquea el build todavía.

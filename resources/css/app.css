@@ -1,18 +1,99 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Tokens del sistema visual CAMEPG. Marca: #FBDC1D #00B53C #D9141B #151515.
+ * --primary es neutro (#151515) por accesibilidad; el amarillo es --accent.
+ * Solo tema claro por decisión de producto (sin modo oscuro por ahora). Ver design.md.
+ */
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 8%; /* #151515 */
+
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 8%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 8%;
+
+        --primary: 0 0% 8%; /* #151515 neutro */
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 0 0% 96%;
+        --secondary-foreground: 0 0% 8%;
+
+        --muted: 0 0% 96%;
+        --muted-foreground: 0 0% 40%;
+
+        /* Colores cromáticos en 3 pasos: subtle (fondo tenue) · DEFAULT (sólido) · strong (hover/texto). */
+        --accent: 52 96% 55%; /* #FBDC1D amarillo de marca */
+        --accent-foreground: 0 0% 8%;
+        --accent-subtle: 52 96% 92%;
+        --accent-strong: 52 90% 40%;
+
+        --destructive: 358 74% 46%; /* #D9141B rojo de marca */
+        --destructive-foreground: 0 0% 100%;
+        --destructive-subtle: 358 78% 95%;
+        --destructive-strong: 358 70% 38%;
+
+        --success: 140 100% 35%; /* #00B53C verde de marca */
+        --success-foreground: 0 0% 100%;
+        --success-subtle: 140 55% 92%;
+        --success-strong: 140 100% 27%;
+
+        --border: 0 0% 90%;
+        --input: 0 0% 90%;
+        --ring: 0 0% 8%;
+
+        --radius: 0.5rem;
+        /* Escala de radios shadcn: los componentes v4 referencian var(--radius-md), etc.
+       Se definen aquí para copiar las specs "tal cual" sin reescribir sus clases. */
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+    }
+
+    * {
+        border-color: hsl(var(--border));
+    }
+
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+    }
+}
+
 @layer utilities {
-  @keyframes bounce-subtle {
-    0%, 100% {
-      transform: translateY(-5%);
-      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    @keyframes bounce-subtle {
+        0%,
+        100% {
+            transform: translateY(-5%);
+            animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+        }
+        50% {
+            transform: translateY(0);
+            animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+        }
     }
-    50% {
-      transform: translateY(0);
-      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    .animate-bounce-subtle {
+        animation: bounce-subtle 2s infinite;
     }
-  }
-  .animate-bounce-subtle {
-    animation: bounce-subtle 2s infinite;
-  }
+
+    /* Parpadeo del cursor falso del Input OTP (base/InputOTP). tailwindcss-animate no lo trae. */
+    @keyframes caret-blink {
+        0%,
+        70%,
+        100% {
+            opacity: 1;
+        }
+        20%,
+        50% {
+            opacity: 0;
+        }
+    }
+    .animate-caret-blink {
+        animation: caret-blink 1.25s ease-out infinite;
+    }
 }

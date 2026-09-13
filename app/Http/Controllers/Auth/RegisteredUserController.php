@@ -3,18 +3,27 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\RegisterRequest;
+use App\Mail\NewRegistrationToAdmin;
+use App\Mail\WelcomeUser;
 use App\Models\User;
+use App\Services\OtpService;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class RegisteredUserController extends Controller
 {
+    public function __construct(private OtpService $otp) {}
+
     /**
      * Display the registration view.
      */
@@ -24,30 +33,91 @@ class RegisteredUserController extends Controller
     }
 
     /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
+     * Paso 1a — ¿el correo está disponible? (revela existencia a propósito, para ofrecer login).
      */
-    public function store(Request $request): RedirectResponse
+    public function checkEmail(Request $request): JsonResponse
+    {
+        $request->validate(['email' => ['required', 'email']]);
+        $email = mb_strtolower(trim((string) $request->input('email')));
+
+        return response()->json(['available' => ! User::where('email', $email)->exists()]);
+    }
+
+    /**
+     * Paso 1b — enviar el código OTP al correo (si está disponible).
+     */
+    public function sendOtp(Request $request): JsonResponse
+    {
+        $request->validate(['email' => ['required', 'email']]);
+        $email = mb_strtolower(trim((string) $request->input('email')));
+
+        if (User::where('email', $email)->exists()) {
+            return response()->json(['available' => false], 422);
+        }
+
+        if (! $this->otp->request($email, 'registration')) {
+            return response()->json([
+                'sent' => false,
+                'cooldown' => $this->otp->cooldownSecondsRemaining($email, 'registration'),
+            ], 429);
+        }
+
+        return response()->json(['sent' => true]);
+    }
+
+    /**
+     * Paso 2 — verificar el código. Al pasar, marca el correo como verificado en la sesión.
+     */
+    public function verifyOtp(Request $request): JsonResponse
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'email' => ['required', 'email'],
+            'code' => ['required', 'string'],
         ]);
+        $email = mb_strtolower(trim((string) $request->input('email')));
+
+        if (! $this->otp->verify($email, 'registration', (string) $request->input('code'))) {
+            return response()->json(['verified' => false], 422);
+        }
+
+        $request->session()->put('registration.verified_email', $email);
+
+        return response()->json(['verified' => true]);
+    }
+
+    /**
+     * Paso 3 — crear la cuenta (RegisterRequest exige el correo verificado en sesión).
+     *
+     * @throws ValidationException
+     */
+    public function store(RegisterRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+        $email = mb_strtolower(trim($validated['email']));
+
+        // Defensa en profundidad: consume la verificación (uso único).
+        if (! $this->otp->consumeVerified($email, 'registration')) {
+            return back()->withErrors(['email' => 'Debes verificar tu correo antes de continuar.']);
+        }
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name' => $validated['name'],
+            'email' => $email,
+            'password' => Hash::make($validated['password']),
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
+
+        $request->session()->forget('registration.verified_email');
 
         event(new Registered($user));
 
         try {
-            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\WelcomeUser($user));
+            Mail::to($user->email)->send(new WelcomeUser($user));
+
+            $adminRecipient = config('mail.admin_recipient') ?: 'afiliate@camepg.org';
+            Mail::to($adminRecipient)->send(new NewRegistrationToAdmin($user));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error enviando correo de bienvenida: ' . $e->getMessage());
+            Log::error('Error enviando correos de registro: '.$e->getMessage());
         }
 
         Auth::login($user);

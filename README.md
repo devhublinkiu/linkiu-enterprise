@@ -90,10 +90,14 @@ Requieren el cron de Laravel en el servidor (`* * * * * php artisan schedule:run
 ## Pruebas y estilo
 
 ```powershell
-php artisan test        # PHPUnit
+npm run preflight       # orquesta los gates según lo que cambió (recomendado)
+php artisan test        # PHPUnit / Pest
 npm run lint            # ESLint + Prettier sobre resources/js
 ./vendor/bin/pint       # formato PHP (Laravel Pint)
 ```
+
+El **preflight** (`scripts/preflight.mjs`) corre los gates que aplican al cambio; ver
+[docs/actualizaciones/0002-preflight.md](docs/actualizaciones/0002-preflight.md).
 
 ## Despliegue
 

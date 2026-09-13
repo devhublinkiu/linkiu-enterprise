@@ -22,3 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Debug temporal de login (nunca debe versionarse; contenía PII)
+login_debug.txt

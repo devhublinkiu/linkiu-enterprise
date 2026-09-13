@@ -12,10 +12,10 @@ Leyenda: 🔴 crítico · 🟠 importante · 🟡 conviene · ⬜ pendiente · �
 
 ## Bloque 1 — Crítico (resolver primero)
 
-- [ ] 🔴 **Commitear `docs/` a git.** Toda la carpeta (ADRs incluidos) está sin versionar
-      (`git ls-files docs/` vacío). Un `git clean` o un clon nuevo la pierde.
-- [ ] 🔴 **Decidir y commitear el motor de cobro.** Todo el código de los tres cortes está en
-      el working tree sin commit (services, payments, features, migraciones, controladores).
+- [x] ✅ **Commitear `docs/` a git.** Hecho (commit `docs:` en `production`, junto con README y CLAUDE.md).
+- [x] ✅ **Decidir y commitear el motor de cobro.** Hecho (commit `feat:` en `production` con
+      services, payments, features, migraciones y controladores). `login_debug.txt` se dejó
+      fuera a propósito (pendiente de limpieza, Bloque 5).
 - [x] ✅ **Escribir un `README.md` real.** Hecho: stack, módulos, puesta en marcha (Herd, MySQL
       `camepg`, Minio), variables clave, tareas programadas, pruebas y despliegue.
 - [x] ✅ **Crear `CLAUDE.md` en el repo.** Hecho: entorno Windows/Herd, comandos, reglas de

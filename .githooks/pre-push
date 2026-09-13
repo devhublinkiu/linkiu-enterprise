@@ -1,0 +1,12 @@
+#!/bin/sh
+# Hook opcional: corre el preflight completo antes de cada push.
+# NO se instala solo. Para activarlo (una vez):
+#   git config core.hooksPath .githooks
+# Para desactivarlo:
+#   git config --unset core.hooksPath
+#
+# En el flujo con el agente no hace falta: el agente corre el preflight
+# dentro de #commit/#push. Este hook es para push manual sin agente.
+
+echo "› preflight (pre-push)…"
+npm run preflight:push

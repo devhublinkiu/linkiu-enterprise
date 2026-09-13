@@ -1,89 +1,108 @@
-import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState } from 'react';
-import { Bell } from 'lucide-react';
-import Sidebar from '@/Components/Sidebar';
+import AppSidebar from '@/Components/AppSidebar';
+import { Separator } from '@/Components/base/Separator';
+import {
+    SidebarInset,
+    SidebarProvider,
+    SidebarTrigger,
+} from '@/Components/base/Sidebar';
+import { TooltipProvider } from '@/Components/base/Tooltip';
 import NotificationToastStack from '@/Components/NotificationToastStack';
 import { useNotifications } from '@/hooks/useNotifications';
 import { PageProps } from '@/types';
-import { cn } from '@/lib/utils';
+import { usePage } from '@inertiajs/react';
+import { Bell } from 'lucide-react';
+import { PropsWithChildren, ReactNode } from 'react';
+
+type LayoutAuth = {
+    user: {
+        name: string;
+        is_superadmin?: boolean;
+        role?: string;
+        profile_photo_url?: string | null;
+    };
+    associate?: { logo_url?: string | null } | null;
+};
 
 export default function AppLayout({
-    header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const { tenant } = usePage<PageProps>().props;
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const page = usePage<PageProps>().props;
+    const tenant = page.tenant;
+    const auth = page.auth as unknown as LayoutAuth;
+    const user = auth.user;
+    const associate = auth.associate;
     const { notifications, dismiss } = useNotifications();
 
+    const isAdmin = user.is_superadmin || user.role === 'admin';
+
     return (
-        <div className="min-h-screen bg-slate-50 font-sans antialiased text-slate-900">
-            {/* Sidebar */}
-            <Sidebar
-                tenant={tenant}
-                isOpen={isSidebarOpen}
-                setIsOpen={setIsSidebarOpen}
-            />
+        <TooltipProvider delayDuration={0}>
+            <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset>
+                    {/* Topbar */}
+                    <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-border bg-background/80 px-4 backdrop-blur-md md:px-6">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <SidebarTrigger />
+                            <Separator orientation="vertical" className="h-6" />
+                            <h2 className="max-w-[200px] truncate text-sm font-medium text-muted-foreground">
+                                {tenant?.company_name || 'Panel de Gestión'}
+                            </h2>
+                        </div>
 
-            {/* Main Content Area */}
-            <div className={cn(
-                "transition-all duration-300 ease-in-out",
-                isSidebarOpen ? 'pl-72' : 'pl-20'
-            )}>
-                {/* Admin Topbar */}
-                <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 px-6 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <h2 className="text-sm font-bold text-slate-400 capitalize truncate max-w-[200px]">
-                            {tenant?.company_name || 'Panel de Gestión'}
-                        </h2>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <button className="p-2 text-slate-400 hover:text-slate-900 transition-colors">
-                            <Bell size={20} />
-                        </button>
-                        <div className="h-8 w-px bg-slate-100" />
-                        <div className="flex items-center gap-3 pl-2">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-xs font-bold text-slate-900 leading-none">
-                                    {(usePage().props.auth.user as any).name}
-                                </p>
-                                <p className="text-[10px] text-slate-400 font-medium mt-1 uppercase">
-                                    {(usePage().props.auth.user as any).is_superadmin || (usePage().props.auth.user as any).role === 'admin'
-                                        ? 'Administrador CAMEP'
-                                        : 'Asociado Linkiu'}
-                                </p>
-                            </div>
-                            <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center text-white text-xs font-bold shadow-lg overflow-hidden border border-slate-200">
-                                {(usePage().props.auth.user as any).profile_photo_url ? (
-                                    <img
-                                        src={(usePage().props.auth.user as any).profile_photo_url}
-                                        alt="Avatar"
-                                        className="h-full w-full object-cover bg-white"
-                                    />
-                                ) : (usePage().props.auth as any).associate?.logo_url ? (
-                                    <img
-                                        src={(usePage().props.auth as any).associate.logo_url}
-                                        alt="Logo"
-                                        className="h-full w-full object-cover bg-white"
-                                    />
-                                ) : (
-                                    (usePage().props.auth.user as any).name.charAt(0)
-                                )}
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                className="text-muted-foreground transition-colors hover:text-foreground"
+                                aria-label="Notificaciones"
+                            >
+                                <Bell size={20} />
+                            </button>
+                            <Separator orientation="vertical" className="h-6" />
+                            <div className="flex items-center gap-3">
+                                <div className="hidden text-right sm:block">
+                                    <p className="text-xs font-medium leading-none text-foreground">
+                                        {user.name}
+                                    </p>
+                                    <p className="mt-1 text-[10px] text-muted-foreground">
+                                        {isAdmin
+                                            ? 'Administrador CAMEP'
+                                            : 'Asociado'}
+                                    </p>
+                                </div>
+                                <div className="flex size-9 items-center justify-center overflow-hidden rounded-lg border border-border bg-primary text-xs font-medium text-primary-foreground">
+                                    {user.profile_photo_url ? (
+                                        <img
+                                            src={user.profile_photo_url}
+                                            alt="Avatar"
+                                            className="size-full object-cover"
+                                        />
+                                    ) : associate?.logo_url ? (
+                                        <img
+                                            src={associate.logo_url}
+                                            alt="Logo"
+                                            className="size-full object-cover"
+                                        />
+                                    ) : (
+                                        user.name.charAt(0)
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </header>
+                    </header>
 
-                {/* Page Content */}
-                <main className="p-6 md:p-10 min-h-[calc(100vh-64px)]">
-                    <div className="max-w-7xl mx-auto">
-                        {children}
+                    {/* Contenido */}
+                    <div className="min-h-[calc(100svh-4rem)] p-6 md:p-10">
+                        <div className="mx-auto max-w-7xl">{children}</div>
                     </div>
-                </main>
-            </div>
+                </SidebarInset>
+            </SidebarProvider>
 
-            {/* Real-time notification toasts */}
-            <NotificationToastStack notifications={notifications} dismiss={dismiss} />
-        </div>
+            {/* Notificaciones en tiempo real */}
+            <NotificationToastStack
+                notifications={notifications}
+                dismiss={dismiss}
+            />
+        </TooltipProvider>
     );
 }

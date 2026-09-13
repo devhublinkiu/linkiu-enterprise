@@ -12,6 +12,9 @@ import { cn } from '@/lib/utils';
 //   · `has-data-[icon=...]:` (v4) → `has-[[data-icon=...]]:`.
 //   · `color-mix(... var(--secondary) ...)`: nuestras vars son tripletas HSL, así que se
 //     envuelven en `hsl(var(--…))` para que sean colores válidos.
+//   · `forwardRef`: la spec (React 19) recibe el `ref` como prop; en React 18 un componente de
+//     función no puede recibirlo, así que se envuelve en `React.forwardRef` para que Radix
+//     (`asChild` de Tooltip/Sheet/Sidebar…) pueda anclar el botón. No cambia el comportamiento.
 // `ring-3` y `aria-invalid:` funcionan gracias a la extensión en tailwind.config.js.
 const buttonVariants = cva(
     "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [&:active:not([aria-haspopup])]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -50,20 +53,27 @@ const buttonVariants = cva(
     },
 );
 
-function Button({
-    className,
-    variant = 'default',
-    size = 'default',
-    asChild = false,
-    ...props
-}: React.ComponentProps<'button'> &
-    VariantProps<typeof buttonVariants> & {
-        asChild?: boolean;
-    }) {
+const Button = React.forwardRef<
+    HTMLButtonElement,
+    React.ComponentProps<'button'> &
+        VariantProps<typeof buttonVariants> & {
+            asChild?: boolean;
+        }
+>(function Button(
+    {
+        className,
+        variant = 'default',
+        size = 'default',
+        asChild = false,
+        ...props
+    },
+    ref,
+) {
     const Comp = asChild ? Slot.Root : 'button';
 
     return (
         <Comp
+            ref={ref}
             data-slot="button"
             data-variant={variant}
             data-size={size}
@@ -71,6 +81,6 @@ function Button({
             {...props}
         />
     );
-}
+});
 
 export { Button, buttonVariants };

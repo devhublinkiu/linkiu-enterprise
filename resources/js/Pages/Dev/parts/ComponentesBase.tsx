@@ -34,15 +34,53 @@ import {
 } from '@/Components/base/InputOTP';
 import { Label } from '@/Components/base/Label';
 import { Separator } from '@/Components/base/Separator';
+import {
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@/Components/base/Sheet';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuBadge,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
+    SidebarProvider,
+} from '@/Components/base/Sidebar';
+import { Skeleton } from '@/Components/base/Skeleton';
 import { Spinner } from '@/Components/base/Spinner';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/Components/base/Tooltip';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import {
     ArrowUpRight,
     CircleAlert,
     CircleCheck,
+    CreditCard,
     Info,
+    LayoutDashboard,
     Mail,
     TriangleAlert,
+    UserCircle,
+    Users,
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -179,6 +217,168 @@ export default function ComponentesBase() {
                         <InputOTPSlot index={3} aria-invalid />
                     </InputOTPGroup>
                 </InputOTP>
+            </div>
+
+            {/* Tooltip */}
+            <div className="space-y-4 rounded-lg border p-5">
+                <p className="text-small font-medium">Tooltip</p>
+                <TooltipProvider>
+                    <div className="flex flex-wrap items-center gap-3">
+                        {(['top', 'right', 'bottom', 'left'] as const).map(
+                            (side) => (
+                                <Tooltip key={side}>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="w-fit capitalize"
+                                        >
+                                            {side}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side={side}>
+                                        <p>Aparece en el directorio público.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            ),
+                        )}
+                    </div>
+                </TooltipProvider>
+            </div>
+
+            {/* Sheet */}
+            <div className="space-y-4 rounded-lg border p-5">
+                <p className="text-small font-medium">Sheet</p>
+                <div className="flex flex-wrap items-center gap-3">
+                    {(['top', 'right', 'bottom', 'left'] as const).map(
+                        (side) => (
+                            <Sheet key={side}>
+                                <SheetTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="capitalize"
+                                    >
+                                        {side}
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent
+                                    side={side}
+                                    className="data-[side=bottom]:max-h-[50vh] data-[side=top]:max-h-[50vh]"
+                                >
+                                    <SheetHeader>
+                                        <SheetTitle>Editar perfil</SheetTitle>
+                                        <SheetDescription>
+                                            Haz los cambios y guarda cuando
+                                            termines.
+                                        </SheetDescription>
+                                    </SheetHeader>
+                                    <div className="no-scrollbar overflow-y-auto px-4">
+                                        <p className="leading-relaxed text-muted-foreground">
+                                            Contenido del panel lateral.
+                                        </p>
+                                    </div>
+                                    <SheetFooter>
+                                        <Button>Guardar cambios</Button>
+                                        <SheetClose asChild>
+                                            <Button variant="outline">
+                                                Cancelar
+                                            </Button>
+                                        </SheetClose>
+                                    </SheetFooter>
+                                </SheetContent>
+                            </Sheet>
+                        ),
+                    )}
+                </div>
+            </div>
+
+            {/* Skeleton */}
+            <div className="space-y-4 rounded-lg border p-5">
+                <p className="text-small font-medium">Skeleton</p>
+                {/* Avatar + líneas */}
+                <div className="flex w-fit items-center gap-4">
+                    <Skeleton className="size-10 shrink-0 rounded-full" />
+                    <div className="grid gap-2">
+                        <Skeleton className="h-4 w-[150px]" />
+                        <Skeleton className="h-4 w-[100px]" />
+                    </div>
+                </div>
+                {/* Bloque de texto */}
+                <div className="flex w-full max-w-xs flex-col gap-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-4 rounded-lg border p-5">
+                <p className="text-small font-medium">Sidebar</p>
+                <SidebarProvider className="min-h-0">
+                    <div className="h-96 w-72 overflow-hidden rounded-lg border">
+                        <Sidebar collapsible="none" className="h-full">
+                            <SidebarHeader>
+                                <p className="px-2 font-display text-base font-medium">
+                                    CAMEP
+                                </p>
+                            </SidebarHeader>
+                            <SidebarContent>
+                                <SidebarGroup>
+                                    <SidebarGroupLabel>Panel</SidebarGroupLabel>
+                                    <SidebarGroupContent>
+                                        <SidebarMenu>
+                                            <SidebarMenuItem>
+                                                <SidebarMenuButton isActive>
+                                                    <LayoutDashboard />
+                                                    <span>Inicio</span>
+                                                </SidebarMenuButton>
+                                            </SidebarMenuItem>
+                                            <SidebarMenuItem>
+                                                <SidebarMenuButton>
+                                                    <Users />
+                                                    <span>Empresas</span>
+                                                </SidebarMenuButton>
+                                                <SidebarMenuBadge>
+                                                    12
+                                                </SidebarMenuBadge>
+                                            </SidebarMenuItem>
+                                            <SidebarMenuItem>
+                                                <SidebarMenuButton>
+                                                    <CreditCard />
+                                                    <span>Finanzas</span>
+                                                </SidebarMenuButton>
+                                                <SidebarMenuSub>
+                                                    <SidebarMenuSubItem>
+                                                        <SidebarMenuSubButton href="#">
+                                                            Pagos
+                                                        </SidebarMenuSubButton>
+                                                    </SidebarMenuSubItem>
+                                                    <SidebarMenuSubItem>
+                                                        <SidebarMenuSubButton
+                                                            href="#"
+                                                            isActive
+                                                        >
+                                                            Facturación
+                                                        </SidebarMenuSubButton>
+                                                    </SidebarMenuSubItem>
+                                                </SidebarMenuSub>
+                                            </SidebarMenuItem>
+                                        </SidebarMenu>
+                                    </SidebarGroupContent>
+                                </SidebarGroup>
+                            </SidebarContent>
+                            <SidebarFooter>
+                                <SidebarMenu>
+                                    <SidebarMenuItem>
+                                        <SidebarMenuButton>
+                                            <UserCircle />
+                                            <span>Mi perfil</span>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                </SidebarMenu>
+                            </SidebarFooter>
+                        </Sidebar>
+                    </div>
+                </SidebarProvider>
             </div>
 
             {/* Button */}

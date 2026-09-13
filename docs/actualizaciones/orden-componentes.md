@@ -39,7 +39,7 @@ Sin dependencias; casi todo lo demás los usa. Empezar aquí.
 - [ ] Badge ↻
 - [x] Separator ↻ *(base/Separator.tsx · en galería · conectado en FieldSeparator)*
 - [x] Spinner *(base/Spinner.tsx · en galería)*
-- [ ] Skeleton
+- [x] Skeleton *(base/Skeleton.tsx · en galería · Corte 5C del plan 0005)*
 - [ ] Avatar ↻
 - [ ] Aspect Ratio
 - [ ] Progress
@@ -60,12 +60,12 @@ Usan primitivos de la fase 1.
 ## Fase 3 · Overlays / capas (Radix portal)
 Base de menús, diálogos y popovers. Muchos compuestos dependen de estos.
 
-- [ ] Tooltip
+- [x] Tooltip *(base/Tooltip.tsx · Radix `radix-ui` · en galería (4 lados) · Corte 5A del plan 0005)*
 - [ ] Popover
 - [ ] Hover Card
 - [ ] Dialog
 - [ ] Alert Dialog *(→ [Dialog, Button])*
-- [ ] Sheet
+- [x] Sheet *(base/Sheet.tsx · Radix Dialog · en galería (4 lados) · Corte 5B del plan 0005)*
 - [ ] Drawer
 - [ ] Dropdown Menu ↻
 - [ ] Context Menu
@@ -95,7 +95,7 @@ Dependen de la fase 3 (y de cmdk / react-day-picker).
 - [ ] Breadcrumb
 - [ ] Pagination
 - [ ] Navigation Menu
-- [ ] Sidebar *(→ [Sheet, Button, Separator, Tooltip])*
+- [x] Sidebar *(base/Sidebar.tsx · familia completa + `useSidebar`/`useIsMobile` · en galería · Corte 5C del plan 0005)*
 
 ## Fase 7 · Feedback / estado
 

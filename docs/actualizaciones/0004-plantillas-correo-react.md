@@ -1,6 +1,6 @@
 # Plan de actualización — 0004 · Plantillas de correo en React (react-email)
 
-- **Estado:** Borrador (a la espera de `#go`)
+- **Estado:** ✅ COMPLETADO (cortes 4A–4K + 4Z) — 2026-09-13
 - **Fecha:** 2026-09-13
 - **Alcance:** Migrar las plantillas de correo de **Blade a React** con la librería **`react-email`**
   (la de Resend, nuestro proveedor). Se crean **Header, Footer y Layout** como componentes React de
@@ -104,11 +104,13 @@ RUNTIME     Mailable → Blade → Resend            (100 % PHP; Mailables NO ca
 Diagnóstico DNS (2026-09-13): SPF (en `send.camepg.com`), DKIM (`resend._domainkey`, `d=camepg.com`)
 y DMARC (`p=none`) **presentes** → el spam no es por autenticación. Palancas de código:
 
-- [ ] **Parte de texto plano** en los Mailables (hoy solo HTML): `Content(view, text: 'emails...text')`
-  o auto-derivada. Es señal de spam fuerte enviar HTML sin `text/plain`.
-- [ ] **Cabecera `List-Unsubscribe`** (+ `List-Unsubscribe-Post`) en los correos transaccionales
-  masivos, vía `Headers` del Mailable.
-- [ ] **`Reply-To` real** (p. ej. `adminfin@camepg.org`) en lugar de solo `no-reply@`.
+- [x] **Parte de texto plano** — auto-derivada del HTML por el listener `App\Listeners\EnsureEmailPlainText`
+  (evento `MessageSending`), transversal a los ~23 Mailables. Limpia el relleno invisible de `<Preview>`.
+- [x] **`Reply-To` real** — `Mail::alwaysReplyTo(config('mail.reply_to'))` en `AppServiceProvider`;
+  `config/mail.php` añade `reply_to` (env `MAIL_REPLY_TO_ADDRESS`, por defecto `adminfin@camepg.org`).
+- [ ] **`List-Unsubscribe`** — **pospuesto** (decisión, no código pendiente): no hay endpoint de baja y
+  es semánticamente incorrecto en correos transaccionales/seguridad (¿darse de baja de un OTP?).
+  Aplicar solo a correos "masivos" (alertas de foro/licitaciones) cuando exista un flujo de baja real.
 
 *(Lo que más mueve la aguja — mover el envío a `camepg.org`, DMARC `p=quarantine`, calentar dominio —
 es infra, §10.)*
@@ -179,11 +181,18 @@ es infra, §10.)*
   - **✅ Todos los cuerpos migrados.** Restan solo 4K (entregabilidad) y 4Z (cierre).
   - En cada uno: portar cuerpo a React, aplicar botón/enlaces de marca (§5), regenerar Blade,
     **comparar HTML** contra el original. El texto plano (§6) se centraliza en 4K.
-- **Corte 4K · Entregabilidad de código.** `List-Unsubscribe` + `Reply-To` transversal en los
-  Mailables (§6). *(La parte de texto plano se va metiendo por plantilla en 4D–4J.)*
-- **Corte 4Z · Cierre.** Retirar el `_layout.blade.php` viejo hardcodeado y cualquier `<style>`
-  duplicado ya sin uso. Confirmar que ningún Mailable apunta a una vista huérfana. Marcar plan
-  COMPLETADO. Registrar en `docs/pendientes-documentacion.md` la sección de infra pendiente (§10).
+- **Corte 4K · Entregabilidad de código.** ✅ **HECHO** (2026-09-13). Transversal vía
+  `AppServiceProvider` (no se tocan los Mailables): **Reply-To global** (`Mail::alwaysReplyTo`, config
+  `mail.reply_to`) + **parte de texto plano** auto-derivada del HTML (listener `EnsureEmailPlainText`
+  en `MessageSending`, que además limpia el relleno invisible de `<Preview>`). Test
+  `tests/Feature/EmailDeliverabilityTest.php` (3 casos: deriva texto, respeta texto existente, envío
+  real lleva Reply-To + texto). `List-Unsubscribe` **pospuesto** (ver §6). Pest 32/32, preflight verde.
+  *Nota: el texto plano NO se hizo por plantilla en 4D–4J; se centralizó aquí.*
+- **Corte 4Z · Cierre.** ✅ **HECHO** (2026-09-13). Retirado `resources/views/emails/_layout.blade.php`
+  (huérfano: ninguna plantilla lo extiende ya; 0 referencias en `app/` y `resources/views/`).
+  Verificado 1:1 entre las **23 vistas generadas** y sus 23 fuentes `.tsx` (sin huérfanos en ningún
+  sentido). Registrada la infra pendiente en `docs/pendientes-documentacion.md` (§10). Plan
+  **COMPLETADO**.
 
 **Gates por corte:** `types:check` + ESLint + Prettier (sobre los `.tsx` nuevos) + Vitest si aplica;
 Pint + Larastan + Pest cuando el corte toque Mailables/PHP. `npm run emails:build` debe correr y no
@@ -227,6 +236,6 @@ Estos mueven la entregabilidad pero son configuración, no código de este plan:
 
 ## 11. Aprobación
 
-- [ ] Plan revisado
-- [ ] Pipeline confirmado (compilar a Blade en build)
-- [ ] `#go` recibido → Corte 4A
+- [x] Plan revisado
+- [x] Pipeline confirmado (compilar a Blade en build)
+- [x] `#go` recibido → cortes 4A–4K + 4Z ejecutados. **Plan completado.**

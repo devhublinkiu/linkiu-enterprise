@@ -83,6 +83,14 @@ Leyenda: 🔴 crítico · 🟠 importante · 🟡 conviene · ⬜ pendiente · �
       `routes.json`, `routes.txt`, `route_names.txt`, `logo_b64.txt`, `ziggy.json`, y el archivo
       con nombre corrupto **`toArray())`**.
 - [ ] 🟡 **Actualizar el índice de ADRs** (`docs/adr/README.md`) a medida que se agreguen 0003+.
+- [ ] 🟠 **Entregabilidad de correo (infra) — plan 0004 §10.** No es código (eso ya está: Reply-To
+      y texto plano en el corte 4K). Pendiente en Resend/DNS: (1) **enviar desde `camepg.org`**
+      (verificar el dominio en Resend y cambiar `MAIL_FROM_ADDRESS`) para alinear remitente con la
+      marca —hoy sale de `camepg.com` y enlaza a `.org`, señal de phishing—; (2) **`APP_NAME="CAMEP"`
+      en `.env`** (hoy vacío → el From sale sin nombre); (3) completar el **DKIM** en Resend a
+      `v=DKIM1; k=rsa; p=…` (hoy solo `p=…`); (4) **DMARC** `p=none` → `p=quarantine` tras monitorear;
+      (5) **calentar** el dominio; (6) `List-Unsubscribe` solo cuando exista un flujo de baja real,
+      para los correos masivos (foro/licitaciones), no los transaccionales.
 
 ---
 

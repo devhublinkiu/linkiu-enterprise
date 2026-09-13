@@ -117,4 +117,20 @@ return [
 
     'admin_recipient' => env('ADMIN_EMAIL'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Global "Reply-To" Address
+    |--------------------------------------------------------------------------
+    |
+    | Los correos salen desde un remitente no-reply; darles un Reply-To a un
+    | buzón monitoreado mejora la entregabilidad y la experiencia. Se aplica de
+    | forma global en AppServiceProvider (Mail::alwaysReplyTo). Ver plan 0004 §6.
+    |
+    */
+
+    'reply_to' => [
+        'address' => env('MAIL_REPLY_TO_ADDRESS', 'adminfin@camepg.org'),
+        'name' => env('MAIL_REPLY_TO_NAME', env('APP_NAME', 'CAMEP')),
+    ],
+
 ];

@@ -1,20 +1,15 @@
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
     SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
     SidebarRail,
 } from '@/Components/base/Sidebar';
-import { Link, usePage } from '@inertiajs/react';
-import { LogOut, UserCircle } from 'lucide-react';
+import { usePage } from '@inertiajs/react';
 
 import { buildAdminItems, buildAssociateItems } from './parts/nav-items';
-import { NavMenu, useIsActive } from './parts/nav-menu';
+import { NavMenu } from './parts/nav-menu';
 import {
     NoPlanNotice,
     PlanWidget,
@@ -38,7 +33,6 @@ type SidebarProps = {
 export default function AppSidebar() {
     const props = usePage().props as unknown as SidebarProps;
     const auth = props.auth;
-    const isActive = useIsActive();
 
     const isAdmin = auth.user.is_superadmin || auth.user.role === 'admin';
 
@@ -103,35 +97,6 @@ export default function AppSidebar() {
                 </SidebarGroup>
                 {!isAdmin && <NoPlanNotice hasNoPlan={hasNoPlan} />}
             </SidebarContent>
-
-            <SidebarFooter>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            asChild
-                            tooltip="Mi perfil"
-                            isActive={isActive(route('profile.edit'))}
-                        >
-                            <Link href={route('profile.edit')}>
-                                <UserCircle />
-                                <span>Mi perfil</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton asChild tooltip="Salir">
-                            <Link
-                                href={route('logout')}
-                                method="post"
-                                as="button"
-                            >
-                                <LogOut />
-                                <span>Salir</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarFooter>
 
             <SidebarRail />
         </Sidebar>

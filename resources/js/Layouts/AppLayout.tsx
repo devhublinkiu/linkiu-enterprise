@@ -1,4 +1,14 @@
 import AppSidebar from '@/Components/AppSidebar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/Components/base/Avatar';
+import { Button } from '@/Components/base/Button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/Components/base/DropdownMenu';
 import { Separator } from '@/Components/base/Separator';
 import {
     SidebarInset,
@@ -9,8 +19,8 @@ import { TooltipProvider } from '@/Components/base/Tooltip';
 import NotificationToastStack from '@/Components/NotificationToastStack';
 import { useNotifications } from '@/hooks/useNotifications';
 import { PageProps } from '@/types';
-import { usePage } from '@inertiajs/react';
-import { Bell } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { Bell, LogOut, UserCircle } from 'lucide-react';
 import { PropsWithChildren, ReactNode } from 'react';
 
 type LayoutAuth = {
@@ -51,43 +61,86 @@ export default function AppLayout({
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                className="text-muted-foreground transition-colors hover:text-foreground"
+                            <Button
+                                variant="ghost"
+                                size="icon"
                                 aria-label="Notificaciones"
+                                className="text-muted-foreground"
                             >
-                                <Bell size={20} />
-                            </button>
+                                <Bell />
+                            </Button>
                             <Separator orientation="vertical" className="h-6" />
-                            <div className="flex items-center gap-3">
-                                <div className="hidden text-right sm:block">
-                                    <p className="text-xs font-medium leading-none text-foreground">
-                                        {user.name}
-                                    </p>
-                                    <p className="mt-1 text-[10px] text-muted-foreground">
-                                        {isAdmin
-                                            ? 'Administrador CAMEP'
-                                            : 'Asociado'}
-                                    </p>
-                                </div>
-                                <div className="flex size-9 items-center justify-center overflow-hidden rounded-lg border border-border bg-primary text-xs font-medium text-primary-foreground">
-                                    {user.profile_photo_url ? (
-                                        <img
-                                            src={user.profile_photo_url}
-                                            alt="Avatar"
-                                            className="size-full object-cover"
-                                        />
-                                    ) : associate?.logo_url ? (
-                                        <img
-                                            src={associate.logo_url}
-                                            alt="Logo"
-                                            className="size-full object-cover"
-                                        />
-                                    ) : (
-                                        user.name.charAt(0)
-                                    )}
-                                </div>
-                            </div>
+
+                            {/* Menú de usuario: Mi perfil / Salir (antes en el footer del sidebar) */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="flex items-center gap-3 rounded-lg px-1 py-1 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+                                    >
+                                        <span className="hidden text-right sm:block">
+                                            <span className="block text-xs font-medium leading-none text-foreground">
+                                                {user.name}
+                                            </span>
+                                            <span className="mt-1 block text-[10px] text-muted-foreground">
+                                                {isAdmin
+                                                    ? 'Administrador CAMEP'
+                                                    : 'Asociado'}
+                                            </span>
+                                        </span>
+                                        <Avatar>
+                                            <AvatarImage
+                                                src={
+                                                    user.profile_photo_url ||
+                                                    associate?.logo_url ||
+                                                    undefined
+                                                }
+                                                alt={user.name}
+                                            />
+                                            <AvatarFallback>
+                                                {user.name.charAt(0)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="w-56"
+                                >
+                                    <DropdownMenuLabel className="flex flex-col gap-0.5">
+                                        <span className="text-sm font-medium text-foreground">
+                                            {user.name}
+                                        </span>
+                                        <span className="text-xs font-normal text-muted-foreground">
+                                            {isAdmin
+                                                ? 'Administrador CAMEP'
+                                                : 'Asociado'}
+                                        </span>
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem asChild>
+                                        <Link href={route('profile.edit')}>
+                                            <UserCircle />
+                                            Mi perfil
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        asChild
+                                        variant="destructive"
+                                    >
+                                        <Link
+                                            href={route('logout')}
+                                            method="post"
+                                            as="button"
+                                            className="w-full"
+                                        >
+                                            <LogOut />
+                                            Salir
+                                        </Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </header>
 

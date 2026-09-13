@@ -36,11 +36,11 @@ Sin dependencias; casi todo lo demás los usa. Empezar aquí.
 - [ ] Radio Group
 - [ ] Switch ↻
 - [ ] Toggle
-- [ ] Badge ↻
+- [x] Badge ↻ *(base/Badge.tsx · cva + Slot (asChild) · variantes default/secondary/destructive/outline/ghost/link · en galería · Corte 6B del plan 0006)*
 - [x] Separator ↻ *(base/Separator.tsx · en galería · conectado en FieldSeparator)*
 - [x] Spinner *(base/Spinner.tsx · en galería)*
 - [x] Skeleton *(base/Skeleton.tsx · en galería · Corte 5C del plan 0005)*
-- [ ] Avatar ↻
+- [x] Avatar ↻ *(base/Avatar.tsx · Radix Avatar · en galería (imagen/fallback, tamaños, badge, grupo) · Corte 6A del plan 0006)*
 - [ ] Aspect Ratio
 - [ ] Progress
 - [ ] Slider
@@ -67,7 +67,7 @@ Base de menús, diálogos y popovers. Muchos compuestos dependen de estos.
 - [ ] Alert Dialog *(→ [Dialog, Button])*
 - [x] Sheet *(base/Sheet.tsx · Radix Dialog · en galería (4 lados) · Corte 5B del plan 0005)*
 - [ ] Drawer
-- [ ] Dropdown Menu ↻
+- [x] Dropdown Menu ↻ *(base/DropdownMenu.tsx · Radix DropdownMenu · familia completa · en galería (item/íconos/destructivo, checkbox, radio, submenú) · Corte 6B del plan 0006)*
 - [ ] Context Menu
 - [ ] Menubar
 

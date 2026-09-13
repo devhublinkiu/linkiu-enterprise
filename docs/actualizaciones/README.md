@@ -20,5 +20,8 @@ se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas
 | [0001](0001-fundacion-visual-y-tooling.md) | Fundación: sistema visual + tooling/gates | Hecho |
 | [0002](0002-preflight.md) | Preflight: orquestador de gates | Hecho |
 | [0003](0003-login-registro.md) | Login y Registro (lado asociado) | Borrador |
+| [0004](0004-plantillas-correo-react.md) | Plantillas de correo en React (react-email) | Hecho |
+| [0005](0005-sidebar-navegacion.md) | Sidebar y navegación (shell de la app) | Hecho |
+| [0006](0006-navbar-topbar.md) | Navbar / Topbar del panel | Hecho |
 
 Estados posibles: `Borrador` · `Aprobado (#go)` · `En curso` · `Hecho` · `Descartado`.

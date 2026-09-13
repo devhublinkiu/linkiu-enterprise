@@ -10,6 +10,23 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     };
 }
 
+// jsdom no implementa scrollIntoView ni la Pointer Capture API; Radix Menu (DropdownMenu…) las
+// usa al abrir para enfocar/medir ítems. Polyfills no-op para poder abrir menús en las pruebas.
+if (typeof Element !== 'undefined') {
+    if (!Element.prototype.scrollIntoView) {
+        Element.prototype.scrollIntoView = () => {};
+    }
+    if (!Element.prototype.hasPointerCapture) {
+        Element.prototype.hasPointerCapture = () => false;
+    }
+    if (!Element.prototype.setPointerCapture) {
+        Element.prototype.setPointerCapture = () => {};
+    }
+    if (!Element.prototype.releasePointerCapture) {
+        Element.prototype.releasePointerCapture = () => {};
+    }
+}
+
 // jsdom tampoco implementa matchMedia; useIsMobile (base/Sidebar) lo usa. Devuelve "no coincide".
 if (typeof window !== 'undefined' && !window.matchMedia) {
     window.matchMedia = (query: string) =>

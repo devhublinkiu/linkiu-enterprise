@@ -4,6 +4,15 @@ import {
     AlertDescription,
     AlertTitle,
 } from '@/Components/base/Alert';
+import {
+    Avatar,
+    AvatarBadge,
+    AvatarFallback,
+    AvatarGroup,
+    AvatarGroupCount,
+    AvatarImage,
+} from '@/Components/base/Avatar';
+import { Badge } from '@/Components/base/Badge';
 import { Button } from '@/Components/base/Button';
 import {
     Card,
@@ -15,6 +24,21 @@ import {
     CardTitle,
 } from '@/Components/base/Card';
 import { Checkbox } from '@/Components/base/Checkbox';
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuPortal,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+} from '@/Components/base/DropdownMenu';
 import {
     Field,
     FieldDescription,
@@ -77,7 +101,11 @@ import {
     CreditCard,
     Info,
     LayoutDashboard,
+    LogOut,
     Mail,
+    Plus,
+    Settings,
+    Trash2,
     TriangleAlert,
     UserCircle,
     Users,
@@ -89,6 +117,8 @@ import * as React from 'react';
 export default function ComponentesBase() {
     const [acepta, setAcepta] = React.useState(true);
     const [otp, setOtp] = React.useState('');
+    const [notifPush, setNotifPush] = React.useState(true);
+    const [posicion, setPosicion] = React.useState('bottom');
 
     return (
         <section className="space-y-6">
@@ -307,6 +337,178 @@ export default function ComponentesBase() {
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-3/4" />
+                </div>
+            </div>
+
+            {/* Avatar */}
+            <div className="space-y-4 rounded-lg border p-5">
+                <p className="text-small font-medium">Avatar</p>
+                {/* Con imagen + fallback (la imagen puede no cargar: muestra la inicial) */}
+                <div className="flex items-center gap-4">
+                    <Avatar>
+                        <AvatarImage
+                            src="/images/camep/logo_camep_horizontal_sidebar.svg"
+                            alt="CAMEP"
+                        />
+                        <AvatarFallback>CN</AvatarFallback>
+                    </Avatar>
+                    <Avatar>
+                        <AvatarFallback>MJ</AvatarFallback>
+                    </Avatar>
+                </div>
+                {/* Tamaños: sm · default · lg */}
+                <div className="flex items-center gap-3">
+                    <Avatar size="sm">
+                        <AvatarFallback>SM</AvatarFallback>
+                    </Avatar>
+                    <Avatar>
+                        <AvatarFallback>MD</AvatarFallback>
+                    </Avatar>
+                    <Avatar size="lg">
+                        <AvatarFallback>LG</AvatarFallback>
+                    </Avatar>
+                </div>
+                {/* Con badge (punto) y badge con ícono */}
+                <div className="flex items-center gap-4">
+                    <Avatar>
+                        <AvatarFallback>ON</AvatarFallback>
+                        <AvatarBadge className="bg-success" />
+                    </Avatar>
+                    <Avatar size="lg">
+                        <AvatarFallback>PL</AvatarFallback>
+                        <AvatarBadge>
+                            <Plus />
+                        </AvatarBadge>
+                    </Avatar>
+                </div>
+                {/* Grupo con contador */}
+                <AvatarGroup>
+                    <Avatar>
+                        <AvatarFallback>CN</AvatarFallback>
+                    </Avatar>
+                    <Avatar>
+                        <AvatarFallback>MJ</AvatarFallback>
+                    </Avatar>
+                    <Avatar>
+                        <AvatarFallback>ER</AvatarFallback>
+                    </Avatar>
+                    <AvatarGroupCount>+3</AvatarGroupCount>
+                </AvatarGroup>
+            </div>
+
+            {/* Badge */}
+            <div className="space-y-4 rounded-lg border p-5">
+                <p className="text-small font-medium">Badge</p>
+                {/* Variantes */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <Badge>Default</Badge>
+                    <Badge variant="secondary">Secondary</Badge>
+                    <Badge variant="destructive">Destructive</Badge>
+                    <Badge variant="outline">Outline</Badge>
+                    <Badge variant="ghost">Ghost</Badge>
+                </div>
+                {/* Con ícono y como enlace */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">
+                        <CircleCheck data-icon="inline-start" />
+                        Verificado
+                    </Badge>
+                    <Badge variant="outline">
+                        3 nuevos
+                        <ArrowUpRight data-icon="inline-end" />
+                    </Badge>
+                    <Badge asChild>
+                        <a href="#badge-link">
+                            Ver más
+                            <ArrowUpRight data-icon="inline-end" />
+                        </a>
+                    </Badge>
+                </div>
+            </div>
+
+            {/* Dropdown Menu */}
+            <div className="space-y-4 rounded-lg border p-5">
+                <p className="text-small font-medium">Dropdown Menu</p>
+                <div className="flex flex-wrap items-center gap-3">
+                    {/* Básico + íconos + destructivo */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline">Mi cuenta</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                            <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
+                            <DropdownMenuItem>
+                                <UserCircle />
+                                Mi perfil
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <CreditCard />
+                                Facturación
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Settings />
+                                Configuración
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem variant="destructive">
+                                <LogOut />
+                                Salir
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Checkbox + Radio + Submenú */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline">Preferencias</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-52">
+                            <DropdownMenuLabel>
+                                Notificaciones
+                            </DropdownMenuLabel>
+                            <DropdownMenuCheckboxItem
+                                checked={notifPush}
+                                onCheckedChange={(v) =>
+                                    setNotifPush(v === true)
+                                }
+                            >
+                                Push
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel>Posición</DropdownMenuLabel>
+                            <DropdownMenuRadioGroup
+                                value={posicion}
+                                onValueChange={setPosicion}
+                            >
+                                <DropdownMenuRadioItem value="top">
+                                    Arriba
+                                </DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="bottom">
+                                    Abajo
+                                </DropdownMenuRadioItem>
+                            </DropdownMenuRadioGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <Users />
+                                    Invitar
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                    <DropdownMenuSubContent>
+                                        <DropdownMenuItem>
+                                            <Mail />
+                                            Por correo
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem variant="destructive">
+                                            <Trash2 />
+                                            Quitar acceso
+                                        </DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                            </DropdownMenuSub>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
 

@@ -14,6 +14,7 @@ ADR nuevo que la sustituya y se marca la anterior como `Sustituida por ADR-XXXX`
 | [0001](0001-motor-de-cobro-unificado.md) | Motor de cobro unificado: factura como documento, pago como transacción | Aceptada | 2026-08-06 |
 | [0002](0002-interruptores-de-modulo-por-plan.md) | Todo módulo se entrega con interruptor de plan | Aceptada | 2026-08-06 |
 | [0003](0003-sistema-otp-por-correo.md) | Sistema OTP por correo (registro y recuperación) | Aceptada | 2026-09-13 |
+| [0004](0004-plantillas-correo-react.md) | Plantillas de correo en React (react-email) compiladas a Blade | Aceptada | 2026-09-13 |
 
 ## Cómo escribir uno nuevo
 

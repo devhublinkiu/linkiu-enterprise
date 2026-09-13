@@ -25,3 +25,6 @@ Thumbs.db
 
 # Debug temporal de login (nunca debe versionarse; contenía PII)
 login_debug.txt
+
+# Dir de trabajo del preview de react-email (npm run emails:dev)
+/.react-email

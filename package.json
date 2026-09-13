@@ -9,6 +9,8 @@
         "types:check": "tsc --noEmit",
         "test": "vitest run",
         "test:watch": "vitest",
+        "emails:build": "tsx scripts/build-emails.ts",
+        "emails:dev": "email dev --dir resources/js/emails",
         "preflight": "node scripts/preflight.mjs",
         "preflight:push": "node scripts/preflight.mjs --push",
         "preflight:all": "node scripts/preflight.mjs --all"
@@ -16,6 +18,8 @@
     "devDependencies": {
         "@headlessui/react": "^2.0.0",
         "@inertiajs/react": "^2.0.0",
+        "@react-email/components": "^1.0.12",
+        "@react-email/render": "^2.1.0",
         "@tailwindcss/container-queries": "^0.1.1",
         "@tailwindcss/forms": "^0.5.3",
         "@tailwindcss/vite": "^4.0.0",
@@ -44,8 +48,10 @@
         "prettier-plugin-tailwindcss": "^0.6.5",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
+        "react-email": "^6.9.5",
         "tailwindcss": "^3.2.1",
         "tailwindcss-animate": "^1.0.7",
+        "tsx": "^4.23.13",
         "typescript": "^5.0.2",
         "vite": "^7.0.7",
         "vitest": "^5.0.0"

@@ -37,6 +37,8 @@ php artisan create:admin "Nombre" correo pass  # crea superadmin
 php artisan schedule:list
 npm run dev            # o npm run build
 npm run lint           # ESLint + Prettier (resources/js)
+npm run emails:build   # compila plantillas React de correo (resources/js/emails) -> vistas Blade
+npm run emails:dev     # previsualiza los correos en el navegador (react-email)
 ./vendor/bin/pint      # formato PHP
 ```
 
@@ -71,6 +73,10 @@ npm run lint           # ESLint + Prettier (resources/js)
 ## Correo y notificaciones
 
 - Correo saliente por **Resend**. Hay ~20 Mailables en `app/Mail`.
+- **Plantillas de correo en React** (`react-email`), en `resources/js/emails/`. Se **autoran en
+  React** y se **compilan a Blade** con `npm run emails:build` (ver ADR-0004). El runtime no cambia:
+  los Mailables siguen apuntando a `resources/views/emails/**.blade.php` (archivos **generados**, no
+  editar a mano). Los estilos van inline con hex literal (los clientes de correo no soportan tokens).
 - Los correos de facturación se envían con `defer()` (tras la respuesta), así que **hoy no hace
   falta un worker de cola**. Si se corre `queue:work`, se pueden migrar a `ShouldQueue`.
 - Realtime con **Ably + Laravel Echo**. La unificación de notificaciones está en curso en la rama

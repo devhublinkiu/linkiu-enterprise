@@ -254,6 +254,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/contacts', [AssociateController::class, 'editContacts'])->name('contacts');
         Route::post('/contacts', [AssociateController::class, 'updateContacts'])->name('update.contacts');
         Route::post('/contacts/draft', [AssociateController::class, 'saveContactsDraft'])->name('save.contacts.draft');
+        Route::post('/contacts/reopen', [AssociateController::class, 'reopenContacts'])->name('reopen.contacts');
 
         Route::get('/services', [AssociateController::class, 'editServices'])->name('services');
         Route::post('/services', [AssociateController::class, 'updateServices'])->name('update.services');

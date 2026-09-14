@@ -18,6 +18,7 @@ ADR nuevo que la sustituya y se marca la anterior como `Sustituida por ADR-XXXX`
 | [0005](0005-fichas-de-asociado-por-seccion.md) | La ficha del asociado se gobierna por secciones independientes | Aceptada | 2026-09-13 |
 | [0005-a](0005-a-informacion-basica.md) | Información Básica (sub-ADR de 0005) | Aceptada | 2026-09-13 |
 | [0005-b](0005-b-caracterizacion.md) | Caracterización (sub-ADR de 0005) | Aceptada | 2026-09-13 |
+| [0005-c](0005-c-contactos.md) | Contactos y Referencias (sub-ADR de 0005) | Aceptada | 2026-09-13 |
 
 ## Cómo escribir uno nuevo
 

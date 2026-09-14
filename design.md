@@ -139,7 +139,48 @@ Infraestructura visual establecida en el plan
   colores incrustados (`slate-*`, `red-*`); se migran a tokens a medida que se trabaja cada
   módulo. Al rehacer un componente, se borra el viejo y queda solo el nuevo.
 
-## 6. Galería de componentes (solo local)
+## 6. Patrones de composición — formularios de sección
+
+Regla de consistencia para los formularios por sección de la **ficha del asociado** (lado
+asociado). Establecidos en Información Básica (0007) y Caracterización (0008); **son de cumplimiento
+para toda sección nueva o migrada** (Contactos 0009 en adelante). No se improvisan variantes de
+tarjeta, encabezado o espaciado: se usa exactamente esto.
+
+- **Cascarón de página:** `<div className="mx-auto max-w-4xl space-y-6">`. Título con
+  `<h1 className="font-display text-h3">` + subtítulo `<p className="text-sm text-muted-foreground">`.
+- **Mensaje flash y banners de estado:** `base/Alert`. Un banner por estado de la sección:
+  `draft` = `variant="warning"`, `pending` = default, `approved` = `variant="success"` con
+  `AlertAction` → botón **Editar** (reabre), `rejected` = `variant="destructive"` con el motivo.
+- **Avance:** `base/Field` + `FieldLabel` (con `{filled}/{total}` a la derecha vía `ml-auto`) +
+  `base/Progress`. Solo visible cuando la sección es editable.
+- **Bloque = `base/Card`:**
+  - Encabezado: `<CardHeader>` con
+    `<CardTitle className="flex items-center gap-2 text-base"><Icon className="size-4 text-muted-foreground" /> Título</CardTitle>`.
+    **Sin** `border-b`, **sin** `CardDescription`, **sin** `CardAction`.
+  - Elemento a la derecha del encabezado (badge, contador o botón "Agregar"):
+    `<CardHeader className="flex-row items-center justify-between space-y-0">` con el `CardTitle` y
+    el elemento como **hermanos** (patrón del badge "Total" de Talento Humano).
+  - Cuerpo: `<CardContent className="space-y-5">` (campos). Rejillas con `gap-4`/`gap-5`.
+  - Dos tarjetas lado a lado: envolver en `<div className="grid gap-6 md:grid-cols-2">`.
+- **Campo:** helper local `FormField` (label + control + `hint` + error). **Las ayudas van en
+  `hint`** (`FieldDescription`), nunca en descripciones de tarjeta. Error por campo con `FieldError`.
+- **Grupos de opción:** helpers `RadioControls` (`YesNo`, `OptionGroup`) sobre `base/RadioGroup`;
+  multi-selección con `base/Checkbox` envuelto en `Field`/`FieldLabel`. Nada de chips `<button>`.
+- **Listas repetibles** (directorio de contactos, referencias…):
+  - Botón **Agregar** en el encabezado (patrón elemento-a-la-derecha), `Button variant="outline"
+    size="sm"` con ícono `Plus`.
+  - Cada fila: `<div className="relative space-y-4 rounded-lg border p-4">`; los campos de la fila
+    en rejilla (`grid gap-4 sm:grid-cols-2`). La lista de filas va en `CardContent` con `space-y-4`.
+  - Botón **Eliminar** por fila: `Button variant="ghost" size="icon-sm"` posicionado
+    `absolute right-2 top-2`, con `aria-label` explícito (p. ej. "Eliminar contacto 1"). Se oculta
+    cuando solo queda una fila (mínimo 1) o cuando la sección está bloqueada.
+- **Acciones:** barra pegajosa `<div className="sticky bottom-4 z-30 flex justify-end gap-3">` con
+  **Guardar borrador** (`variant="outline"`, ícono `Save`) y **Enviar a revisión** (default, ícono
+  `Send`). Solo cuando la sección es editable.
+- **Bloqueo por sección** (no editable): los controles reciben `disabled`; los botones de
+  agregar/eliminar/guardar/enviar se ocultan. El estado no se comunica solo por color (banner + texto).
+
+## 7. Galería de componentes (solo local)
 
 Existe una página **temporal y solo de entorno local** para ver los componentes que se van creando
 o migrando, con sus **variantes y estados** en uso. Sirve para revisar consistencia visual; no es

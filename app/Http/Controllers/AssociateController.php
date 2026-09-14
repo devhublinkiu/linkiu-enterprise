@@ -509,30 +509,30 @@ class AssociateController extends Controller
             'social_other' => 'nullable|string',
         ]);
 
-        $associate->fill(array_diff_key($data, array_flip(['contacts', 'references'])));
-
-        $sectionStatus = $associate->getSectionStatus('contacts');
-        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
-            $associate->setSectionStatus('contacts', Associate::SEC_DRAFT);
+        // Sección bloqueada salvo en draft/rejected. El front oculta los botones, pero el
+        // servidor es la autoridad. Ver ADR-0005 / 0005-c.
+        if (! $associate->canEditSection('contacts')) {
+            return back()->with('error', 'Esta sección no puede editarse en su estado actual.');
         }
 
+        // Se recortan los textos y se descartan las filas vacías (ADR-0005-c).
+        $data = $this->normalizeContacts($data);
+
+        $associate->fill(array_diff_key($data, array_flip(['contacts', 'references'])));
+        $associate->setSectionStatus('contacts', Associate::SEC_DRAFT);
         $associate->save();
 
-        if ($request->has('contacts')) {
+        if (array_key_exists('contacts', $data)) {
             $associate->contacts()->delete();
-            foreach ($request->contacts as $contact) {
-                if (! empty($contact['name'])) {
-                    $associate->contacts()->create($contact);
-                }
+            foreach ($data['contacts'] as $contact) {
+                $associate->contacts()->create($contact);
             }
         }
 
-        if ($request->has('references')) {
+        if (array_key_exists('references', $data)) {
             $associate->references()->delete();
-            foreach ($request->references as $reference) {
-                if (! empty($reference['name'])) {
-                    $associate->references()->create($reference);
-                }
+            foreach ($data['references'] as $reference) {
+                $associate->references()->create($reference);
             }
         }
 
@@ -548,7 +548,7 @@ class AssociateController extends Controller
             return back()->with('error', 'Esta sección no puede enviarse en su estado actual.');
         }
 
-        $data = $request->validate([
+        $validator = Validator::make($request->all(), [
             'contacts' => 'required|array|min:1',
             'contacts.*.area' => 'required|string',
             'contacts.*.name' => 'required|string',
@@ -558,9 +558,9 @@ class AssociateController extends Controller
             'main_ciiu' => 'required|string',
             'secondary_ciiu' => 'nullable|string',
             'billing_email' => 'required|email',
-            'company_type' => 'required|array',
+            'company_type' => 'required|array|min:1',
             'references' => 'required|array|min:1',
-            'references.*.type' => 'required|string',
+            'references.*.type' => 'required|in:commercial,bank',
             'references.*.name' => 'required|string',
             'references.*.contact_person' => 'nullable|string',
             'references.*.position' => 'nullable|string',
@@ -572,6 +572,22 @@ class AssociateController extends Controller
             'social_other' => 'nullable|string',
         ]);
 
+        // Regla propia (ADR-0005-c): una referencia externa sin forma de contacto es
+        // inverificable. Cada referencia debe traer teléfono o email (al menos uno).
+        $validator->after(function ($v) use ($request) {
+            foreach ((array) $request->input('references', []) as $i => $ref) {
+                $hasPhone = filled($ref['phone'] ?? null);
+                $hasEmail = filled($ref['email'] ?? null);
+                if (! $hasPhone && ! $hasEmail) {
+                    $msg = 'Agrega teléfono o email para poder verificar la referencia.';
+                    $v->errors()->add("references.{$i}.phone", $msg);
+                    $v->errors()->add("references.{$i}.email", $msg);
+                }
+            }
+        });
+
+        $data = $this->normalizeContacts($validator->validate());
+
         $associate->fill(array_diff_key($data, array_flip(['contacts', 'references'])));
         $associate->setSectionStatus('contacts', Associate::SEC_PENDING, [
             'submitted_at' => now()->toIso8601String(),
@@ -579,20 +595,61 @@ class AssociateController extends Controller
         $associate->save();
 
         $associate->contacts()->delete();
-        foreach ($request->contacts as $contact) {
-            if (! empty($contact['name'])) {
-                $associate->contacts()->create($contact);
-            }
+        foreach ($data['contacts'] as $contact) {
+            $associate->contacts()->create($contact);
         }
 
         $associate->references()->delete();
-        foreach ($request->references as $reference) {
-            if (! empty($reference['name'])) {
-                $associate->references()->create($reference);
-            }
+        foreach ($data['references'] as $reference) {
+            $associate->references()->create($reference);
         }
 
         return back()->with('success', 'Contactos y referencias enviados a revisión.');
+    }
+
+    public function reopenContacts()
+    {
+        $user = auth()->user();
+        $associate = Associate::findOrFail($user->associate_id);
+
+        if (! $associate->canReopenSection('contacts')) {
+            return back()->with('error', 'Solo puedes editar una sección que ya fue aprobada.');
+        }
+
+        $associate->setSectionStatus('contacts', Associate::SEC_DRAFT, [
+            'reopened_at' => now()->toIso8601String(),
+        ]);
+        $associate->save();
+
+        return back()->with('success', 'Sección reabierta para edición. Envíala a revisión cuando termines.');
+    }
+
+    /**
+     * Normaliza los datos de Contactos antes de persistir (ADR-0005-c):
+     *   · recorta los textos de cada contacto/referencia;
+     *   · descarta las filas sin nombre (no se guardan contactos ni referencias vacíos).
+     */
+    private function normalizeContacts(array $data): array
+    {
+        $clean = fn ($row) => array_map(fn ($v) => is_string($v) ? trim($v) : $v, $row);
+
+        if (isset($data['contacts'])) {
+            $data['contacts'] = collect($data['contacts'])
+                ->map($clean)
+                ->filter(fn ($c) => filled($c['name'] ?? null))
+                ->values()
+                ->all();
+        }
+
+        if (isset($data['references'])) {
+            $data['references'] = collect($data['references'])
+                ->map($clean)
+                ->filter(fn ($r) => filled($r['name'] ?? null))
+                ->values()
+                ->all();
+        }
+
+        return $data;
     }
 
     // =========================================================================
@@ -899,11 +956,11 @@ class AssociateController extends Controller
         $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
-        // basicinfo y characterization ya no usan el flujo de solicitud de cambio: se reabren
-        // con "Editar" (reopen…). Ver ADR-0005 / planes 0007-0008. Las demás secciones siguen
-        // igual hasta que se migren.
+        // basicinfo, characterization y contacts ya no usan el flujo de solicitud de cambio: se
+        // reabren con "Editar" (reopen…). Ver ADR-0005 / planes 0007-0009. Las demás secciones
+        // siguen igual hasta que se migren.
         $request->validate([
-            'section' => 'required|in:contacts,documentation,services',
+            'section' => 'required|in:documentation,services',
             'reason' => 'required|string|max:500',
         ]);
 
@@ -993,7 +1050,7 @@ class AssociateController extends Controller
     public function auditChangeRequest(Request $request, Associate $associate)
     {
         $request->validate([
-            'section' => 'required|in:contacts,documentation,services',
+            'section' => 'required|in:documentation,services',
             'action' => 'required|in:approve,reject',
             'reason' => 'required_if:action,reject|nullable|string|max:1000',
         ]);
@@ -1300,30 +1357,14 @@ class AssociateController extends Controller
             'description' => 'nullable|string',
             'service_ids' => 'nullable|array',
             'service_ids.*' => 'exists:services,id',
-            // Información Básica y Caracterización: el admin NO edita (ADR-0005 / 0005-b). Sus
-            // campos se retiran de este endpoint; el asociado los cambia por su flujo de revisión
-            // (draft→pending→approved). Corrección = rechazo con motivo.
-            // Contacts
-            'billing_email' => 'nullable|email',
-            'main_ciiu' => 'nullable|string',
-            'secondary_ciiu' => 'nullable|string',
-            'company_type' => 'nullable|array',
-            'social_instagram' => 'nullable|string|max:255',
-            'social_facebook' => 'nullable|string|max:255',
-            'social_linkedin' => 'nullable|string|max:255',
-            'social_other' => 'nullable|string|max:255',
-            'contacts' => 'nullable|array',
-            'contacts.*.name' => 'nullable|string',
-            'contacts.*.position' => 'nullable|string',
-            'contacts.*.area' => 'nullable|string',
-            'contacts.*.email' => 'nullable|string',
-            'contacts.*.phone' => 'nullable|string',
+            // Información Básica, Caracterización y Contactos: el admin NO edita
+            // (ADR-0005 / 0005-b / 0005-c). Sus campos se retiran de este endpoint; el asociado
+            // los cambia por su flujo de revisión (draft→pending→approved). Corrección = rechazo
+            // con motivo.
         ]);
 
         $fields = $request->only([
             'description', // servicios (la descripción vive en la sección de servicios)
-            'billing_email', 'main_ciiu', 'secondary_ciiu', 'company_type',
-            'social_instagram', 'social_facebook', 'social_linkedin', 'social_other',
         ]);
 
         if (! empty($fields)) {
@@ -1332,15 +1373,6 @@ class AssociateController extends Controller
 
         if ($request->has('service_ids')) {
             $associate->services()->sync($request->service_ids);
-        }
-
-        if ($request->has('contacts')) {
-            $associate->contacts()->delete();
-            foreach ((array) $request->contacts as $c) {
-                if (! empty($c['name'])) {
-                    $associate->contacts()->create($c);
-                }
-            }
         }
 
         return back()->with('success', 'Información actualizada correctamente.');

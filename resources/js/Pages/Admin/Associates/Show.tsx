@@ -464,7 +464,6 @@ export default function Show({
                                 associate={associate}
                                 sectionReview={getSectionReview('contacts')}
                                 onAuditSection={handleAuditSection}
-                                onAuditChangeRequest={handleAuditChangeRequest}
                             />
                             <TabServices
                                 associate={associate}

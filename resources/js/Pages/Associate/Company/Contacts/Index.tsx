@@ -1,132 +1,307 @@
-import React, { useState, useEffect } from 'react';
-import AppLayout from '@/Layouts/AppLayout';
-import { Head, useForm } from '@inertiajs/react';
-import { Button } from '@/Components/ui/Button';
-import { Save, Send } from 'lucide-react';
-import SectionReviewBanner, { SectionReview } from '@/Components/SectionReviewBanner';
+import { Head, router, useForm } from '@inertiajs/react';
+import {
+    AlertCircle,
+    CheckCircle2,
+    Info,
+    Pencil,
+    Save,
+    Send,
+    ShieldCheck,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import Directory from './Parts/Directory';
+import {
+    Alert,
+    AlertAction,
+    AlertDescription,
+    AlertTitle,
+} from '@/Components/base/Alert';
+import { Button } from '@/Components/base/Button';
+import { Field, FieldLabel } from '@/Components/base/Field';
+import { Progress } from '@/Components/base/Progress';
+import AppLayout from '@/Layouts/AppLayout';
+
+import { SectionStatus } from '../BasicInfo/types';
 import CommerceBilling from './Parts/CommerceBilling';
-import SupportReferences from './Parts/SupportReferences';
 import DigitalChannels from './Parts/DigitalChannels';
+import Directory from './Parts/Directory';
+import SupportReferences from './Parts/SupportReferences';
+import {
+    ContactsForm,
+    hydrateContacts,
+    hydrateReferences,
+    isEmail,
+} from './types';
+
+type InitialAssociate =
+    | (Partial<ContactsForm> & {
+          section_reviews?: Record<
+              string,
+              { status: SectionStatus; rejected_reason?: string }
+          >;
+      })
+    | null;
 
 interface Props {
-    auth: any;
-    flash: any;
-    initialAssociate?: any;
+    initialAssociate?: InitialAssociate;
+    flash?: { success?: string; error?: string; draft_saved?: string };
 }
 
-const REQUIRED_FIELDS = ['contacts', 'main_ciiu', 'billing_email', 'company_type', 'references'];
+export default function Contacts({ initialAssociate, flash }: Props) {
+    const review = initialAssociate?.section_reviews?.contacts ?? {
+        status: 'draft' as SectionStatus,
+    };
+    const status = review.status;
+    const canEdit = status === 'draft' || status === 'rejected';
 
-export default function ContactsIndex({ auth, flash, initialAssociate }: Props) {
-    const sectionReview: SectionReview = initialAssociate?.section_reviews?.contacts ?? { status: 'draft' };
-    const sectionStatus = sectionReview.status;
-    const canEdit = ['draft', 'rejected'].includes(sectionStatus);
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm<ContactsForm>({
+            // Las filas de la BD traen campos null; se hidratan a '' (ver types.ts).
+            contacts: hydrateContacts(initialAssociate?.contacts),
+            main_ciiu: initialAssociate?.main_ciiu || '',
+            secondary_ciiu: initialAssociate?.secondary_ciiu || '',
+            billing_email: initialAssociate?.billing_email || '',
+            company_type: initialAssociate?.company_type || [],
+            references: hydrateReferences(initialAssociate?.references),
+            social_instagram: initialAssociate?.social_instagram || '',
+            social_facebook: initialAssociate?.social_facebook || '',
+            social_linkedin: initialAssociate?.social_linkedin || '',
+            social_other: initialAssociate?.social_other || '',
+        });
 
-    const [notification, setNotification] = useState<{ type: 'success' | 'draft' | 'error'; msg: string } | null>(null);
+    const [notice, setNotice] = useState<{
+        variant: 'success' | 'destructive';
+        msg: string;
+    } | null>(null);
 
     useEffect(() => {
-        if (flash?.draft_saved) setNotification({ type: 'draft', msg: `Borrador guardado · ${flash.draft_saved}` });
-        if (flash?.success)     setNotification({ type: 'success', msg: flash.success });
-        if (flash?.error)       setNotification({ type: 'error', msg: flash.error });
-        if (flash) {
-            const t = setTimeout(() => setNotification(null), 5000);
+        if (flash?.draft_saved)
+            setNotice({
+                variant: 'success',
+                msg: `Borrador guardado · ${flash.draft_saved}`,
+            });
+        else if (flash?.success)
+            setNotice({ variant: 'success', msg: flash.success });
+        else if (flash?.error)
+            setNotice({ variant: 'destructive', msg: flash.error });
+
+        if (flash?.draft_saved || flash?.success || flash?.error) {
+            const t = setTimeout(() => setNotice(null), 5000);
             return () => clearTimeout(t);
         }
     }, [flash]);
 
-    const { data, setData, post, processing, errors } = useForm({
-        contacts:         initialAssociate?.contacts         || [{ area: 'Gerencia', name: '', position: '', email: '', phone: '' }],
-        main_ciiu:        initialAssociate?.main_ciiu        || '',
-        secondary_ciiu:   initialAssociate?.secondary_ciiu   || '',
-        billing_email:    initialAssociate?.billing_email    || '',
-        company_type:     initialAssociate?.company_type     || [],
-        references:       initialAssociate?.references       || [{ type: 'commercial', name: '', contact_person: '', position: '', email: '', phone: '' }],
-        social_instagram: initialAssociate?.social_instagram || '',
-        social_facebook:  initialAssociate?.social_facebook  || '',
-        social_linkedin:  initialAssociate?.social_linkedin  || '',
-        social_other:     initialAssociate?.social_other     || '',
-    });
+    // Avance: cinco compuertas significativas.
+    const gates = [
+        data.contacts.some((c) => c.name.trim()),
+        data.main_ciiu.trim() !== '',
+        data.billing_email.trim() !== '',
+        data.company_type.length > 0,
+        data.references.some((r) => r.name.trim()),
+    ];
+    const filled = gates.filter(Boolean).length;
+    const pct = Math.round((filled / gates.length) * 100);
 
-    const score = (() => {
-        const checks = [
-            data.contacts?.some((c: any) => c.name?.trim()),
-            !!data.main_ciiu?.trim(),
-            !!data.billing_email?.trim(),
-            data.company_type?.length > 0,
-            data.references?.some((r: any) => r.name?.trim()),
-        ];
-        const filled = checks.filter(Boolean).length;
-        return { filled, total: checks.length, pct: Math.round((filled / checks.length) * 100) };
-    })();
+    const handleSaveDraft = () =>
+        post(route('associate.company.save.contacts.draft'), {
+            preserveScroll: true,
+        });
 
-    const isRequired  = (field: string) => REQUIRED_FIELDS.includes(field);
-    const isLocked    = (_field: string) => !canEdit;
-    const fieldStatus = (_field: string) => canEdit ? 'editable' : sectionStatus;
+    const handleSubmit = () => {
+        clearErrors();
+        const errs: Record<string, string> = {};
+        const NEEDED = 'Completa este dato.';
+        const BAD_EMAIL = 'Escribe un correo válido.';
+        const NO_MEDIUM =
+            'Agrega teléfono o email para poder verificar la referencia.';
 
-    const handleSubmit  = () => post(route('associate.company.update.contacts'));
-    const handleSaveDraft = () => post(route('associate.company.save.contacts.draft'));
+        // Directorio de contactos: todos los campos obligatorios.
+        if (data.contacts.length === 0)
+            errs.contacts = 'Agrega al menos un contacto.';
+        data.contacts.forEach((c, i) => {
+            (['area', 'name', 'position', 'phone'] as const).forEach((f) => {
+                if (!c[f].trim()) errs[`contacts.${i}.${f}`] = NEEDED;
+            });
+            if (!c.email.trim()) errs[`contacts.${i}.email`] = NEEDED;
+            else if (!isEmail(c.email)) errs[`contacts.${i}.email`] = BAD_EMAIL;
+        });
+
+        // Comercial y facturación.
+        if (!data.main_ciiu.trim()) errs.main_ciiu = NEEDED;
+        if (!data.billing_email.trim()) errs.billing_email = NEEDED;
+        else if (!isEmail(data.billing_email)) errs.billing_email = BAD_EMAIL;
+        if (data.company_type.length === 0)
+            errs.company_type = 'Marca al menos una opción.';
+
+        // Referencias: nombre + contactabilidad (teléfono o email).
+        if (data.references.length === 0)
+            errs.references = 'Agrega al menos una referencia.';
+        data.references.forEach((r, i) => {
+            if (!r.name.trim()) errs[`references.${i}.name`] = NEEDED;
+            const hasPhone = r.phone.trim() !== '';
+            const hasEmail = r.email.trim() !== '';
+            if (!hasPhone && !hasEmail) {
+                errs[`references.${i}.phone`] = NO_MEDIUM;
+                errs[`references.${i}.email`] = NO_MEDIUM;
+            } else if (hasEmail && !isEmail(r.email)) {
+                errs[`references.${i}.email`] = BAD_EMAIL;
+            }
+        });
+
+        if (Object.keys(errs).length > 0) {
+            Object.entries(errs).forEach(([k, v]) =>
+                setError(k as keyof ContactsForm, v),
+            );
+            setNotice({
+                variant: 'destructive',
+                msg: 'Revisa los campos marcados antes de enviar.',
+            });
+            return;
+        }
+
+        post(route('associate.company.update.contacts'), {
+            preserveScroll: true,
+        });
+    };
+
+    const handleReopen = () =>
+        router.post(
+            route('associate.company.reopen.contacts'),
+            {},
+            { preserveScroll: true },
+        );
 
     return (
         <AppLayout>
             <Head title="Contactos y Referencias" />
-            <div className="max-w-5xl mx-auto space-y-5 pb-20">
-                <SectionReviewBanner
-                    section="contacts"
-                    review={sectionReview}
-                    notification={notification}
-                    onCloseNotification={() => setNotification(null)}
+            <div className="mx-auto max-w-4xl space-y-6">
+                <div>
+                    <h1 className="font-display text-h3">
+                        Contactos y Referencias
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        Directorio, facturación, referencias y canales
+                        digitales.
+                    </p>
+                </div>
+
+                {notice && (
+                    <Alert variant={notice.variant}>
+                        {notice.variant === 'success' ? (
+                            <CheckCircle2 />
+                        ) : (
+                            <AlertCircle />
+                        )}
+                        <AlertTitle>{notice.msg}</AlertTitle>
+                    </Alert>
+                )}
+
+                {status === 'draft' && (
+                    <Alert variant="warning">
+                        <Info />
+                        <AlertTitle>Borrador</AlertTitle>
+                        <AlertDescription>
+                            Completa la sección y envíala a revisión cuando esté
+                            lista.
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {status === 'pending' && (
+                    <Alert>
+                        <ShieldCheck />
+                        <AlertTitle>En revisión</AlertTitle>
+                        <AlertDescription>
+                            CAMEP está validando esta sección. Te avisaremos por
+                            correo cualquier novedad.
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {status === 'approved' && (
+                    <Alert variant="success">
+                        <CheckCircle2 />
+                        <AlertTitle>Sección aprobada</AlertTitle>
+                        <AlertDescription>
+                            Para actualizar estos datos, ábrela con “Editar” y
+                            vuelve a enviarla a revisión.
+                        </AlertDescription>
+                        <AlertAction>
+                            <Button size="sm" onClick={handleReopen}>
+                                <Pencil className="size-4" /> Editar
+                            </Button>
+                        </AlertAction>
+                    </Alert>
+                )}
+                {status === 'rejected' && (
+                    <Alert variant="destructive">
+                        <AlertCircle />
+                        <AlertTitle>Sección rechazada</AlertTitle>
+                        <AlertDescription>
+                            {review.rejected_reason
+                                ? `Motivo: ${review.rejected_reason}`
+                                : 'Realiza las correcciones y vuelve a enviar a revisión.'}
+                        </AlertDescription>
+                    </Alert>
+                )}
+
+                {canEdit && (
+                    <Field>
+                        <FieldLabel htmlFor="contacts-progress">
+                            <span>Avance</span>
+                            <span className="ml-auto text-muted-foreground">
+                                {filled}/{gates.length} secciones
+                            </span>
+                        </FieldLabel>
+                        <Progress id="contacts-progress" value={pct} />
+                    </Field>
+                )}
+
+                <Directory
+                    data={data}
+                    setData={setData}
+                    errors={errors}
+                    disabled={!canEdit}
+                />
+                <CommerceBilling
+                    data={data}
+                    setData={setData}
+                    errors={errors}
+                    disabled={!canEdit}
+                />
+                <SupportReferences
+                    data={data}
+                    setData={setData}
+                    errors={errors}
+                    disabled={!canEdit}
+                />
+                <DigitalChannels
+                    data={data}
+                    setData={setData}
+                    errors={errors}
+                    disabled={!canEdit}
                 />
 
-                <div>
-                    <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Contactos y Referencias</h1>
-                    <p className="text-slate-500 text-sm">Directorio, facturación, referencias y canales digitales.</p>
-                </div>
-
-                {/* Progress bar */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
-                    <div className="flex justify-between text-[11px] font-black uppercase tracking-wider text-slate-600">
-                        <span>Progreso</span>
-                        <span>{score.filled}/{score.total} secciones</span>
+                {canEdit && (
+                    <div className="sticky bottom-4 z-30 flex justify-end gap-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleSaveDraft}
+                            disabled={processing}
+                            className="shadow-sm"
+                        >
+                            <Save className="size-4" /> Guardar borrador
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={processing}
+                            className="shadow-sm"
+                        >
+                            <Send className="size-4" />
+                            {processing ? 'Enviando…' : 'Enviar a revisión'}
+                        </Button>
                     </div>
-                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-slate-900 transition-all duration-500" style={{ width: `${score.pct}%` }} />
-                    </div>
-                </div>
-
-                <div className="space-y-8">
-                    <Directory
-                        data={data} setData={setData} errors={errors} isEditing={canEdit}
-                        isLocked={isLocked} fieldStatus={fieldStatus} auditLog={{}}
-                        isRequired={isRequired} setChangeRequestField={() => {}}
-                    />
-                    <CommerceBilling
-                        data={data} setData={setData} errors={errors} isEditing={canEdit}
-                        isLocked={isLocked} fieldStatus={fieldStatus} isRequired={isRequired}
-                        auditLog={{}} setChangeRequestField={() => {}}
-                    />
-                    <SupportReferences
-                        data={data} setData={setData} errors={errors} isEditing={canEdit}
-                        isLocked={isLocked} fieldStatus={fieldStatus} auditLog={{}}
-                        isRequired={isRequired} setChangeRequestField={() => {}}
-                    />
-                    <DigitalChannels
-                        data={data} setData={setData} errors={errors} isEditing={canEdit}
-                        isLocked={isLocked} fieldStatus={fieldStatus} auditLog={{}}
-                        setChangeRequestField={() => {}}
-                    />
-
-                    {canEdit && (
-                        <div className="sticky bottom-6 flex justify-end gap-3 z-30">
-                            <Button type="button" onClick={handleSaveDraft} disabled={processing} className="bg-white border border-slate-200 text-slate-700 rounded-xl px-6 shadow-lg hover:bg-slate-50">
-                                <Save size={16} className="mr-2" /> Guardar Borrador
-                            </Button>
-                            <Button type="button" onClick={handleSubmit} disabled={processing} className="bg-slate-900 text-white rounded-xl px-8 shadow-xl hover:bg-slate-800">
-                                <Send size={16} className="mr-2" /> {processing ? 'Enviando...' : 'Enviar a Revisión'}
-                            </Button>
-                        </div>
-                    )}
-                </div>
+                )}
             </div>
         </AppLayout>
     );

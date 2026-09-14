@@ -2,8 +2,8 @@
 
 Empresa inventada para probar el flujo de la ficha del asociado (plan 0007 / ADR-0005).
 **Es ficticia**: NIT, documentos, teléfonos y direcciones no corresponden a ninguna empresa real.
-Trae **Información Básica** y **Caracterización**; se irán agregando las demás secciones a esta
-misma empresa a medida que las trabajemos.
+Trae **Información Básica**, **Caracterización** y **Contactos y Referencias**; se irán agregando las
+demás secciones a esta misma empresa a medida que las trabajemos.
 
 > Ubicación elegida a propósito dentro del catálogo DANE (DIVIPOLA) sembrado en 7-B: **Meta /
 > Puerto Gaitán**, para que los Select de departamento y ciudad la encuentren.
@@ -144,4 +144,79 @@ Ingresos sector privado:    35
 ¿Tiene plan de capacitación?: Sí
 Nivel que prioriza:         Técnicos
 Afiliación a otros gremios: ACIPET, Campetrol
+```
+
+---
+
+## Contactos y Referencias
+
+Datos coherentes con las reglas de la sección (plan 0009 / ADR-0005-c): cada contacto lleva todos los
+campos, y cada referencia trae al menos un medio de contacto (teléfono o email) para poder verificarla.
+
+### Directorio de contactos
+
+| Nombre | Cargo | Área | Email | Teléfono |
+|---|---|---|---|---|
+| Carlos Andrés Beltrán Rojas | Gerente General | Gerencia | gerencia@psllano.com.co | 3106548899 |
+| Diana Marcela Ávila Torres | Directora Comercial | Comercial | comercial@psllano.com.co | 3115542310 |
+
+### Información comercial y facturación
+
+| Campo | Valor |
+|---|---|
+| CIIU principal | 0910 |
+| CIIU secundario | 4290 |
+| Email de facturación | facturacion@psllano.com.co |
+| Perfil de operación | Suministros, Proveedor |
+
+### Referencias de respaldo
+
+| Tipo | Nombre | Persona de contacto | Cargo | Teléfono | Email |
+|---|---|---|---|---|---|
+| Comercial | Frontera Energy Colombia | Luis Fernando Cárdenas | Jefe de Compras | 3124478890 | compras@fronteraenergy.example |
+| Bancaria | Banco de Bogotá | Sandra Milena Peña | Ejecutiva de cuenta | 6017439000 | — |
+
+### Canales digitales
+
+| Canal | Valor |
+|---|---|
+| Instagram | @psllano |
+| Facebook | facebook.com/psllano |
+| LinkedIn | linkedin.com/company/psllano |
+| Sitio web / portafolio | https://psllano.com.co |
+
+---
+
+### Valores para copiar/pegar (Contactos y Referencias)
+
+```
+Contacto 1 — Nombre:     Carlos Andrés Beltrán Rojas
+Contacto 1 — Cargo:      Gerente General
+Contacto 1 — Área:       Gerencia
+Contacto 1 — Email:      gerencia@psllano.com.co
+Contacto 1 — Teléfono:   3106548899
+
+Contacto 2 — Nombre:     Diana Marcela Ávila Torres
+Contacto 2 — Cargo:      Directora Comercial
+Contacto 2 — Área:       Comercial
+Contacto 2 — Email:      comercial@psllano.com.co
+Contacto 2 — Teléfono:   3115542310
+
+CIIU principal:          0910
+CIIU secundario:         4290
+Email de facturación:    facturacion@psllano.com.co
+Perfil de operación:     Suministros, Proveedor
+
+Referencia 1 (Comercial): Frontera Energy Colombia
+  Persona / Cargo:        Luis Fernando Cárdenas / Jefe de Compras
+  Teléfono / Email:       3124478890 / compras@fronteraenergy.example
+
+Referencia 2 (Bancaria):  Banco de Bogotá
+  Persona / Cargo:        Sandra Milena Peña / Ejecutiva de cuenta
+  Teléfono:               6017439000
+
+Instagram:               @psllano
+Facebook:                facebook.com/psllano
+LinkedIn:                linkedin.com/company/psllano
+Sitio web:               https://psllano.com.co
 ```

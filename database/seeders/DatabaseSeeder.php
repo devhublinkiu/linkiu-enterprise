@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -18,5 +17,8 @@ class DatabaseSeeder extends Seeder
         // Catálogo de módulos + siembra del pivote preservando el acceso actual.
         // Idempotente: seguro de correr en producción. Ver ADR-0002.
         $this->call(FeatureSeeder::class);
+
+        // Catálogo de ubicaciones DANE (DIVIPOLA). Idempotente. Ver ADR-0005 / plan 0007.
+        $this->call(DivipolaSeeder::class);
     }
 }

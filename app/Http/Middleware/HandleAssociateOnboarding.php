@@ -38,7 +38,7 @@ class HandleAssociateOnboarding
         }
 
         // If user is NOT an associate yet (no company registered)
-        if (!$user->associate_id) {
+        if (! $user->associate_id) {
             $onboardingRoutes = [
                 'associate.company.basic',
                 'associate.company.update.basic',
@@ -46,10 +46,11 @@ class HandleAssociateOnboarding
                 'associate.company.save.characterization.draft',
                 'associate.company.request.section.change',
             ];
-            
-            if (!in_array($routeName, $onboardingRoutes)) {
+
+            if (! in_array($routeName, $onboardingRoutes)) {
                 return redirect()->route('associate.company.basic');
             }
+
             return $next($request);
         }
 
@@ -69,7 +70,9 @@ class HandleAssociateOnboarding
                     'associate.company.basic',
                     'associate.company.update.basic',
                     'associate.company.save.draft',
+                    'associate.company.reopen.basic',
                     'associate.company.save.characterization.draft',
+                    'associate.company.reopen.characterization',
                     'associate.company.request.section.change',
                     'associate.company.characterization',
                     'associate.company.update.characterization',
@@ -87,7 +90,7 @@ class HandleAssociateOnboarding
                     'associate.company.delete.gallery.image',
                     'associate.company.set.cover.image',
                 ];
-                if (!in_array($routeName, $allowedPending)) {
+                if (! in_array($routeName, $allowedPending)) {
                     return redirect()->route('dashboard')->with('info', 'Tu perfil está siendo revisado por CAMEP.');
                 }
                 break;
@@ -99,7 +102,9 @@ class HandleAssociateOnboarding
                     'associate.company.basic',
                     'associate.company.update.basic',
                     'associate.company.save.draft',
+                    'associate.company.reopen.basic',
                     'associate.company.save.characterization.draft',
+                    'associate.company.reopen.characterization',
                     'associate.company.request.section.change',
                     'associate.checkout.show',
                     'associate.checkout.store',
@@ -110,7 +115,7 @@ class HandleAssociateOnboarding
                     'associate.invoice.proof',
                     'associate.invoice.online',
                 ];
-                if (!in_array($routeName, $allowedVerified)) {
+                if (! in_array($routeName, $allowedVerified)) {
                     return redirect()->route('associate.company.billing')->with('info', '¡Felicidades! Has sido admitido. Por favor, elige un plan para activar tu cuenta.');
                 }
                 break;

@@ -1,244 +1,379 @@
-import React, { useState } from 'react';
-import { Briefcase, Layers, ShieldAlert, Pencil, Save, X } from 'lucide-react';
-import { TabsContent } from '@/Components/ui/Tabs';
-import { Card, CardContent } from '@/Components/ui/Card';
-import { Button } from '@/Components/ui/Button';
-import { Input } from '@/Components/ui/Input';
-import { Label } from '@/Components/ui/Label';
-import { useForm } from '@inertiajs/react';
-import { SectionAuditPanel, SectionReviewData } from './SectionAuditPanel';
+import {
+    AlertCircle,
+    Briefcase,
+    Check,
+    CheckCircle2,
+    Clock,
+    GraduationCap,
+    Layers,
+    ShieldAlert,
+    ShieldCheck,
+    X,
+} from 'lucide-react';
+import { ReactNode, useState } from 'react';
 
-interface TabCharacterizationProps {
-    associate: any;
-    sectionReview: SectionReviewData;
-    onAuditSection: (section: string, status: 'approved' | 'rejected', reason?: string) => void;
-    onAuditChangeRequest: (section: string, action: 'approve' | 'reject', reason?: string) => void;
+import { Alert, AlertDescription, AlertTitle } from '@/Components/base/Alert';
+import { Button } from '@/Components/base/Button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/Components/base/Card';
+import { Textarea } from '@/Components/base/Textarea';
+import { TabsContent } from '@/Components/ui/Tabs';
+
+import { SectionReviewData } from './SectionAuditPanel';
+
+// Solo los campos de Caracterización que se muestran (lectura). El admin no edita (ADR-0005).
+interface AssociateCharacterization {
+    employees_tech?: number;
+    employees_prof?: number;
+    employees_admin?: number;
+    employees_exec?: number;
+    employees_other?: number;
+    employees_other_desc?: string;
+    employees_direct_count?: number;
+    company_classification?: string;
+    hydrocarbons_participation?: boolean | null;
+    hydrocarbons_level?: string;
+    pep_declaration?: boolean | null;
+    pep_name?: string;
+    pep_doc_type?: string;
+    pep_entity?: string;
+    public_income_pct?: number;
+    private_income_pct?: number;
+    capacitation_plan?: boolean | null;
+    capacitation_level?: string;
+    capacitation_no_reason?: string;
+    other_guilds?: string;
 }
 
-function Field({ label, value }: { label: string; value: any }) {
+interface Props {
+    associate: AssociateCharacterization;
+    sectionReview: SectionReviewData;
+    onAuditSection: (
+        section: string,
+        status: 'approved' | 'rejected',
+        reason?: string,
+    ) => void;
+}
+
+const DOC_LABELS: Record<string, string> = {
+    CC: 'Cédula de ciudadanía',
+    CE: 'Cédula de extranjería',
+    PAS: 'Pasaporte',
+    NIT: 'NIT',
+};
+
+const yesNo = (v: boolean | null | undefined): string | null =>
+    v === null || v === undefined ? null : v ? 'Sí' : 'No';
+
+function ReadField({ label, value }: { label: string; value: ReactNode }) {
     return (
-        <div className="px-5 py-3">
-            <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block leading-none mb-0.5">{label}</span>
-            <p className="text-sm font-bold text-slate-900">
-                {value ?? <span className="text-slate-300 font-normal italic text-xs">Sin registrar</span>}
+        <div className="space-y-0.5">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="text-sm font-medium text-foreground">
+                {value || <span className="text-muted-foreground">—</span>}
             </p>
         </div>
     );
 }
 
-function NumField({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-    return (
-        <div className="space-y-1">
-            <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{label}</Label>
-            <Input type="number" min={0} value={value} onChange={e => onChange(Number(e.target.value))}
-                className="h-8 text-sm border-slate-200 rounded-lg" />
-        </div>
-    );
-}
+// Panel de auditoría de la sección (solo Caracterización): aprobar / rechazar.
+// characterization no usa change_pending (se reabre con "Editar" del asociado). Ver ADR-0005-b.
+function AuditPanel({
+    review,
+    onAuditSection,
+}: {
+    review: SectionReviewData;
+    onAuditSection: Props['onAuditSection'];
+}) {
+    const [rejecting, setRejecting] = useState(false);
+    const [reason, setReason] = useState('');
+    const status = review.status;
 
-function TxtField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-    return (
-        <div className="space-y-1">
-            <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{label}</Label>
-            <Input value={value} onChange={e => onChange(e.target.value)} className="h-8 text-sm border-slate-200 rounded-lg" />
-        </div>
-    );
-}
+    if (status === 'draft') {
+        return (
+            <Alert>
+                <Clock />
+                <AlertTitle>Borrador</AlertTitle>
+                <AlertDescription>
+                    El asociado aún no ha enviado esta sección.
+                </AlertDescription>
+            </Alert>
+        );
+    }
 
-function BoolField({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
-    return (
-        <div className="space-y-1">
-            <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{label}</Label>
-            <div className="flex gap-2">
-                <button type="button" onClick={() => onChange(true)}
-                    className={`h-8 px-4 rounded-lg text-[10px] font-black uppercase border transition-colors ${value ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-500 hover:border-slate-400'}`}>
-                    Sí
-                </button>
-                <button type="button" onClick={() => onChange(false)}
-                    className={`h-8 px-4 rounded-lg text-[10px] font-black uppercase border transition-colors ${!value ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-500 hover:border-slate-400'}`}>
-                    No
-                </button>
-            </div>
-        </div>
-    );
-}
+    if (status === 'approved') {
+        return (
+            <Alert variant="success">
+                <CheckCircle2 />
+                <AlertTitle>Sección aprobada</AlertTitle>
+                <AlertDescription>
+                    {review.reviewed_by
+                        ? `Aprobada por ${review.reviewed_by}.`
+                        : 'Esta sección está aprobada.'}
+                </AlertDescription>
+            </Alert>
+        );
+    }
 
-export function TabCharacterization({ associate, sectionReview, onAuditSection, onAuditChangeRequest }: TabCharacterizationProps) {
-    const [isEditing, setIsEditing] = useState(false);
-    const bool = (v: boolean | null) => v === null ? null : (v ? 'SÍ' : 'NO');
-
-    const { data, setData, put, processing, reset } = useForm({
-        employees_direct_count:     associate.employees_direct_count     ?? 0,
-        employees_tech:             associate.employees_tech             ?? 0,
-        employees_prof:             associate.employees_prof             ?? 0,
-        employees_admin:            associate.employees_admin            ?? 0,
-        employees_exec:             associate.employees_exec             ?? 0,
-        employees_other:            associate.employees_other            ?? 0,
-        employees_other_desc:       associate.employees_other_desc       || '',
-        company_classification:     associate.company_classification     || '',
-        hydrocarbons_participation: associate.hydrocarbons_participation ?? false,
-        hydrocarbons_level:         associate.hydrocarbons_level         || '',
-        private_income_pct:         associate.private_income_pct         ?? 0,
-        public_income_pct:          associate.public_income_pct          ?? 0,
-        pep_declaration:            associate.pep_declaration            ?? false,
-        pep_name:                   associate.pep_name                   || '',
-        pep_doc_type:               associate.pep_doc_type               || '',
-        pep_entity:                 associate.pep_entity                 || '',
-        capacitation_plan:          associate.capacitation_plan          ?? false,
-        capacitation_level:         associate.capacitation_level         || '',
-        capacitation_no_reason:     associate.capacitation_no_reason     || '',
-        other_guilds:               associate.other_guilds               || '',
-    });
-
-    const handleSave = () => {
-        put(route('admin.associates.update', associate.id), {
-            preserveScroll: true,
-            onSuccess: () => setIsEditing(false),
-        });
-    };
-
-    return (
-        <TabsContent value="characterization" className="space-y-4">
-            <SectionAuditPanel
-                sectionKey="characterization"
-                review={sectionReview}
-                onAuditSection={onAuditSection}
-                onAuditChangeRequest={onAuditChangeRequest}
-            />
-
-            <div className="flex justify-end">
-                {!isEditing ? (
-                    <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}
-                        className="h-8 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:text-slate-900 border-slate-200">
-                        <Pencil size={12} className="mr-1.5" /> Modificar datos
+    if (status === 'rejected') {
+        return (
+            <div className="space-y-3">
+                <Alert variant="destructive">
+                    <AlertCircle />
+                    <AlertTitle>Sección rechazada</AlertTitle>
+                    <AlertDescription>
+                        {review.rejected_reason
+                            ? `Motivo: ${review.rejected_reason}`
+                            : 'A la espera de que el asociado corrija y reenvíe.'}
+                    </AlertDescription>
+                </Alert>
+                <div className="flex justify-end">
+                    <Button
+                        size="sm"
+                        onClick={() =>
+                            onAuditSection('characterization', 'approved')
+                        }
+                    >
+                        <Check /> Re-aprobar
                     </Button>
-                ) : (
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => { reset(); setIsEditing(false); }}
-                            className="h-8 text-[10px] font-bold uppercase border-slate-200">
-                            <X size={12} className="mr-1" /> Cancelar
-                        </Button>
-                        <Button size="sm" disabled={processing} onClick={handleSave}
-                            className="h-8 text-[10px] font-bold uppercase bg-slate-900 text-white hover:bg-slate-800">
-                            <Save size={12} className="mr-1.5" /> Guardar
-                        </Button>
-                    </div>
-                )}
+                </div>
             </div>
+        );
+    }
 
-            {isEditing ? (
-                <div className="space-y-4">
-                    <Card className="border-slate-200 overflow-hidden rounded-2xl bg-white">
-                        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2.5">
-                            <div className="h-7 w-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm shrink-0"><Briefcase size={14} /></div>
-                            <h4 className="text-[11px] font-black uppercase text-slate-700 tracking-wider">Estructura de Empleados</h4>
-                        </div>
-                        <CardContent className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                            <NumField label="Total Directos"     value={data.employees_direct_count} onChange={v => setData('employees_direct_count', v)} />
-                            <NumField label="Técnicos"           value={data.employees_tech}         onChange={v => setData('employees_tech', v)} />
-                            <NumField label="Profesionales"      value={data.employees_prof}         onChange={v => setData('employees_prof', v)} />
-                            <NumField label="Administrativos"    value={data.employees_admin}        onChange={v => setData('employees_admin', v)} />
-                            <NumField label="Directivos"         value={data.employees_exec}         onChange={v => setData('employees_exec', v)} />
-                            <NumField label="Otros"              value={data.employees_other}        onChange={v => setData('employees_other', v)} />
-                            <div className="col-span-2 sm:col-span-3">
-                                <TxtField label="Desc. Otros"    value={data.employees_other_desc}   onChange={v => setData('employees_other_desc', v)} />
-                            </div>
-                            <div className="col-span-2 sm:col-span-3">
-                                <TxtField label="Clasificación Empresa" value={data.company_classification} onChange={v => setData('company_classification', v)} />
-                            </div>
-                        </CardContent>
-                    </Card>
+    // status === 'pending'
+    return (
+        <div className="space-y-3">
+            <Alert>
+                <ShieldCheck />
+                <AlertTitle>Pendiente de revisión</AlertTitle>
+                <AlertDescription>
+                    Revisa los datos y aprueba o rechaza la sección.
+                </AlertDescription>
+            </Alert>
 
-                    <Card className="border-slate-200 overflow-hidden rounded-2xl bg-white">
-                        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2.5">
-                            <div className="h-7 w-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm shrink-0"><Layers size={14} /></div>
-                            <h4 className="text-[11px] font-black uppercase text-slate-700 tracking-wider">Actividad e Ingresos</h4>
-                        </div>
-                        <CardContent className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <BoolField label="Part. Hidrocarburos" value={data.hydrocarbons_participation} onChange={v => setData('hydrocarbons_participation', v)} />
-                            {data.hydrocarbons_participation && (
-                                <TxtField label="Alcance Hidrocarburos" value={data.hydrocarbons_level} onChange={v => setData('hydrocarbons_level', v)} />
-                            )}
-                            <NumField label="% Ingresos Privados" value={data.private_income_pct} onChange={v => setData('private_income_pct', v)} />
-                            <NumField label="% Ingresos Públicos"  value={data.public_income_pct}  onChange={v => setData('public_income_pct', v)} />
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-slate-200 overflow-hidden rounded-2xl bg-white">
-                        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2.5">
-                            <div className="h-7 w-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm shrink-0"><ShieldAlert size={14} /></div>
-                            <h4 className="text-[11px] font-black uppercase text-slate-700 tracking-wider">PEP y Transparencia</h4>
-                        </div>
-                        <CardContent className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <BoolField label="Declaración PEP" value={data.pep_declaration} onChange={v => setData('pep_declaration', v)} />
-                            {data.pep_declaration && (<>
-                                <TxtField label="Nombre PEP"  value={data.pep_name}     onChange={v => setData('pep_name', v)} />
-                                <TxtField label="Doc. PEP"    value={data.pep_doc_type} onChange={v => setData('pep_doc_type', v)} />
-                                <TxtField label="Entidad PEP" value={data.pep_entity}   onChange={v => setData('pep_entity', v)} />
-                            </>)}
-                            <BoolField label="Plan Capacitación" value={data.capacitation_plan} onChange={v => setData('capacitation_plan', v)} />
-                            {data.capacitation_plan === true  && <TxtField label="Prioridad"       value={data.capacitation_level}     onChange={v => setData('capacitation_level', v)} />}
-                            {data.capacitation_plan === false && <TxtField label="Motivo sin plan" value={data.capacitation_no_reason} onChange={v => setData('capacitation_no_reason', v)} />}
-                            <div className="col-span-1 sm:col-span-2">
-                                <TxtField label="Otros Gremios" value={data.other_guilds} onChange={v => setData('other_guilds', v)} />
-                            </div>
-                        </CardContent>
-                    </Card>
+            {!rejecting ? (
+                <div className="flex gap-2">
+                    <Button
+                        size="sm"
+                        onClick={() =>
+                            onAuditSection('characterization', 'approved')
+                        }
+                    >
+                        <Check /> Aprobar sección
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setRejecting(true)}
+                    >
+                        <X /> Rechazar
+                    </Button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <Card className="border-slate-200 overflow-hidden rounded-2xl bg-white">
-                        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2.5">
-                            <div className="h-7 w-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm shrink-0"><Briefcase size={14} /></div>
-                            <h4 className="text-[11px] font-black uppercase text-slate-700 tracking-wider">Estructura de Empleados</h4>
-                        </div>
-                        <CardContent className="p-0 divide-y divide-slate-100/60">
-                            <Field label="Total Directos"        value={associate.employees_direct_count} />
-                            <Field label="Técnicos"              value={associate.employees_tech} />
-                            <Field label="Profesionales"         value={associate.employees_prof} />
-                            <Field label="Administrativos"       value={associate.employees_admin} />
-                            <Field label="Directivos"            value={associate.employees_exec} />
-                            <Field label="Otros"                 value={associate.employees_other ?? 0} />
-                            <Field label="Desc. Otros"           value={associate.employees_other_desc} />
-                            <Field label="Clasificación Empresa" value={associate.company_classification} />
-                        </CardContent>
-                    </Card>
-
-                    <div className="space-y-4">
-                        <Card className="border-slate-200 overflow-hidden rounded-2xl bg-white">
-                            <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2.5">
-                                <div className="h-7 w-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm shrink-0"><Layers size={14} /></div>
-                                <h4 className="text-[11px] font-black uppercase text-slate-700 tracking-wider">Actividad e Ingresos</h4>
-                            </div>
-                            <CardContent className="p-0 divide-y divide-slate-100/60">
-                                <Field label="Part. Hidrocarburos" value={bool(associate.hydrocarbons_participation)} />
-                                {associate.hydrocarbons_participation && <Field label="Alcance Hidrocarburos" value={associate.hydrocarbons_level} />}
-                                <Field label="% Ingresos Privados"  value={associate.private_income_pct != null ? `${associate.private_income_pct}%` : null} />
-                                <Field label="% Ingresos Públicos"  value={associate.public_income_pct  != null ? `${associate.public_income_pct}%`  : null} />
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-slate-200 overflow-hidden rounded-2xl bg-white">
-                            <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2.5">
-                                <div className="h-7 w-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm shrink-0"><ShieldAlert size={14} /></div>
-                                <h4 className="text-[11px] font-black uppercase text-slate-700 tracking-wider">PEP y Transparencia</h4>
-                            </div>
-                            <CardContent className="p-0 divide-y divide-slate-100/60">
-                                <Field label="Declaración PEP"  value={bool(associate.pep_declaration)} />
-                                {associate.pep_declaration && (<>
-                                    <Field label="Nombre PEP"   value={associate.pep_name} />
-                                    <Field label="Doc. PEP"     value={associate.pep_doc_type} />
-                                    <Field label="Entidad PEP"  value={associate.pep_entity} />
-                                </>)}
-                                <Field label="Plan Capacitación" value={bool(associate.capacitation_plan)} />
-                                {associate.capacitation_plan === true  && <Field label="Prioridad"       value={associate.capacitation_level} />}
-                                {associate.capacitation_plan === false && <Field label="Motivo sin plan" value={associate.capacitation_no_reason} />}
-                                <Field label="Otros Gremios"     value={associate.other_guilds} />
-                            </CardContent>
-                        </Card>
+                <div className="space-y-2">
+                    <Textarea
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="Motivo del rechazo (se enviará al asociado)…"
+                        maxLength={1000}
+                        autoFocus
+                    />
+                    <div className="flex gap-2">
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={!reason.trim()}
+                            onClick={() => {
+                                onAuditSection(
+                                    'characterization',
+                                    'rejected',
+                                    reason,
+                                );
+                                setRejecting(false);
+                                setReason('');
+                            }}
+                        >
+                            <X /> Confirmar rechazo
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                                setRejecting(false);
+                                setReason('');
+                            }}
+                        >
+                            Cancelar
+                        </Button>
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+export function TabCharacterization({
+    associate,
+    sectionReview,
+    onAuditSection,
+}: Props) {
+    const docType = associate.pep_doc_type;
+    const num = (v: number | undefined) => String(v ?? 0);
+    const pct = (v: number | undefined) => (v != null ? `${v}%` : null);
+
+    return (
+        <TabsContent value="characterization" className="space-y-4">
+            <AuditPanel
+                review={sectionReview}
+                onAuditSection={onAuditSection}
+            />
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                        <Briefcase className="size-4 text-muted-foreground" />
+                        Estructura de empleados
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-3">
+                    <ReadField
+                        label="Total (directos)"
+                        value={num(associate.employees_direct_count)}
+                    />
+                    <ReadField
+                        label="Técnicos"
+                        value={num(associate.employees_tech)}
+                    />
+                    <ReadField
+                        label="Profesionales"
+                        value={num(associate.employees_prof)}
+                    />
+                    <ReadField
+                        label="Administrativos"
+                        value={num(associate.employees_admin)}
+                    />
+                    <ReadField
+                        label="Directivos"
+                        value={num(associate.employees_exec)}
+                    />
+                    <ReadField
+                        label="Otros"
+                        value={num(associate.employees_other)}
+                    />
+                    {!!associate.employees_other_desc && (
+                        <ReadField
+                            label='Descripción de "Otros"'
+                            value={associate.employees_other_desc}
+                        />
+                    )}
+                    <ReadField
+                        label="Tamaño de la organización"
+                        value={associate.company_classification}
+                    />
+                </CardContent>
+            </Card>
+
+            <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <Layers className="size-4 text-muted-foreground" />
+                            Sector e ingresos
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 sm:grid-cols-2">
+                        <ReadField
+                            label="Participa en hidrocarburos"
+                            value={yesNo(associate.hydrocarbons_participation)}
+                        />
+                        {associate.hydrocarbons_participation && (
+                            <ReadField
+                                label="Nivel de alcance"
+                                value={associate.hydrocarbons_level}
+                            />
+                        )}
+                        <ReadField
+                            label="Ingresos sector público"
+                            value={pct(associate.public_income_pct)}
+                        />
+                        <ReadField
+                            label="Ingresos sector privado"
+                            value={pct(associate.private_income_pct)}
+                        />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <ShieldAlert className="size-4 text-muted-foreground" />
+                            PEP y transparencia
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 sm:grid-cols-2">
+                        <ReadField
+                            label="Declaración PEP"
+                            value={yesNo(associate.pep_declaration)}
+                        />
+                        {associate.pep_declaration && (
+                            <>
+                                <ReadField
+                                    label="Nombre del PEP"
+                                    value={associate.pep_name}
+                                />
+                                <ReadField
+                                    label="Tipo de documento"
+                                    value={
+                                        docType
+                                            ? (DOC_LABELS[docType] ?? docType)
+                                            : null
+                                    }
+                                />
+                                <ReadField
+                                    label="Entidad vinculada"
+                                    value={associate.pep_entity}
+                                />
+                            </>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                        <GraduationCap className="size-4 text-muted-foreground" />
+                        Capacitación y gremios
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                    <ReadField
+                        label="Plan de capacitación"
+                        value={yesNo(associate.capacitation_plan)}
+                    />
+                    {associate.capacitation_plan === true && (
+                        <ReadField
+                            label="Nivel que prioriza"
+                            value={associate.capacitation_level}
+                        />
+                    )}
+                    {associate.capacitation_plan === false && (
+                        <ReadField
+                            label="Motivo sin plan"
+                            value={associate.capacitation_no_reason}
+                        />
+                    )}
+                    <ReadField
+                        label="Otros gremios"
+                        value={associate.other_guilds}
+                    />
+                </CardContent>
+            </Card>
         </TabsContent>
     );
 }

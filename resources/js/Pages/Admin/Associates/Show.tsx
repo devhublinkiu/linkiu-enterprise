@@ -317,13 +317,11 @@ export default function Show({ associate, availableServices, documentCatalog }: 
                                 associate={associate}
                                 sectionReview={getSectionReview('basicinfo')}
                                 onAuditSection={handleAuditSection}
-                                onAuditChangeRequest={handleAuditChangeRequest}
                             />
                             <TabCharacterization
                                 associate={associate}
                                 sectionReview={getSectionReview('characterization')}
                                 onAuditSection={handleAuditSection}
-                                onAuditChangeRequest={handleAuditChangeRequest}
                             />
                             <TabContacts
                                 associate={associate}

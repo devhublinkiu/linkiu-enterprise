@@ -25,6 +25,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BillingDocumentController;
 use App\Http\Controllers\ForumController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicAnnouncementController;
 use App\Http\Controllers\PublicBienesServiciosController;
@@ -197,6 +198,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Catálogo propio de ubicaciones (DANE/DIVIPOLA) para los Select del formulario.
+    // Reemplaza a api-colombia.com. Ver ADR-0005 / plan 0007 (corte 7-B).
+    Route::get('/ubicaciones/departamentos', [LocationController::class, 'departments'])
+        ->name('locations.departments');
+    Route::get('/ubicaciones/departamentos/{department}/ciudades', [LocationController::class, 'cities'])
+        ->name('locations.cities');
+
     // Authenticated download of associate documents (owner or admin only).
     Route::get('/associate/documents/{associate}/{docKey}', [AssociateController::class, 'showDocument'])
         ->name('associate.documents.show');
@@ -235,11 +243,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/basic-info', [AssociateController::class, 'editBasicInfo'])->name('basic');
         Route::post('/basic-info', [AssociateController::class, 'updateBasicInfo'])->name('update.basic');
         Route::post('/basic-info/draft', [AssociateController::class, 'saveBasicInfoDraft'])->name('save.draft');
+        Route::post('/basic-info/reopen', [AssociateController::class, 'reopenBasicInfo'])->name('reopen.basic');
         Route::post('/section/request-change', [AssociateController::class, 'requestSectionChange'])->name('request.section.change');
 
         Route::get('/characterization', [AssociateController::class, 'editCharacterization'])->name('characterization');
         Route::post('/characterization', [AssociateController::class, 'updateCharacterization'])->name('update.characterization');
         Route::post('/characterization/draft', [AssociateController::class, 'saveCharacterizationDraft'])->name('save.characterization.draft');
+        Route::post('/characterization/reopen', [AssociateController::class, 'reopenCharacterization'])->name('reopen.characterization');
 
         Route::get('/contacts', [AssociateController::class, 'editContacts'])->name('contacts');
         Route::post('/contacts', [AssociateController::class, 'updateContacts'])->name('update.contacts');

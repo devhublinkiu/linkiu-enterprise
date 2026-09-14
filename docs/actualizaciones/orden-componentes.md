@@ -31,9 +31,9 @@ Sin dependencias; casi todo lo demás los usa. Empezar aquí.
 - [x] Button ↻ *(base/Button.tsx · en galería · Spinner conectado en `loading`)*
 - [x] Label ↻ *(base/Label.tsx · en galería)*
 - [x] Input ↻ *(base/Input.tsx · en galería)*
-- [ ] Textarea ↻
+- [x] Textarea ↻ *(base/Textarea.tsx · en galería · Corte 7-E del plan 0007)*
 - [x] Checkbox ↻ *(base/Checkbox.tsx · en galería · integrado con los grupos de Field)*
-- [ ] Radio Group
+- [x] Radio Group *(base/RadioGroup.tsx · Radix · en galería (sí/no, niveles, choice cards, disabled, invalid) · Corte 8-A del plan 0008 · retira `ui/YesNoToggle`)*
 - [ ] Switch ↻
 - [ ] Toggle
 - [x] Badge ↻ *(base/Badge.tsx · cva + Slot (asChild) · variantes default/secondary/destructive/outline/ghost/link · en galería · Corte 6B del plan 0006)*
@@ -42,7 +42,7 @@ Sin dependencias; casi todo lo demás los usa. Empezar aquí.
 - [x] Skeleton *(base/Skeleton.tsx · en galería · Corte 5C del plan 0005)*
 - [x] Avatar ↻ *(base/Avatar.tsx · Radix Avatar · en galería (imagen/fallback, tamaños, badge, grupo) · Corte 6A del plan 0006)*
 - [ ] Aspect Ratio
-- [ ] Progress
+- [x] Progress *(base/Progress.tsx · Radix · en galería · Corte 7-F del plan 0007)*
 - [ ] Slider
 - [ ] Kbd
 
@@ -50,20 +50,20 @@ Sin dependencias; casi todo lo demás los usa. Empezar aquí.
 Usan primitivos de la fase 1.
 
 - [x] Field *(→ [Label ✓, Separator ✓] — base/Field.tsx · familia completa (Field, FieldSet, FieldLegend, FieldGroup, FieldContent, FieldLabel, FieldTitle, FieldDescription, FieldError, FieldSeparator) · en galería · Separator conectado)*
-- [ ] Input Group *(→ [Input, Button])*
+- [x] Input Group *(base/InputGroup.tsx · reusa Input/Button/Textarea · en galería · Corte 7-I del plan 0007)*
 - [ ] Button Group *(→ [Button])*
 - [ ] Toggle Group *(→ [Toggle])*
 - [ ] Native Select
-- [ ] Select ↻
+- [x] Select ↻ *(base/Select.tsx · Radix · en galería · Corte 7-A del plan 0007)*
 - [x] Input OTP *(base/InputOTP.tsx · usa `input-otp` · en galería · Corte 3A del plan 0003)*
 
 ## Fase 3 · Overlays / capas (Radix portal)
 Base de menús, diálogos y popovers. Muchos compuestos dependen de estos.
 
 - [x] Tooltip *(base/Tooltip.tsx · Radix `radix-ui` · en galería (4 lados) · Corte 5A del plan 0005)*
-- [ ] Popover
+- [x] Popover *(base/Popover.tsx · Radix · en galería · Corte 7-G del plan 0007)*
 - [ ] Hover Card
-- [ ] Dialog
+- [x] Dialog *(base/Dialog.tsx · Radix · en galería · Corte 7-H del plan 0007)*
 - [ ] Alert Dialog *(→ [Dialog, Button])*
 - [x] Sheet *(base/Sheet.tsx · Radix Dialog · en galería (4 lados) · Corte 5B del plan 0005)*
 - [ ] Drawer
@@ -74,8 +74,8 @@ Base de menús, diálogos y popovers. Muchos compuestos dependen de estos.
 ## Fase 4 · Compuestos sobre overlays
 Dependen de la fase 3 (y de cmdk / react-day-picker).
 
-- [ ] Command *(→ [Dialog, Popover] + cmdk)*
-- [ ] Combobox *(→ [Command, Popover]; ↻ reemplaza a `SearchableSelect`)*
+- [ ] Command *(→ [Dialog, Popover] + cmdk · descartado en 0007: el Combobox usa Base UI, no Command; se recrea si hace falta una paleta ⌘K)*
+- [x] Combobox *(base/Combobox.tsx · @base-ui/react · en galería · Corte 7-K del plan 0007 · reemplazará a `SearchableSelect`)*
 - [ ] Calendar *(react-day-picker)*
 - [ ] Date Picker *(→ [Calendar, Popover])*
 

@@ -1,0 +1,34 @@
+'use client';
+
+import { Progress as ProgressPrimitive } from 'radix-ui';
+import * as React from 'react';
+
+import { cn } from '@/lib/utils';
+
+// Spec de shadcn (Tailwind v4). Única adaptación a nuestro stack: el import de `cn`
+// (@/lib/utils). Colores por tokens (`bg-muted` / `bg-primary`); sin variantes `dark:`
+// (light-only). Se conserva el diseño (altura h-1, píldora).
+function Progress({
+    className,
+    value,
+    ...props
+}: React.ComponentProps<typeof ProgressPrimitive.Root>) {
+    return (
+        <ProgressPrimitive.Root
+            data-slot="progress"
+            className={cn(
+                'relative flex h-1 w-full items-center overflow-x-hidden rounded-full bg-muted',
+                className,
+            )}
+            {...props}
+        >
+            <ProgressPrimitive.Indicator
+                data-slot="progress-indicator"
+                className="size-full flex-1 bg-primary transition-all"
+                style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+            />
+        </ProgressPrimitive.Root>
+    );
+}
+
+export { Progress };

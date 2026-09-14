@@ -23,5 +23,7 @@ se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas
 | [0004](0004-plantillas-correo-react.md) | Plantillas de correo en React (react-email) | Hecho |
 | [0005](0005-sidebar-navegacion.md) | Sidebar y navegación (shell de la app) | Hecho |
 | [0006](0006-navbar-topbar.md) | Navbar / Topbar del panel | Hecho |
+| [0007](0007-ficha-informacion-basica.md) | Ficha del asociado · Información Básica | Borrador |
+| [0008](0008-ficha-caracterizacion.md) | Ficha del asociado · Caracterización | Borrador |
 
 Estados posibles: `Borrador` · `Aprobado (#go)` · `En curso` · `Hecho` · `Descartado`.

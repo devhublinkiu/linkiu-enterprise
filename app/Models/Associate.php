@@ -12,11 +12,15 @@ class Associate extends Model
     const BILLING_DAY = 19;
 
     // Section status constants
-    const SEC_DRAFT            = 'draft';
-    const SEC_PENDING          = 'pending';
-    const SEC_APPROVED         = 'approved';
-    const SEC_REJECTED         = 'rejected';
-    const SEC_CHANGE_PENDING   = 'change_pending';
+    const SEC_DRAFT = 'draft';
+
+    const SEC_PENDING = 'pending';
+
+    const SEC_APPROVED = 'approved';
+
+    const SEC_REJECTED = 'rejected';
+
+    const SEC_CHANGE_PENDING = 'change_pending';
 
     protected $fillable = [
         'company_name', 'initials', 'description', 'legal_status', 'constitution_date',
@@ -37,19 +41,19 @@ class Associate extends Model
     ];
 
     protected $casts = [
-        'constitution_date'       => 'date',
+        'constitution_date' => 'date',
         'hydrocarbons_participation' => 'boolean',
-        'pep_declaration'         => 'boolean',
-        'funds_origin_declaration'=> 'boolean',
-        'capacitation_plan'       => 'boolean',
-        'company_type'            => 'array',
-        'membership_interest'     => 'array',
-        'gallery_paths'           => 'array',
-        'files'                   => 'array',
-        'section_reviews'         => 'array',
-        'is_public'               => 'boolean',
-        'is_verified'             => 'boolean',
-        'plan_expires_at'         => 'datetime',
+        'pep_declaration' => 'boolean',
+        'funds_origin_declaration' => 'boolean',
+        'capacitation_plan' => 'boolean',
+        'company_type' => 'array',
+        'membership_interest' => 'array',
+        'gallery_paths' => 'array',
+        'files' => 'array',
+        'section_reviews' => 'array',
+        'is_public' => 'boolean',
+        'is_verified' => 'boolean',
+        'plan_expires_at' => 'datetime',
     ];
 
     // ─── Relationships ────────────────────────────────────────────────────────
@@ -116,15 +120,24 @@ class Associate extends Model
         return $this->getSectionStatus($section) === self::SEC_APPROVED;
     }
 
+    // Reapertura de una sección aprobada por el propio asociado (botón "Editar").
+    // Reemplaza al flujo de solicitud de cambio para las secciones ya migradas al
+    // modelo de 4 estados. Ver ADR-0005 / plan 0007.
+    public function canReopenSection(string $section): bool
+    {
+        return $this->getSectionStatus($section) === self::SEC_APPROVED;
+    }
+
     // ─── Subscription ─────────────────────────────────────────────────────────
 
     public function isSubscriptionActive(): bool
     {
-        if (!$this->plan_id || !$this->plan_expires_at) {
+        if (! $this->plan_id || ! $this->plan_expires_at) {
             return false;
         }
 
         $graceDays = $this->plan->grace_days ?? 0;
+
         return now()->lessThanOrEqualTo($this->plan_expires_at->addDays($graceDays));
     }
 }

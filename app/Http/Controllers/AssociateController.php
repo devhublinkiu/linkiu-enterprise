@@ -2,15 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Mail\AssociateApproved;
+use App\Mail\AssociateAuditRejected;
+use App\Mail\AssociateDocsSubmitted;
+use App\Mail\AssociateFieldChangeRequested;
+use App\Mail\SectionAuditApproved;
 use App\Models\Associate;
 use App\Models\DocumentRequirement;
+use App\Models\PaymentRequest;
+use App\Models\Plan;
+use App\Models\Service;
+use App\Models\ServiceCategory;
+use App\Services\BillingService;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class AssociateController extends Controller
 {
@@ -27,7 +37,7 @@ class AssociateController extends Controller
             ->get();
 
         return Inertia::render('Admin/Associates/Index', [
-            'associates'    => $associates,
+            'associates' => $associates,
             'currentStatus' => $status,
         ]);
     }
@@ -73,9 +83,9 @@ class AssociateController extends Controller
 
         return [
             'mandatory' => $docs->where('is_required', true)->values()
-                ->map(fn($d) => $d->toCatalogEntry())->all(),
-            'optional'  => $docs->where('is_required', false)->values()
-                ->map(fn($d) => $d->toCatalogEntry())->all(),
+                ->map(fn ($d) => $d->toCatalogEntry())->all(),
+            'optional' => $docs->where('is_required', false)->values()
+                ->map(fn ($d) => $d->toCatalogEntry())->all(),
         ];
     }
 
@@ -88,7 +98,7 @@ class AssociateController extends Controller
         return DocumentRequirement::active()
             ->get()
             ->keyBy('key')
-            ->map(fn($d) => $d->toCatalogEntry())
+            ->map(fn ($d) => $d->toCatalogEntry())
             ->all();
     }
 
@@ -98,7 +108,7 @@ class AssociateController extends Controller
 
     public function editBasicInfo()
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::with(['contacts', 'references', 'services'])
             ->where('id', $user->associate_id)->first();
 
@@ -111,35 +121,51 @@ class AssociateController extends Controller
         ]);
     }
 
+    /**
+     * Marca de tiempo para mostrar al asociado (flashes "Borrador guardado · …").
+     * La app persiste en UTC (config/app.php); aquí se convierte a hora de Colombia
+     * SOLO para presentación, sin tocar el almacenamiento.
+     */
+    private function localTimestamp(): string
+    {
+        return now()->timezone('America/Bogota')->format('d/m/Y H:i:s');
+    }
+
     public function saveBasicInfoDraft(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = $user->associate_id
             ? Associate::find($user->associate_id)
-            : new Associate();
+            : new Associate;
+
+        // Sección bloqueada salvo en draft/rejected (o nueva). El front oculta los botones,
+        // pero el servidor es la autoridad. Ver ADR-0005.
+        if ($associate->exists && ! $associate->canEditSection('basicinfo')) {
+            return back()->with('error', 'Esta sección no puede editarse en su estado actual.');
+        }
 
         $data = $request->validate([
-            'company_name'       => 'nullable|string|max:255',
-            'initials'           => 'nullable|string|max:20',
-            'nit'                => 'nullable|string|max:30|unique:associates,nit,' . ($associate->id ?? 'NULL'),
-            'legal_status'       => 'nullable|string',
+            'company_name' => 'nullable|string|max:255',
+            'initials' => 'nullable|string|max:20',
+            'nit' => 'nullable|string|max:30|unique:associates,nit,'.($associate->id ?? 'NULL'),
+            'legal_status' => 'nullable|string',
             'legal_status_other' => 'nullable|string',
-            'constitution_date'  => 'nullable|date',
-            'country_origin'     => 'nullable|string',
-            'phone'              => 'nullable|string',
-            'website'            => 'nullable|string',
-            'department'         => 'nullable|string',
-            'department_id'      => 'nullable|integer',
-            'city'               => 'nullable|string',
-            'city_id'            => 'nullable|integer',
-            'address'            => 'nullable|string',
-            'rep_name'           => 'nullable|string',
-            'rep_position'       => 'nullable|string',
-            'rep_doc_type'       => 'nullable|string|max:20',
-            'rep_doc'            => 'nullable|string|max:50',
+            'constitution_date' => 'nullable|date',
+            'country_origin' => 'nullable|string',
+            'phone' => 'nullable|string',
+            'website' => 'nullable|string',
+            'department' => 'nullable|string',
+            'department_id' => 'nullable|integer',
+            'city' => 'nullable|string',
+            'city_id' => 'nullable|integer',
+            'address' => 'nullable|string',
+            'rep_name' => 'nullable|string',
+            'rep_position' => 'nullable|string',
+            'rep_doc_type' => 'nullable|string|max:20',
+            'rep_doc' => 'nullable|string|max:50',
         ]);
 
-        if (($data['legal_status'] ?? '') === 'Otro' && !empty($data['legal_status_other'])) {
+        if (($data['legal_status'] ?? '') === 'Otro' && ! empty($data['legal_status_other'])) {
             $data['legal_status'] = $data['legal_status_other'];
         }
         unset($data['legal_status_other']);
@@ -148,58 +174,58 @@ class AssociateController extends Controller
 
         // Sección: mantener status actual o iniciar en draft
         $sectionStatus = $associate->getSectionStatus('basicinfo');
-        if (!in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
+        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
             $associate->setSectionStatus('basicinfo', Associate::SEC_DRAFT);
         }
 
         // Associate status global
-        if (!$associate->exists) {
+        if (! $associate->exists) {
             $associate->status = 'draft';
         }
 
         $associate->save();
 
-        if (!$user->associate_id) {
+        if (! $user->associate_id) {
             $user->update(['associate_id' => $associate->id]);
         }
 
-        return back()->with('draft_saved', now()->format('d/m/Y H:i:s'));
+        return back()->with('draft_saved', $this->localTimestamp());
     }
 
     public function updateBasicInfo(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = $user->associate_id
             ? Associate::find($user->associate_id)
-            : new Associate();
+            : new Associate;
 
         // Solo permitir enviar si la sección está en estado editable
-        if ($associate->exists && !$associate->canSubmitSection('basicinfo')) {
+        if ($associate->exists && ! $associate->canSubmitSection('basicinfo')) {
             return back()->with('error', 'Esta sección no puede enviarse en su estado actual.');
         }
 
         $data = $request->validate([
-            'company_name'       => 'required|string|max:255',
-            'initials'           => 'nullable|string|max:20',
-            'nit'                => 'required|string|max:30|unique:associates,nit,' . ($associate->id ?? 'NULL'),
-            'legal_status'       => 'required|string',
+            'company_name' => 'required|string|max:255',
+            'initials' => 'nullable|string|max:20',
+            'nit' => 'required|string|max:30|unique:associates,nit,'.($associate->id ?? 'NULL'),
+            'legal_status' => 'required|string',
             'legal_status_other' => 'nullable|string',
-            'constitution_date'  => 'nullable|date',
-            'country_origin'     => 'nullable|string',
-            'phone'              => 'required|string',
-            'website'            => 'nullable|string',
-            'department'         => 'required|string',
-            'department_id'      => 'required|integer',
-            'city'               => 'required|string',
-            'city_id'            => 'required|integer',
-            'address'            => 'required|string',
-            'rep_name'           => 'required|string',
-            'rep_position'       => 'required|string',
-            'rep_doc_type'       => 'required|string|max:20',
-            'rep_doc'            => 'required|string|max:50',
+            'constitution_date' => 'nullable|date',
+            'country_origin' => 'nullable|string',
+            'phone' => 'required|string',
+            'website' => 'nullable|string',
+            'department' => 'required|string',
+            'department_id' => 'required|integer',
+            'city' => 'required|string',
+            'city_id' => 'required|integer',
+            'address' => 'required|string',
+            'rep_name' => 'required|string',
+            'rep_position' => 'required|string',
+            'rep_doc_type' => 'required|string|max:20',
+            'rep_doc' => 'required|string|max:50',
         ]);
 
-        if (($data['legal_status'] ?? '') === 'Otro' && !empty($data['legal_status_other'])) {
+        if (($data['legal_status'] ?? '') === 'Otro' && ! empty($data['legal_status_other'])) {
             $data['legal_status'] = $data['legal_status_other'];
         }
         unset($data['legal_status_other']);
@@ -209,17 +235,36 @@ class AssociateController extends Controller
             'submitted_at' => now()->toIso8601String(),
         ]);
 
-        if (!$associate->exists || $associate->status === 'draft') {
+        if (! $associate->exists || $associate->status === 'draft') {
             $associate->status = 'pending';
         }
 
         $associate->save();
 
-        if (!$user->associate_id) {
+        if (! $user->associate_id) {
             $user->update(['associate_id' => $associate->id]);
         }
 
         return back()->with('success', 'Información básica enviada a revisión.');
+    }
+
+    // Reabre una sección aprobada para que el asociado la edite (botón "Editar").
+    // approved → draft. El asociado decide cuándo volver a enviarla. Ver ADR-0005.
+    public function reopenBasicInfo()
+    {
+        $user = auth()->user();
+        $associate = Associate::findOrFail($user->associate_id);
+
+        if (! $associate->canReopenSection('basicinfo')) {
+            return back()->with('error', 'Solo puedes editar una sección que ya fue aprobada.');
+        }
+
+        $associate->setSectionStatus('basicinfo', Associate::SEC_DRAFT, [
+            'reopened_at' => now()->toIso8601String(),
+        ]);
+        $associate->save();
+
+        return back()->with('success', 'Sección reabierta para edición. Envíala a revisión cuando termines.');
     }
 
     // =========================================================================
@@ -228,7 +273,7 @@ class AssociateController extends Controller
 
     public function editCharacterization()
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::with(['contacts', 'references', 'services'])
             ->where('id', $user->associate_id)->first();
 
@@ -243,76 +288,118 @@ class AssociateController extends Controller
 
     public function saveCharacterizationDraft(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
         $data = $request->validate([
-            'employees_tech'           => 'nullable|integer|min:0',
-            'employees_prof'           => 'nullable|integer|min:0',
-            'employees_admin'          => 'nullable|integer|min:0',
-            'employees_exec'           => 'nullable|integer|min:0',
-            'employees_other'          => 'nullable|integer|min:0',
-            'employees_other_desc'     => 'nullable|string',
-            'employees_direct_count'   => 'nullable|integer|min:0',
+            'employees_tech' => 'nullable|integer|min:0',
+            'employees_prof' => 'nullable|integer|min:0',
+            'employees_admin' => 'nullable|integer|min:0',
+            'employees_exec' => 'nullable|integer|min:0',
+            'employees_other' => 'nullable|integer|min:0',
+            'employees_other_desc' => 'nullable|string',
+            'employees_direct_count' => 'nullable|integer|min:0',
             'hydrocarbons_participation' => 'nullable|boolean',
-            'hydrocarbons_level'       => 'nullable|string',
-            'pep_declaration'          => 'nullable|boolean',
-            'pep_name'                 => 'nullable|string',
-            'pep_doc_type'             => 'nullable|string',
-            'pep_entity'               => 'nullable|string',
-            'other_guilds'             => 'nullable|string',
-            'capacitation_plan'        => 'nullable|boolean',
-            'capacitation_level'       => 'nullable|string',
-            'capacitation_no_reason'   => 'nullable|string',
-            'company_classification'   => 'nullable|string',
-            'public_income_pct'        => 'nullable|integer|min:0|max:100',
-            'private_income_pct'       => 'nullable|integer|min:0|max:100',
+            'hydrocarbons_level' => 'nullable|string',
+            'pep_declaration' => 'nullable|boolean',
+            'pep_name' => 'nullable|string',
+            'pep_doc_type' => 'nullable|string',
+            'pep_entity' => 'nullable|string',
+            'other_guilds' => 'nullable|string',
+            'capacitation_plan' => 'nullable|boolean',
+            'capacitation_level' => 'nullable|string',
+            'capacitation_no_reason' => 'nullable|string',
+            'company_classification' => 'nullable|string',
+            'public_income_pct' => 'nullable|integer|min:0|max:100',
+            'private_income_pct' => 'nullable|integer|min:0|max:100',
         ]);
 
-        $associate->fill($data);
-
-        $sectionStatus = $associate->getSectionStatus('characterization');
-        if (!in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
-            $associate->setSectionStatus('characterization', Associate::SEC_DRAFT);
+        // Sección bloqueada salvo en draft/rejected. El front oculta los botones, pero el
+        // servidor es la autoridad. Ver ADR-0005.
+        if (! $associate->canEditSection('characterization')) {
+            return back()->with('error', 'Esta sección no puede editarse en su estado actual.');
         }
 
+        // employees_direct_count es derivado y los condicionales se limpian al negativo (ADR-0005-b).
+        $data = $this->normalizeCharacterization($data);
+        $associate->fill($data);
+        $associate->setSectionStatus('characterization', Associate::SEC_DRAFT);
         $associate->save();
 
-        return back()->with('draft_saved', now()->format('d/m/Y H:i:s'));
+        return back()->with('draft_saved', $this->localTimestamp());
     }
 
     public function updateCharacterization(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
-        if (!$associate->canSubmitSection('characterization')) {
+        if (! $associate->canSubmitSection('characterization')) {
             return back()->with('error', 'Esta sección no puede enviarse en su estado actual.');
         }
 
-        $data = $request->validate([
-            'employees_tech'           => 'required|integer|min:0',
-            'employees_prof'           => 'required|integer|min:0',
-            'employees_admin'          => 'required|integer|min:0',
-            'employees_exec'           => 'required|integer|min:0',
-            'employees_other'          => 'required|integer|min:0',
-            'employees_other_desc'     => 'nullable|string|max:255',
-            'employees_direct_count'   => 'required|integer|min:0',
+        $validator = Validator::make($request->all(), [
+            'employees_tech' => 'required|integer|min:0',
+            'employees_prof' => 'required|integer|min:0',
+            'employees_admin' => 'required|integer|min:0',
+            'employees_exec' => 'required|integer|min:0',
+            'employees_other' => 'required|integer|min:0',
+            'employees_other_desc' => 'nullable|string|max:255',
+            // Derivado: se recalcula en el servidor (ADR-0005-b), no se exige del cliente.
+            'employees_direct_count' => 'nullable|integer|min:0',
             'hydrocarbons_participation' => 'required|boolean',
-            'hydrocarbons_level'       => 'nullable|string',
-            'pep_declaration'          => 'required|boolean',
-            'pep_name'                 => 'nullable|string',
-            'pep_doc_type'             => 'nullable|string',
-            'pep_entity'               => 'nullable|string',
-            'other_guilds'             => 'nullable|string',
-            'capacitation_plan'        => 'required|boolean',
-            'capacitation_level'       => 'nullable|string',
-            'capacitation_no_reason'   => 'nullable|string',
-            'company_classification'   => 'required|string',
-            'public_income_pct'        => 'required|integer|min:0|max:100',
-            'private_income_pct'       => 'required|integer|min:0|max:100',
+            'hydrocarbons_level' => 'nullable|string',
+            'pep_declaration' => 'required|boolean',
+            'pep_name' => 'nullable|string',
+            'pep_doc_type' => 'nullable|string',
+            'pep_entity' => 'nullable|string',
+            'other_guilds' => 'nullable|string',
+            'capacitation_plan' => 'required|boolean',
+            'capacitation_level' => 'nullable|string',
+            'capacitation_no_reason' => 'nullable|string',
+            'company_classification' => 'required|string',
+            'public_income_pct' => 'required|integer|min:0|max:100',
+            'private_income_pct' => 'required|integer|min:0|max:100',
         ]);
 
+        // Reglas de negocio que la spec exige y el servidor blinda (ADR-0005-b):
+        //   1) los ingresos suman exactamente 100%;
+        //   2) condicionales obligatorios cuando su disparador es afirmativo.
+        $validator->after(function ($v) use ($request) {
+            $sum = (int) $request->input('public_income_pct')
+                + (int) $request->input('private_income_pct');
+            if ($sum !== 100) {
+                $msg = "Los ingresos deben sumar exactamente 100% (hoy: {$sum}%).";
+                $v->errors()->add('public_income_pct', $msg);
+                $v->errors()->add('private_income_pct', $msg);
+            }
+
+            if ($request->boolean('hydrocarbons_participation') && ! filled($request->input('hydrocarbons_level'))) {
+                $v->errors()->add('hydrocarbons_level', 'Completa este dato para continuar.');
+            }
+
+            if ($request->boolean('pep_declaration')) {
+                foreach (['pep_name', 'pep_doc_type', 'pep_entity'] as $field) {
+                    if (! filled($request->input($field))) {
+                        $v->errors()->add($field, 'Completa este dato para continuar.');
+                    }
+                }
+            }
+
+            if ($request->has('capacitation_plan')) {
+                if ($request->boolean('capacitation_plan')) {
+                    if (! filled($request->input('capacitation_level'))) {
+                        $v->errors()->add('capacitation_level', 'Completa este dato para continuar.');
+                    }
+                } elseif (! filled($request->input('capacitation_no_reason'))) {
+                    $v->errors()->add('capacitation_no_reason', 'Completa este dato para continuar.');
+                }
+            }
+        });
+
+        $data = $validator->validate();
+
+        $data = $this->normalizeCharacterization($data);
         $associate->fill($data);
         $associate->setSectionStatus('characterization', Associate::SEC_PENDING, [
             'submitted_at' => now()->toIso8601String(),
@@ -322,13 +409,65 @@ class AssociateController extends Controller
         return back()->with('success', 'Caracterización enviada a revisión.');
     }
 
+    public function reopenCharacterization()
+    {
+        $user = auth()->user();
+        $associate = Associate::findOrFail($user->associate_id);
+
+        if (! $associate->canReopenSection('characterization')) {
+            return back()->with('error', 'Solo puedes editar una sección que ya fue aprobada.');
+        }
+
+        $associate->setSectionStatus('characterization', Associate::SEC_DRAFT, [
+            'reopened_at' => now()->toIso8601String(),
+        ]);
+        $associate->save();
+
+        return back()->with('success', 'Sección reabierta para edición. Envíala a revisión cuando termines.');
+    }
+
+    /**
+     * Normaliza los datos de Caracterización antes de persistir (ADR-0005-b):
+     *   · employees_direct_count es DERIVADO: se recalcula como la suma de las cinco
+     *     categorías (el cliente nunca decide el total; blindaje ante manipulación).
+     *   · Los campos condicionales se limpian cuando su disparador es negativo, para no
+     *     arrastrar datos huérfanos.
+     */
+    private function normalizeCharacterization(array $data): array
+    {
+        $data['employees_direct_count'] =
+            (int) ($data['employees_tech'] ?? 0)
+            + (int) ($data['employees_prof'] ?? 0)
+            + (int) ($data['employees_admin'] ?? 0)
+            + (int) ($data['employees_exec'] ?? 0)
+            + (int) ($data['employees_other'] ?? 0);
+
+        if (($data['hydrocarbons_participation'] ?? null) === false) {
+            $data['hydrocarbons_level'] = null;
+        }
+
+        if (($data['pep_declaration'] ?? null) === false) {
+            $data['pep_name'] = null;
+            $data['pep_doc_type'] = null;
+            $data['pep_entity'] = null;
+        }
+
+        if (($data['capacitation_plan'] ?? null) === true) {
+            $data['capacitation_no_reason'] = null;
+        } elseif (($data['capacitation_plan'] ?? null) === false) {
+            $data['capacitation_level'] = null;
+        }
+
+        return $data;
+    }
+
     // =========================================================================
     // CONTACTS
     // =========================================================================
 
     public function editContacts()
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::with(['contacts', 'references', 'services'])
             ->where('id', $user->associate_id)->first();
 
@@ -343,37 +482,37 @@ class AssociateController extends Controller
 
     public function saveContactsDraft(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
         $data = $request->validate([
-            'contacts'               => 'nullable|array',
-            'contacts.*.area'        => 'nullable|string',
-            'contacts.*.name'        => 'nullable|string',
-            'contacts.*.position'    => 'nullable|string',
-            'contacts.*.email'       => 'nullable|string',
-            'contacts.*.phone'       => 'nullable|string',
-            'main_ciiu'              => 'nullable|string',
-            'secondary_ciiu'         => 'nullable|string',
-            'billing_email'          => 'nullable|string',
-            'company_type'           => 'nullable|array',
-            'references'             => 'nullable|array',
-            'references.*.type'      => 'nullable|string',
-            'references.*.name'      => 'nullable|string',
+            'contacts' => 'nullable|array',
+            'contacts.*.area' => 'nullable|string',
+            'contacts.*.name' => 'nullable|string',
+            'contacts.*.position' => 'nullable|string',
+            'contacts.*.email' => 'nullable|string',
+            'contacts.*.phone' => 'nullable|string',
+            'main_ciiu' => 'nullable|string',
+            'secondary_ciiu' => 'nullable|string',
+            'billing_email' => 'nullable|string',
+            'company_type' => 'nullable|array',
+            'references' => 'nullable|array',
+            'references.*.type' => 'nullable|string',
+            'references.*.name' => 'nullable|string',
             'references.*.contact_person' => 'nullable|string',
-            'references.*.position'  => 'nullable|string',
-            'references.*.phone'     => 'nullable|string',
-            'references.*.email'     => 'nullable|string',
-            'social_instagram'       => 'nullable|string',
-            'social_facebook'        => 'nullable|string',
-            'social_linkedin'        => 'nullable|string',
-            'social_other'           => 'nullable|string',
+            'references.*.position' => 'nullable|string',
+            'references.*.phone' => 'nullable|string',
+            'references.*.email' => 'nullable|string',
+            'social_instagram' => 'nullable|string',
+            'social_facebook' => 'nullable|string',
+            'social_linkedin' => 'nullable|string',
+            'social_other' => 'nullable|string',
         ]);
 
         $associate->fill(array_diff_key($data, array_flip(['contacts', 'references'])));
 
         $sectionStatus = $associate->getSectionStatus('contacts');
-        if (!in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
+        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
             $associate->setSectionStatus('contacts', Associate::SEC_DRAFT);
         }
 
@@ -382,7 +521,7 @@ class AssociateController extends Controller
         if ($request->has('contacts')) {
             $associate->contacts()->delete();
             foreach ($request->contacts as $contact) {
-                if (!empty($contact['name'])) {
+                if (! empty($contact['name'])) {
                     $associate->contacts()->create($contact);
                 }
             }
@@ -391,46 +530,46 @@ class AssociateController extends Controller
         if ($request->has('references')) {
             $associate->references()->delete();
             foreach ($request->references as $reference) {
-                if (!empty($reference['name'])) {
+                if (! empty($reference['name'])) {
                     $associate->references()->create($reference);
                 }
             }
         }
 
-        return back()->with('draft_saved', now()->format('d/m/Y H:i:s'));
+        return back()->with('draft_saved', $this->localTimestamp());
     }
 
     public function updateContacts(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
-        if (!$associate->canSubmitSection('contacts')) {
+        if (! $associate->canSubmitSection('contacts')) {
             return back()->with('error', 'Esta sección no puede enviarse en su estado actual.');
         }
 
         $data = $request->validate([
-            'contacts'               => 'required|array|min:1',
-            'contacts.*.area'        => 'required|string',
-            'contacts.*.name'        => 'required|string',
-            'contacts.*.position'    => 'required|string',
-            'contacts.*.email'       => 'required|email',
-            'contacts.*.phone'       => 'required|string',
-            'main_ciiu'              => 'required|string',
-            'secondary_ciiu'         => 'nullable|string',
-            'billing_email'          => 'required|email',
-            'company_type'           => 'required|array',
-            'references'             => 'required|array|min:1',
-            'references.*.type'      => 'required|string',
-            'references.*.name'      => 'required|string',
+            'contacts' => 'required|array|min:1',
+            'contacts.*.area' => 'required|string',
+            'contacts.*.name' => 'required|string',
+            'contacts.*.position' => 'required|string',
+            'contacts.*.email' => 'required|email',
+            'contacts.*.phone' => 'required|string',
+            'main_ciiu' => 'required|string',
+            'secondary_ciiu' => 'nullable|string',
+            'billing_email' => 'required|email',
+            'company_type' => 'required|array',
+            'references' => 'required|array|min:1',
+            'references.*.type' => 'required|string',
+            'references.*.name' => 'required|string',
             'references.*.contact_person' => 'nullable|string',
-            'references.*.position'  => 'nullable|string',
-            'references.*.phone'     => 'nullable|string',
-            'references.*.email'     => 'nullable|email',
-            'social_instagram'       => 'nullable|string',
-            'social_facebook'        => 'nullable|string',
-            'social_linkedin'        => 'nullable|string',
-            'social_other'           => 'nullable|string',
+            'references.*.position' => 'nullable|string',
+            'references.*.phone' => 'nullable|string',
+            'references.*.email' => 'nullable|email',
+            'social_instagram' => 'nullable|string',
+            'social_facebook' => 'nullable|string',
+            'social_linkedin' => 'nullable|string',
+            'social_other' => 'nullable|string',
         ]);
 
         $associate->fill(array_diff_key($data, array_flip(['contacts', 'references'])));
@@ -441,14 +580,14 @@ class AssociateController extends Controller
 
         $associate->contacts()->delete();
         foreach ($request->contacts as $contact) {
-            if (!empty($contact['name'])) {
+            if (! empty($contact['name'])) {
                 $associate->contacts()->create($contact);
             }
         }
 
         $associate->references()->delete();
         foreach ($request->references as $reference) {
-            if (!empty($reference['name'])) {
+            if (! empty($reference['name'])) {
                 $associate->references()->create($reference);
             }
         }
@@ -462,7 +601,7 @@ class AssociateController extends Controller
 
     public function editDocumentation()
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::with(['contacts', 'references', 'services'])
             ->where('id', $user->associate_id)->first();
 
@@ -471,8 +610,8 @@ class AssociateController extends Controller
         }
 
         return Inertia::render('Associate/Company/Documentation', [
-            'initialAssociate'  => $associate,
-            'documentCatalog'   => $this->documentCatalog(),
+            'initialAssociate' => $associate,
+            'documentCatalog' => $this->documentCatalog(),
         ]);
     }
 
@@ -494,13 +633,14 @@ class AssociateController extends Controller
     private function maxUploadMb(): int
     {
         $toBytes = function (string $val): int {
-            $val  = trim($val);
-            $num  = (int) $val;
+            $val = trim($val);
+            $num = (int) $val;
             $unit = strtolower(substr($val, -1));
+
             return match ($unit) {
-                'g'     => $num * 1024 * 1024 * 1024,
-                'm'     => $num * 1024 * 1024,
-                'k'     => $num * 1024,
+                'g' => $num * 1024 * 1024 * 1024,
+                'm' => $num * 1024 * 1024,
+                'k' => $num * 1024,
                 default => $num,
             };
         };
@@ -523,9 +663,12 @@ class AssociateController extends Controller
         $rules = ['files' => 'nullable|array'];
 
         foreach ((array) $request->file('files', []) as $key => $file) {
-            if (!$file) continue;
-            if (!isset($specs[$key])) {
+            if (! $file) {
+                continue;
+            }
+            if (! isset($specs[$key])) {
                 $rules["files.$key"] = 'file|max:0';
+
                 continue;
             }
             $mimes = implode(',', $specs[$key]['accepts']);
@@ -542,8 +685,8 @@ class AssociateController extends Controller
     {
         return [
             'files.*.mimes' => 'El formato del archivo ":input" no está permitido para este documento.',
-            'files.*.max'   => 'El archivo supera el tamaño máximo permitido (10 MB).',
-            'files.*.file'  => 'El archivo no es válido.',
+            'files.*.max' => 'El archivo supera el tamaño máximo permitido (10 MB).',
+            'files.*.file' => 'El archivo no es válido.',
         ];
     }
 
@@ -553,16 +696,16 @@ class AssociateController extends Controller
      */
     private function storeAssociateDocument(Associate $associate, string $key, $file, array &$storedFiles): void
     {
-        if (!empty($storedFiles[$key])) {
+        if (! empty($storedFiles[$key])) {
             try {
                 Storage::disk(config('filesystems.default'))->delete($storedFiles[$key]);
             } catch (\Throwable $e) {
-                Log::warning("No se pudo eliminar archivo anterior de {$key}: " . $e->getMessage());
+                Log::warning("No se pudo eliminar archivo anterior de {$key}: ".$e->getMessage());
             }
         }
 
         $extension = $file->getClientOriginalExtension();
-        $fileName  = $key . '_' . now()->format('YmdHis') . '_' . Str::random(6) . '.' . $extension;
+        $fileName = $key.'_'.now()->format('YmdHis').'_'.Str::random(6).'.'.$extension;
         $storedFiles[$key] = $file->storeAs(
             "associates/{$associate->id}/docs",
             $fileName,
@@ -572,73 +715,79 @@ class AssociateController extends Controller
 
     public function saveDocumentationDraft(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
         if ($this->postMaxSizeExceeded($request)) {
             $max = $this->maxUploadMb();
+
             return back()->with('error', "Los archivos superan el tamaño máximo que acepta el servidor ({$max} MB en total). Sube archivos más livianos o uno a la vez.");
         }
 
         $request->validate(array_merge($this->buildFileValidationRules($request), [
-            'rep_name'                  => 'nullable|string|max:255',
-            'rep_doc'                   => 'nullable|string|max:255',
-            'membership_interest'       => 'nullable|array',
+            'rep_name' => 'nullable|string|max:255',
+            'rep_doc' => 'nullable|string|max:255',
+            'membership_interest' => 'nullable|array',
             'membership_interest_other' => 'nullable|string|max:500',
-            'funds_origin_declaration'  => 'nullable|boolean',
+            'funds_origin_declaration' => 'nullable|boolean',
         ], $this->fileValidationMessages()));
 
         $storedFiles = $associate->files ?? [];
 
         foreach ((array) $request->file('files', []) as $key => $file) {
-            if (!$file) continue;
+            if (! $file) {
+                continue;
+            }
             $this->storeAssociateDocument($associate, $key, $file, $storedFiles);
         }
 
         $sectionStatus = $associate->getSectionStatus('documentation');
-        if (!in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
+        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
             $associate->setSectionStatus('documentation', Associate::SEC_DRAFT);
         }
 
-        $associate->files                     = $storedFiles;
-        $associate->rep_name                  = $request->rep_name                  ?? $associate->rep_name;
-        $associate->rep_doc                   = $request->rep_doc                   ?? $associate->rep_doc;
-        $associate->membership_interest       = $request->membership_interest       ?? $associate->membership_interest;
+        $associate->files = $storedFiles;
+        $associate->rep_name = $request->rep_name ?? $associate->rep_name;
+        $associate->rep_doc = $request->rep_doc ?? $associate->rep_doc;
+        $associate->membership_interest = $request->membership_interest ?? $associate->membership_interest;
         $associate->membership_interest_other = $request->membership_interest_other ?? $associate->membership_interest_other;
         if ($request->has('funds_origin_declaration')) {
             $associate->funds_origin_declaration = (bool) $request->boolean('funds_origin_declaration');
         }
         $associate->save();
 
-        return back()->with('draft_saved', now()->format('d/m/Y H:i:s'));
+        return back()->with('draft_saved', $this->localTimestamp());
     }
 
     public function updateDocumentation(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
-        if (!$associate->canSubmitSection('documentation')) {
+        if (! $associate->canSubmitSection('documentation')) {
             return back()->with('error', 'Esta sección no puede enviarse en su estado actual.');
         }
 
         if ($this->postMaxSizeExceeded($request)) {
             $max = $this->maxUploadMb();
+
             return back()->with('error', "Los archivos superan el tamaño máximo que acepta el servidor ({$max} MB en total). Sube archivos más livianos o uno a la vez.");
         }
 
         $request->validate(array_merge($this->buildFileValidationRules($request), [
-            'funds_origin_declaration'  => 'accepted',
-            'rep_name'                  => 'required|string|max:255',
-            'rep_doc'                   => 'required|string|max:255',
-            'membership_interest'       => 'required|array|min:1',
+            'funds_origin_declaration' => 'accepted',
+            'rep_name' => 'required|string|max:255',
+            'rep_doc' => 'required|string|max:255',
+            'membership_interest' => 'required|array|min:1',
             'membership_interest_other' => 'nullable|string|max:500|required_if:membership_interest.*,Otro',
         ], $this->fileValidationMessages()));
 
         $storedFiles = $associate->files ?? [];
 
         foreach ((array) $request->file('files', []) as $key => $file) {
-            if (!$file) continue;
+            if (! $file) {
+                continue;
+            }
             $this->storeAssociateDocument($associate, $key, $file, $storedFiles);
         }
 
@@ -649,27 +798,27 @@ class AssociateController extends Controller
                 $missing[] = $doc['label'];
             }
         }
-        if (!empty($missing)) {
-            return back()->with('error', 'Faltan documentos obligatorios: ' . implode(', ', $missing));
+        if (! empty($missing)) {
+            return back()->with('error', 'Faltan documentos obligatorios: '.implode(', ', $missing));
         }
 
         $associate->setSectionStatus('documentation', Associate::SEC_PENDING, [
             'submitted_at' => now()->toIso8601String(),
         ]);
 
-        $associate->files                     = $storedFiles;
-        $associate->rep_name                  = $request->rep_name;
-        $associate->rep_doc                   = $request->rep_doc;
-        $associate->membership_interest       = $request->membership_interest;
+        $associate->files = $storedFiles;
+        $associate->rep_name = $request->rep_name;
+        $associate->rep_doc = $request->rep_doc;
+        $associate->membership_interest = $request->membership_interest;
         $associate->membership_interest_other = $request->membership_interest_other;
-        $associate->funds_origin_declaration  = true;
+        $associate->funds_origin_declaration = true;
         $associate->save();
 
         try {
             Mail::to(config('mail.admin_recipient', env('ADMIN_EMAIL')))
-                ->send(new \App\Mail\AssociateDocsSubmitted($associate));
+                ->send(new AssociateDocsSubmitted($associate));
         } catch (\Exception $e) {
-            Log::error('Error enviando alerta de documentos a admin: ' . $e->getMessage());
+            Log::error('Error enviando alerta de documentos a admin: '.$e->getMessage());
         }
 
         return back()->with('success', 'Documentación enviada a revisión.');
@@ -677,10 +826,10 @@ class AssociateController extends Controller
 
     public function deleteDocument(Request $request, string $docKey)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
-        if (!$associate->canEditSection('documentation')) {
+        if (! $associate->canEditSection('documentation')) {
             return back()->with('error', 'No puedes modificar la documentación en su estado actual.');
         }
 
@@ -692,7 +841,7 @@ class AssociateController extends Controller
         try {
             Storage::disk(config('filesystems.default'))->delete($files[$docKey]);
         } catch (\Throwable $e) {
-            Log::warning("No se pudo eliminar archivo {$docKey}: " . $e->getMessage());
+            Log::warning("No se pudo eliminar archivo {$docKey}: ".$e->getMessage());
         }
 
         unset($files[$docKey]);
@@ -710,14 +859,14 @@ class AssociateController extends Controller
     public function showDocument(Request $request, Associate $associate, string $docKey)
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             abort(403);
         }
 
         $isOwner = $user->associate_id === $associate->id;
         $isAdmin = $user->isAdmin();
 
-        if (!$isOwner && !$isAdmin) {
+        if (! $isOwner && ! $isAdmin) {
             abort(403);
         }
 
@@ -730,7 +879,7 @@ class AssociateController extends Controller
         $path = $files[$docKey];
 
         $storage = Storage::disk($disk);
-        if (!$storage->exists($path)) {
+        if (! $storage->exists($path)) {
             abort(404);
         }
 
@@ -747,25 +896,28 @@ class AssociateController extends Controller
 
     public function requestSectionChange(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
+        // basicinfo y characterization ya no usan el flujo de solicitud de cambio: se reabren
+        // con "Editar" (reopen…). Ver ADR-0005 / planes 0007-0008. Las demás secciones siguen
+        // igual hasta que se migren.
         $request->validate([
-            'section' => 'required|in:basicinfo,characterization,contacts,documentation,services',
-            'reason'  => 'required|string|max:500',
+            'section' => 'required|in:contacts,documentation,services',
+            'reason' => 'required|string|max:500',
         ]);
 
         $section = $request->section;
 
-        if (!$associate->canRequestSectionChange($section)) {
+        if (! $associate->canRequestSectionChange($section)) {
             return back()->with('error', 'Esta sección no está aprobada o ya tiene una solicitud pendiente.');
         }
 
         $associate->setSectionStatus($section, Associate::SEC_CHANGE_PENDING, [
-            'change_request_reason'    => $request->reason,
-            'change_requested_at'      => now()->toIso8601String(),
-            'change_requested_by'      => $user->name,
-            'change_rejected_reason'   => null,
+            'change_request_reason' => $request->reason,
+            'change_requested_at' => now()->toIso8601String(),
+            'change_requested_by' => $user->name,
+            'change_rejected_reason' => null,
         ]);
         $associate->save();
 
@@ -773,11 +925,11 @@ class AssociateController extends Controller
             $adminEmail = config('mail.admin_recipient', env('ADMIN_EMAIL'));
             if ($adminEmail) {
                 Mail::to($adminEmail)->send(
-                    new \App\Mail\AssociateFieldChangeRequested($associate, $section, $request->reason)
+                    new AssociateFieldChangeRequested($associate, $section, $request->reason)
                 );
             }
         } catch (\Exception $e) {
-            Log::error('Error notificando admin de solicitud de cambio: ' . $e->getMessage());
+            Log::error('Error notificando admin de solicitud de cambio: '.$e->getMessage());
         }
 
         return back()->with('success', 'Solicitud de cambio enviada. Te notificaremos cuando sea revisada.');
@@ -791,45 +943,45 @@ class AssociateController extends Controller
     {
         $request->validate([
             'section' => 'required|in:basicinfo,characterization,contacts,documentation,services',
-            'action'  => 'required|in:approve,reject',
-            'reason'  => 'required_if:action,reject|nullable|string|max:1000',
+            'action' => 'required|in:approve,reject',
+            'reason' => 'required_if:action,reject|nullable|string|max:1000',
         ]);
 
         $section = $request->section;
-        $action  = $request->action;
+        $action = $request->action;
         $recipientEmail = $associate->users->first()?->email ?? $associate->billing_email;
 
         if ($action === 'approve') {
             $associate->setSectionStatus($section, Associate::SEC_APPROVED, [
-                'reviewed_by'     => auth()->user()->name,
-                'reviewed_at'     => now()->toIso8601String(),
+                'reviewed_by' => auth()->user()->name,
+                'reviewed_at' => now()->toIso8601String(),
                 'rejected_reason' => null,
             ]);
 
             try {
                 if ($recipientEmail) {
                     Mail::to($recipientEmail)->send(
-                        new \App\Mail\SectionAuditApproved($associate, $section)
+                        new SectionAuditApproved($associate, $section)
                     );
                 }
             } catch (\Exception $e) {
-                Log::error('Error enviando notificación de aprobación de sección: ' . $e->getMessage());
+                Log::error('Error enviando notificación de aprobación de sección: '.$e->getMessage());
             }
         } else {
             $associate->setSectionStatus($section, Associate::SEC_REJECTED, [
                 'rejected_reason' => $request->reason,
-                'reviewed_by'     => auth()->user()->name,
-                'reviewed_at'     => now()->toIso8601String(),
+                'reviewed_by' => auth()->user()->name,
+                'reviewed_at' => now()->toIso8601String(),
             ]);
 
             try {
                 if ($recipientEmail) {
                     Mail::to($recipientEmail)->send(
-                        new \App\Mail\AssociateAuditRejected($associate, $section, $request->reason)
+                        new AssociateAuditRejected($associate, $section, $request->reason)
                     );
                 }
             } catch (\Exception $e) {
-                Log::error('Error enviando notificación de rechazo de sección: ' . $e->getMessage());
+                Log::error('Error enviando notificación de rechazo de sección: '.$e->getMessage());
             }
         }
 
@@ -841,13 +993,13 @@ class AssociateController extends Controller
     public function auditChangeRequest(Request $request, Associate $associate)
     {
         $request->validate([
-            'section' => 'required|in:basicinfo,characterization,contacts,documentation,services',
-            'action'  => 'required|in:approve,reject',
-            'reason'  => 'required_if:action,reject|nullable|string|max:1000',
+            'section' => 'required|in:contacts,documentation,services',
+            'action' => 'required|in:approve,reject',
+            'reason' => 'required_if:action,reject|nullable|string|max:1000',
         ]);
 
-        $section        = $request->section;
-        $action         = $request->action;
+        $section = $request->section;
+        $action = $request->action;
         $recipientEmail = $associate->users->first()?->email ?? $associate->billing_email;
 
         if ($associate->getSectionStatus($section) !== Associate::SEC_CHANGE_PENDING) {
@@ -863,27 +1015,27 @@ class AssociateController extends Controller
             try {
                 if ($recipientEmail) {
                     Mail::to($recipientEmail)->send(
-                        new \App\Mail\SectionAuditApproved($associate, $section, true)
+                        new SectionAuditApproved($associate, $section, true)
                     );
                 }
             } catch (\Exception $e) {
-                Log::error('Error enviando notificación de aprobación de cambio: ' . $e->getMessage());
+                Log::error('Error enviando notificación de aprobación de cambio: '.$e->getMessage());
             }
         } else {
             $associate->setSectionStatus($section, Associate::SEC_APPROVED, [
                 'change_rejected_reason' => $request->reason,
-                'change_rejected_by'     => auth()->user()->name,
-                'change_rejected_at'     => now()->toIso8601String(),
+                'change_rejected_by' => auth()->user()->name,
+                'change_rejected_at' => now()->toIso8601String(),
             ]);
 
             try {
                 if ($recipientEmail) {
                     Mail::to($recipientEmail)->send(
-                        new \App\Mail\AssociateFieldChangeRequested($associate, $section, 'Solicitud rechazada: ' . $request->reason)
+                        new AssociateFieldChangeRequested($associate, $section, 'Solicitud rechazada: '.$request->reason)
                     );
                 }
             } catch (\Exception $e) {
-                Log::error('Error enviando notificación de rechazo de cambio: ' . $e->getMessage());
+                Log::error('Error enviando notificación de rechazo de cambio: '.$e->getMessage());
             }
         }
 
@@ -900,18 +1052,18 @@ class AssociateController extends Controller
 
     public function editServices()
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::where('id', $user->associate_id)->with('services')->first();
 
         if ($associate) {
             $this->appendFileUrls($associate);
         }
 
-        $availableServices = \App\Models\Service::with('category')->where('is_active', true)->get();
-        $serviceCategories = \App\Models\ServiceCategory::all();
+        $availableServices = Service::with('category')->where('is_active', true)->get();
+        $serviceCategories = ServiceCategory::all();
 
         return Inertia::render('Associate/Company/Services', [
-            'initialAssociate'  => $associate,
+            'initialAssociate' => $associate,
             'availableServices' => $availableServices,
             'serviceCategories' => $serviceCategories,
         ]);
@@ -919,49 +1071,49 @@ class AssociateController extends Controller
 
     public function saveServicesDraft(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
         $data = $request->validate([
-            'description'   => 'nullable|string',
-            'service_ids'   => 'nullable|array',
+            'description' => 'nullable|string',
+            'service_ids' => 'nullable|array',
             'service_ids.*' => 'exists:services,id',
         ]);
 
         $associate->description = $data['description'] ?? $associate->description;
 
         $sectionStatus = $associate->getSectionStatus('services');
-        if (!in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
+        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
             $associate->setSectionStatus('services', Associate::SEC_DRAFT);
         }
 
         $associate->save();
 
-        if (!empty($data['service_ids'])) {
+        if (! empty($data['service_ids'])) {
             $associate->services()->sync($data['service_ids']);
         }
 
-        return back()->with('draft_saved', now()->format('d/m/Y H:i:s'));
+        return back()->with('draft_saved', $this->localTimestamp());
     }
 
     public function updateServices(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
-        if (!$associate->canSubmitSection('services')) {
+        if (! $associate->canSubmitSection('services')) {
             return back()->with('error', 'Esta sección no puede enviarse en su estado actual.');
         }
 
         $data = $request->validate([
-            'description'   => 'required|string',
-            'service_ids'   => 'required|array|min:1',
+            'description' => 'required|string',
+            'service_ids' => 'required|array|min:1',
             'service_ids.*' => 'exists:services,id',
         ]);
 
         // Límite vía el catálogo de módulos (cae a limit_services si el plan aún
         // no está migrado). null = ilimitado. Ver ADR-0002.
-        $plan  = $associate->plan;
+        $plan = $associate->plan;
         $limit = $plan?->limitFor('servicios');
 
         if ($limit !== null && count($data['service_ids']) > $limit) {
@@ -984,7 +1136,7 @@ class AssociateController extends Controller
 
     public function editGallery()
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::with('plan')->where('id', $user->associate_id)->first();
 
         if ($associate) {
@@ -998,30 +1150,30 @@ class AssociateController extends Controller
 
     public function updateGallery(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
         $request->validate([
-            'images'   => 'required|array',
+            'images' => 'required|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:5120',
         ]);
 
         // Límite vía el catálogo de módulos (cae a limit_gallery si el plan aún
         // no está migrado). null = ilimitado. Ver ADR-0002.
-        $plan               = $associate->plan;
-        $limit              = $plan?->limitFor('galeria');
+        $plan = $associate->plan;
+        $limit = $plan?->limitFor('galeria');
         $currentImagesCount = count($associate->gallery_paths ?? []);
-        $newImagesCount     = count($request->file('images') ?? []);
+        $newImagesCount = count($request->file('images') ?? []);
 
         if ($limit !== null && ($currentImagesCount + $newImagesCount) > $limit) {
             return back()->with('error', "Has alcanzado el límite de imágenes para tu plan ({$limit} fotos).");
         }
 
-        $disk         = config('filesystems.default');
+        $disk = config('filesystems.default');
         $galleryPaths = $associate->gallery_paths ?? [];
 
         foreach ($request->file('images') as $file) {
-            $path           = $file->store("associates/{$associate->id}/gallery", $disk);
+            $path = $file->store("associates/{$associate->id}/gallery", $disk);
             $galleryPaths[] = $path;
         }
 
@@ -1032,12 +1184,12 @@ class AssociateController extends Controller
 
     public function deleteGalleryImage(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
         $request->validate(['path' => 'required|string']);
 
-        $disk         = config('filesystems.default');
+        $disk = config('filesystems.default');
         $galleryPaths = $associate->gallery_paths ?? [];
 
         if (($key = array_search($request->path, $galleryPaths)) !== false) {
@@ -1049,6 +1201,7 @@ class AssociateController extends Controller
             }
 
             $associate->update(['gallery_paths' => array_values($galleryPaths)]);
+
             return back()->with('success', 'Imagen eliminada correctamente.');
         }
 
@@ -1057,12 +1210,12 @@ class AssociateController extends Controller
 
     public function setCoverImage(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
         $request->validate(['path' => 'required|string']);
 
-        if (!in_array($request->path, $associate->gallery_paths ?? [])) {
+        if (! in_array($request->path, $associate->gallery_paths ?? [])) {
             return back()->with('error', 'La imagen debe pertenecer a tu galería.');
         }
 
@@ -1073,7 +1226,7 @@ class AssociateController extends Controller
 
     public function uploadLogo(Request $request)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
         $request->validate([
@@ -1081,7 +1234,7 @@ class AssociateController extends Controller
         ], [
             'logo.image' => 'El archivo debe ser una imagen.',
             'logo.mimes' => 'Solo se aceptan JPG, PNG o WEBP.',
-            'logo.max'   => 'El logo no puede superar 5 MB.',
+            'logo.max' => 'El logo no puede superar 5 MB.',
         ]);
 
         $disk = config('filesystems.default');
@@ -1090,7 +1243,7 @@ class AssociateController extends Controller
             try {
                 Storage::disk($disk)->delete($associate->logo_path);
             } catch (\Throwable $e) {
-                Log::warning("No se pudo borrar logo anterior {$associate->logo_path}: " . $e->getMessage());
+                Log::warning("No se pudo borrar logo anterior {$associate->logo_path}: ".$e->getMessage());
             }
         }
 
@@ -1102,10 +1255,10 @@ class AssociateController extends Controller
 
     public function deleteLogo()
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
-        if (!$associate->logo_path) {
+        if (! $associate->logo_path) {
             return back()->with('error', 'No hay logo para eliminar.');
         }
 
@@ -1114,7 +1267,7 @@ class AssociateController extends Controller
         try {
             Storage::disk($disk)->delete($associate->logo_path);
         } catch (\Throwable $e) {
-            Log::warning("No se pudo borrar logo {$associate->logo_path}: " . $e->getMessage());
+            Log::warning("No se pudo borrar logo {$associate->logo_path}: ".$e->getMessage());
         }
 
         $associate->update(['logo_path' => null]);
@@ -1132,9 +1285,9 @@ class AssociateController extends Controller
         $this->appendFileUrls($associate);
 
         return Inertia::render('Admin/Associates/Show', [
-            'associate'         => $associate,
-            'documentCatalog'   => $this->documentCatalog(),
-            'availableServices' => \App\Models\ServiceCategory::with(['services' => function ($q) {
+            'associate' => $associate,
+            'documentCatalog' => $this->documentCatalog(),
+            'availableServices' => ServiceCategory::with(['services' => function ($q) {
                 $q->where('is_active', true);
             }])->get(),
         ]);
@@ -1144,77 +1297,36 @@ class AssociateController extends Controller
     {
         $request->validate([
             // Services
-            'description'   => 'nullable|string',
-            'service_ids'   => 'nullable|array',
+            'description' => 'nullable|string',
+            'service_ids' => 'nullable|array',
             'service_ids.*' => 'exists:services,id',
-            // Basic info
-            'company_name'      => 'nullable|string|max:255',
-            'initials'          => 'nullable|string|max:20',
-            'nit'               => 'nullable|string|max:30',
-            'legal_status'      => 'nullable|string',
-            'constitution_date' => 'nullable|date',
-            'country_origin'    => 'nullable|string',
-            'department'        => 'nullable|string',
-            'city'              => 'nullable|string',
-            'address'           => 'nullable|string',
-            'phone'             => 'nullable|string|max:20',
-            'website'           => 'nullable|string|max:255',
-            'rep_name'          => 'nullable|string|max:255',
-            'rep_doc_type'      => 'nullable|string',
-            'rep_doc'           => 'nullable|string|max:50',
-            'rep_position'      => 'nullable|string|max:255',
-            // Characterization
-            'employees_direct_count'     => 'nullable|integer|min:0',
-            'employees_tech'             => 'nullable|integer|min:0',
-            'employees_prof'             => 'nullable|integer|min:0',
-            'employees_admin'            => 'nullable|integer|min:0',
-            'employees_exec'             => 'nullable|integer|min:0',
-            'employees_other'            => 'nullable|integer|min:0',
-            'employees_other_desc'       => 'nullable|string',
-            'company_classification'     => 'nullable|string',
-            'hydrocarbons_participation' => 'nullable|boolean',
-            'hydrocarbons_level'         => 'nullable|string',
-            'private_income_pct'         => 'nullable|integer|min:0|max:100',
-            'public_income_pct'          => 'nullable|integer|min:0|max:100',
-            'pep_declaration'            => 'nullable|boolean',
-            'pep_name'                   => 'nullable|string',
-            'pep_doc_type'               => 'nullable|string',
-            'pep_entity'                 => 'nullable|string',
-            'capacitation_plan'          => 'nullable|boolean',
-            'capacitation_level'         => 'nullable|string',
-            'capacitation_no_reason'     => 'nullable|string',
-            'other_guilds'               => 'nullable|string',
+            // Información Básica y Caracterización: el admin NO edita (ADR-0005 / 0005-b). Sus
+            // campos se retiran de este endpoint; el asociado los cambia por su flujo de revisión
+            // (draft→pending→approved). Corrección = rechazo con motivo.
             // Contacts
-            'billing_email'     => 'nullable|email',
-            'main_ciiu'         => 'nullable|string',
-            'secondary_ciiu'    => 'nullable|string',
-            'company_type'      => 'nullable|array',
-            'social_instagram'  => 'nullable|string|max:255',
-            'social_facebook'   => 'nullable|string|max:255',
-            'social_linkedin'   => 'nullable|string|max:255',
-            'social_other'      => 'nullable|string|max:255',
-            'contacts'              => 'nullable|array',
-            'contacts.*.name'       => 'nullable|string',
-            'contacts.*.position'   => 'nullable|string',
-            'contacts.*.area'       => 'nullable|string',
-            'contacts.*.email'      => 'nullable|string',
-            'contacts.*.phone'      => 'nullable|string',
+            'billing_email' => 'nullable|email',
+            'main_ciiu' => 'nullable|string',
+            'secondary_ciiu' => 'nullable|string',
+            'company_type' => 'nullable|array',
+            'social_instagram' => 'nullable|string|max:255',
+            'social_facebook' => 'nullable|string|max:255',
+            'social_linkedin' => 'nullable|string|max:255',
+            'social_other' => 'nullable|string|max:255',
+            'contacts' => 'nullable|array',
+            'contacts.*.name' => 'nullable|string',
+            'contacts.*.position' => 'nullable|string',
+            'contacts.*.area' => 'nullable|string',
+            'contacts.*.email' => 'nullable|string',
+            'contacts.*.phone' => 'nullable|string',
         ]);
 
         $fields = $request->only([
-            'description', 'company_name', 'initials', 'nit', 'legal_status',
-            'constitution_date', 'country_origin', 'department', 'city', 'address',
-            'phone', 'website', 'rep_name', 'rep_doc_type', 'rep_doc', 'rep_position',
-            'employees_direct_count', 'employees_tech', 'employees_prof', 'employees_admin',
-            'employees_exec', 'employees_other', 'employees_other_desc', 'company_classification',
-            'hydrocarbons_participation', 'hydrocarbons_level', 'private_income_pct', 'public_income_pct',
-            'pep_declaration', 'pep_name', 'pep_doc_type', 'pep_entity',
-            'capacitation_plan', 'capacitation_level', 'capacitation_no_reason', 'other_guilds',
+            'description', // servicios (la descripción vive en la sección de servicios)
             'billing_email', 'main_ciiu', 'secondary_ciiu', 'company_type',
             'social_instagram', 'social_facebook', 'social_linkedin', 'social_other',
         ]);
 
-        if (!empty($fields)) {
+        if (! empty($fields)) {
             $associate->update($fields);
         }
 
@@ -1225,7 +1337,7 @@ class AssociateController extends Controller
         if ($request->has('contacts')) {
             $associate->contacts()->delete();
             foreach ((array) $request->contacts as $c) {
-                if (!empty($c['name'])) {
+                if (! empty($c['name'])) {
                     $associate->contacts()->create($c);
                 }
             }
@@ -1237,14 +1349,14 @@ class AssociateController extends Controller
     public function adminGalleryUpload(Request $request, Associate $associate)
     {
         $request->validate([
-            'images'   => 'required|array',
+            'images' => 'required|array',
             'images.*' => 'file|image|max:5120',
         ]);
 
-        $disk  = config('filesystems.default');
+        $disk = config('filesystems.default');
         $paths = $associate->gallery_paths ?? [];
         foreach ($request->file('images') as $file) {
-            $paths[] = $file->store('associates/' . $associate->id . '/gallery', $disk);
+            $paths[] = $file->store('associates/'.$associate->id.'/gallery', $disk);
         }
         $associate->update(['gallery_paths' => $paths]);
 
@@ -1255,7 +1367,7 @@ class AssociateController extends Controller
     {
         $request->validate(['path' => 'required|string']);
 
-        $paths = array_values(array_filter($associate->gallery_paths ?? [], fn($p) => $p !== $request->path));
+        $paths = array_values(array_filter($associate->gallery_paths ?? [], fn ($p) => $p !== $request->path));
         Storage::disk(config('filesystems.default'))->delete($request->path);
 
         $associate->gallery_paths = $paths;
@@ -1271,11 +1383,12 @@ class AssociateController extends Controller
     {
         $request->validate(['path' => 'required|string']);
 
-        if (!in_array($request->path, $associate->gallery_paths ?? [])) {
+        if (! in_array($request->path, $associate->gallery_paths ?? [])) {
             return back()->with('error', 'La imagen no pertenece a la galería.');
         }
 
         $associate->update(['cover_path' => $request->path]);
+
         return back()->with('success', 'Portada actualizada.');
     }
 
@@ -1286,10 +1399,10 @@ class AssociateController extends Controller
         try {
             $recipientEmail = $associate->users->first()?->email ?? $associate->billing_email;
             if ($recipientEmail) {
-                Mail::to($recipientEmail)->send(new \App\Mail\AssociateApproved($associate));
+                Mail::to($recipientEmail)->send(new AssociateApproved($associate));
             }
         } catch (\Exception $e) {
-            Log::error('Error enviando correo de aprobación: ' . $e->getMessage());
+            Log::error('Error enviando correo de aprobación: '.$e->getMessage());
         }
 
         return redirect()->route('admin.associates.index')
@@ -1298,13 +1411,15 @@ class AssociateController extends Controller
 
     public function togglePublic(Associate $associate)
     {
-        $associate->update(['is_public' => !$associate->is_public]);
+        $associate->update(['is_public' => ! $associate->is_public]);
+
         return back()->with('success', 'Visibilidad actualizada.');
     }
 
     public function toggleVerified(Associate $associate)
     {
-        $associate->update(['is_verified' => !$associate->is_verified]);
+        $associate->update(['is_verified' => ! $associate->is_verified]);
+
         return back()->with('success', 'Estado de verificación actualizado.');
     }
 
@@ -1314,24 +1429,24 @@ class AssociateController extends Controller
 
     public function billing()
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = $user->associate_id
             ? Associate::with('plan')->find($user->associate_id)
             : null;
 
         $subscriptionStatus = 'none';
-        $daysRemaining      = null;
-        $servicesCount      = 0;
-        $galleryCount       = 0;
+        $daysRemaining = null;
+        $servicesCount = 0;
+        $galleryCount = 0;
 
         if ($associate) {
             $servicesCount = $associate->services()->count();
-            $galleryCount  = count($associate->gallery_paths ?? []);
+            $galleryCount = count($associate->gallery_paths ?? []);
 
             if ($associate->plan_id && $associate->plan_expires_at) {
                 if ($associate->isSubscriptionActive()) {
                     $daysRemaining = (int) now()->diffInDays($associate->plan_expires_at, false);
-                    $graceDays     = $associate->plan->grace_days ?? 0;
+                    $graceDays = $associate->plan->grace_days ?? 0;
 
                     $subscriptionStatus = $daysRemaining >= 0 ? 'active' : 'grace';
                     if ($subscriptionStatus === 'grace') {
@@ -1339,12 +1454,12 @@ class AssociateController extends Controller
                     }
                 } else {
                     $subscriptionStatus = 'expired';
-                    $daysRemaining      = 0;
+                    $daysRemaining = 0;
                 }
             }
         }
 
-        $paymentRequestRaw = \App\Models\PaymentRequest::with('plan')
+        $paymentRequestRaw = PaymentRequest::with('plan')
             ->where('user_id', $user->id)
             ->whereIn('status', ['pending', 'rejected'])
             ->latest()
@@ -1362,29 +1477,29 @@ class AssociateController extends Controller
 
             if ($showRequest) {
                 $paymentRequest = [
-                    'id'          => $paymentRequestRaw->id,
-                    'status'      => $paymentRequestRaw->status,
-                    'plan_name'   => $paymentRequestRaw->plan->name ?? 'Plan',
-                    'plan_color'  => $paymentRequestRaw->plan->color_hex ?? '#000000',
+                    'id' => $paymentRequestRaw->id,
+                    'status' => $paymentRequestRaw->status,
+                    'plan_name' => $paymentRequestRaw->plan->name ?? 'Plan',
+                    'plan_color' => $paymentRequestRaw->plan->color_hex ?? '#000000',
                     'admin_notes' => $paymentRequestRaw->admin_notes,
-                    'created_at'  => $paymentRequestRaw->created_at?->format('d/m/Y H:i') ?? '',
+                    'created_at' => $paymentRequestRaw->created_at?->format('d/m/Y H:i') ?? '',
                 ];
             }
         }
 
-        $availablePlans = \App\Models\Plan::where('is_active', true)->orderBy('price_monthly')->get();
+        $availablePlans = Plan::where('is_active', true)->orderBy('price_monthly')->get();
 
         // Un asociado que venció y no tiene nada pendiente que pagar se queda
         // sin salida: el cron dejó de emitirle y no hay documento que saldar.
         // Se le emite la cuenta de reactivación en el acto.
         // Ver docs/adr/0001-motor-de-cobro-unificado.md
-        $billing         = app(\App\Services\BillingService::class);
+        $billing = app(BillingService::class);
         $pendingInvoices = $associate ? $billing->pendingInvoices($associate) : collect();
 
         if ($associate
             && in_array($subscriptionStatus, ['grace', 'expired'], true)
             && $pendingInvoices->isEmpty()
-            && !$paymentRequest
+            && ! $paymentRequest
         ) {
             $reactivation = $billing->issueReactivationInvoice($associate);
 
@@ -1395,21 +1510,21 @@ class AssociateController extends Controller
         }
 
         return Inertia::render('Associate/Billing/Index', [
-            'currentPlan'        => $associate?->plan,
+            'currentPlan' => $associate?->plan,
             'subscriptionStatus' => $subscriptionStatus,
-            'daysRemaining'      => $daysRemaining,
-            'planExpiresAt'      => $associate?->plan_expires_at?->format('d/m/Y'),
-            'billingCycle'       => $associate?->billing_cycle ?? 'monthly',
-            'usage'              => ['services' => $servicesCount, 'gallery' => $galleryCount],
-            'availablePlans'     => $availablePlans,
-            'paymentRequest'     => $paymentRequest,
-            'pendingInvoices'    => $pendingInvoices->map(fn ($inv) => [
-                'id'         => $inv->id,
-                'period'     => $inv->period,
-                'amount'     => $inv->amount,
-                'due_date'   => $inv->due_date?->format('d/m/Y'),
+            'daysRemaining' => $daysRemaining,
+            'planExpiresAt' => $associate?->plan_expires_at?->format('d/m/Y'),
+            'billingCycle' => $associate?->billing_cycle ?? 'monthly',
+            'usage' => ['services' => $servicesCount, 'gallery' => $galleryCount],
+            'availablePlans' => $availablePlans,
+            'paymentRequest' => $paymentRequest,
+            'pendingInvoices' => $pendingInvoices->map(fn ($inv) => [
+                'id' => $inv->id,
+                'period' => $inv->period,
+                'amount' => $inv->amount,
+                'due_date' => $inv->due_date?->format('d/m/Y'),
                 'is_overdue' => $inv->due_date ? $inv->due_date->isPast() : false,
-                'notes'      => $inv->notes,
+                'notes' => $inv->notes,
             ])->values(),
         ]);
     }

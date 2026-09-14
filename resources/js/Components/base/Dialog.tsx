@@ -1,0 +1,177 @@
+'use client';
+
+import { XIcon } from 'lucide-react';
+import { Dialog as DialogPrimitive } from 'radix-ui';
+import * as React from 'react';
+
+import { Button } from '@/Components/base/Button';
+import { cn } from '@/lib/utils';
+
+// Spec de shadcn (Tailwind v4). Adaptaciones a nuestro stack (v3 + tokens HSL, light-only):
+//   · `data-open:` / `data-closed:` → `data-[state=open]:` / `data-[state=closed]:`.
+//   · `supports-backdrop-filter:backdrop-blur-xs` → `supports-[backdrop-filter]:backdrop-blur-sm`.
+//   · `*:[a]:…` (hijo directo <a>) → `[&>a]:…`; `underline-offset-3` → `underline-offset-[3px]`.
+//   · `cn-font-heading` (clase ajena al proyecto) → se retira; el título es UI de app (Inter).
+//   · Se quitan las variantes `dark:`. Tokens `popover`, `popover-foreground`, `foreground`,
+//     `muted`, `muted-foreground`, `border` (existen).
+
+function Dialog({
+    ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) {
+    return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+}
+
+function DialogTrigger({
+    ...props
+}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+    return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
+}
+
+function DialogPortal({
+    ...props
+}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+    return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
+}
+
+function DialogClose({
+    ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close>) {
+    return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
+}
+
+// forwardRef: Radix pasa el `ref` al overlay (animación/presencia) — React 18 lo exige. Ver Button.
+const DialogOverlay = React.forwardRef<
+    React.ElementRef<typeof DialogPrimitive.Overlay>,
+    React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+>(function DialogOverlay({ className, ...props }, ref) {
+    return (
+        <DialogPrimitive.Overlay
+            ref={ref}
+            data-slot="dialog-overlay"
+            className={cn(
+                'fixed inset-0 isolate z-50 bg-black/10 duration-100 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 supports-[backdrop-filter]:backdrop-blur-sm',
+                className,
+            )}
+            {...props}
+        />
+    );
+});
+
+// forwardRef: Radix pasa el `ref` al content (focus trap) — React 18 lo exige.
+const DialogContent = React.forwardRef<
+    React.ElementRef<typeof DialogPrimitive.Content>,
+    React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+        showCloseButton?: boolean;
+    }
+>(function DialogContent(
+    { className, children, showCloseButton = true, ...props },
+    ref,
+) {
+    return (
+        <DialogPortal>
+            <DialogOverlay />
+            <DialogPrimitive.Content
+                ref={ref}
+                data-slot="dialog-content"
+                className={cn(
+                    'fixed left-1/2 top-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground outline-none ring-1 ring-foreground/10 duration-100 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-sm',
+                    className,
+                )}
+                {...props}
+            >
+                {children}
+                {showCloseButton && (
+                    <DialogPrimitive.Close data-slot="dialog-close" asChild>
+                        <Button
+                            variant="ghost"
+                            className="absolute right-2 top-2"
+                            size="icon-sm"
+                        >
+                            <XIcon />
+                            <span className="sr-only">Cerrar</span>
+                        </Button>
+                    </DialogPrimitive.Close>
+                )}
+            </DialogPrimitive.Content>
+        </DialogPortal>
+    );
+});
+
+function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
+    return (
+        <div
+            data-slot="dialog-header"
+            className={cn('flex flex-col gap-2', className)}
+            {...props}
+        />
+    );
+}
+
+function DialogFooter({
+    className,
+    showCloseButton = false,
+    children,
+    ...props
+}: React.ComponentProps<'div'> & {
+    showCloseButton?: boolean;
+}) {
+    return (
+        <div
+            data-slot="dialog-footer"
+            className={cn(
+                '-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end',
+                className,
+            )}
+            {...props}
+        >
+            {children}
+            {showCloseButton && (
+                <DialogPrimitive.Close asChild>
+                    <Button variant="outline">Cerrar</Button>
+                </DialogPrimitive.Close>
+            )}
+        </div>
+    );
+}
+
+function DialogTitle({
+    className,
+    ...props
+}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+    return (
+        <DialogPrimitive.Title
+            data-slot="dialog-title"
+            className={cn('text-base font-medium leading-none', className)}
+            {...props}
+        />
+    );
+}
+
+function DialogDescription({
+    className,
+    ...props
+}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+    return (
+        <DialogPrimitive.Description
+            data-slot="dialog-description"
+            className={cn(
+                'text-sm text-muted-foreground [&>a:hover]:text-foreground [&>a]:underline [&>a]:underline-offset-[3px]',
+                className,
+            )}
+            {...props}
+        />
+    );
+}
+
+export {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogOverlay,
+    DialogPortal,
+    DialogTitle,
+    DialogTrigger,
+};

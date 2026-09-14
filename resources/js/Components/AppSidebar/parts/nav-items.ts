@@ -60,21 +60,21 @@ export function buildAdminItems(
                 {
                     name: 'Activas',
                     href: route('admin.associates.index', {
-                        status: 'approved',
+                        estado: 'activa',
                     }),
                     count: counts.approved,
                 },
                 {
                     name: 'Pendientes',
                     href: route('admin.associates.index', {
-                        status: 'pending',
+                        estado: 'pendiente',
                     }),
                     count: counts.pending,
                 },
                 {
                     name: 'Inactivas',
                     href: route('admin.associates.index', {
-                        status: 'inactive',
+                        estado: 'inactiva',
                     }),
                     count: counts.inactive,
                 },

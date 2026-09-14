@@ -126,10 +126,6 @@ export function buildAdminItems(
                     name: 'Facturación',
                     href: route('admin.invoices.index'),
                 },
-                {
-                    name: 'Solicitudes (histórico)',
-                    href: route('admin.payment-requests.index'),
-                },
             ],
         },
         {

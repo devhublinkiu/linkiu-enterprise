@@ -1,20 +1,59 @@
-import React, { useState } from 'react';
-import { Link, useForm } from '@inertiajs/react';
-import AppLayout from '@/Layouts/AppLayout';
-import { Card } from '@/Components/ui/Card';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
-    Receipt,
-    Plus,
-    ExternalLink,
-    CheckCircle2,
+    AlertCircle,
     Banknote,
-    Trash2,
     Building2,
-    X,
+    CheckCircle2,
+    ExternalLink,
+    MoreHorizontal,
+    Plus,
+    Receipt,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
-interface Associate { id: number; company_name: string; }
+import { Alert, AlertTitle } from '@/Components/base/Alert';
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/base/Dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/Components/base/DropdownMenu';
+import { Field, FieldLabel } from '@/Components/base/Field';
+import { Input } from '@/Components/base/Input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/base/Select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/Components/base/Table';
+import { Textarea } from '@/Components/base/Textarea';
+import AppLayout from '@/Layouts/AppLayout';
+
+interface Associate {
+    id: number;
+    company_name: string;
+}
 interface InvoiceRow {
     id: number;
     associate_name: string;
@@ -42,7 +81,7 @@ interface Props {
 
 const TYPE_LABELS: Record<string, string> = {
     factura: 'Factura',
-    cuenta_cobro: 'Cuenta de Cobro',
+    cuenta_cobro: 'Cuenta de cobro',
 };
 
 const METHOD_LABELS: Record<string, string> = {
@@ -54,11 +93,29 @@ const METHOD_LABELS: Record<string, string> = {
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-export default function InvoicesIndex({ invoices, associates }: Props) {
-    const [showForm, setShowForm] = useState(false);
-    const [payingInvoice, setPayingInvoice] = useState<InvoiceRow | null>(null);
+const formatCurrency = (v: number | null) =>
+    v != null
+        ? new Intl.NumberFormat('es-CO', {
+              style: 'currency',
+              currency: 'COP',
+              maximumFractionDigits: 0,
+          }).format(v)
+        : '—';
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+export default function InvoicesIndex({ invoices, associates }: Props) {
+    const flash = (usePage().props.flash ?? {}) as {
+        success?: string;
+        error?: string;
+    };
+    const [notice, setNotice] = useState<{
+        variant: 'success' | 'destructive';
+        msg: string;
+    } | null>(null);
+    const [showCreate, setShowCreate] = useState(false);
+    const [payingInvoice, setPayingInvoice] = useState<InvoiceRow | null>(null);
+    const [deleting, setDeleting] = useState<InvoiceRow | null>(null);
+
+    const form = useForm({
         associate_id: '',
         type: 'factura',
         period: '',
@@ -69,7 +126,6 @@ export default function InvoicesIndex({ invoices, associates }: Props) {
         notes: '',
     });
 
-    // Riel 3: el asociado pagó por fuera de la plataforma y el admin lo asienta.
     const payment = useForm({
         payment_method: 'efectivo',
         paid_at: today(),
@@ -77,436 +133,600 @@ export default function InvoicesIndex({ invoices, associates }: Props) {
         payment_notes: '',
     });
 
-    const formatCurrency = (v: number | null) =>
-        v != null
-            ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v)
-            : '—';
+    useEffect(() => {
+        if (flash.success)
+            setNotice({ variant: 'success', msg: flash.success });
+        else if (flash.error)
+            setNotice({ variant: 'destructive', msg: flash.error });
+        if (flash.success || flash.error) {
+            const t = setTimeout(() => setNotice(null), 5000);
+            return () => clearTimeout(t);
+        }
+    }, [flash.success, flash.error]);
 
-    const submit = (e: React.FormEvent) => {
+    const submitCreate = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('admin.invoices.store'), {
+        form.post(route('admin.invoices.store'), {
             forceFormData: true,
-            onSuccess: () => { reset(); setShowForm(false); },
+            onSuccess: () => {
+                form.reset();
+                setShowCreate(false);
+            },
         });
-    };
-
-    const openPayment = (invoice: InvoiceRow) => {
-        payment.reset();
-        payment.clearErrors();
-        setPayingInvoice(invoice);
     };
 
     const submitPayment = (e: React.FormEvent) => {
         e.preventDefault();
         if (!payingInvoice) return;
-        payment.post(route('admin.invoices.register-payment', payingInvoice.id), {
+        payment.post(
+            route('admin.invoices.register-payment', payingInvoice.id),
+            {
+                preserveScroll: true,
+                onSuccess: () => setPayingInvoice(null),
+            },
+        );
+    };
+
+    const confirmDelete = () => {
+        if (!deleting) return;
+        router.delete(route('admin.invoices.destroy', deleting.id), {
             preserveScroll: true,
-            onSuccess: () => setPayingInvoice(null),
+            onFinish: () => setDeleting(null),
         });
     };
 
     return (
         <AppLayout>
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
+            <Head title="Facturación" />
+            <div className="mx-auto max-w-6xl space-y-6">
+                <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900">Facturación</h1>
-                        <p className="text-sm text-slate-500 font-medium mt-1">
-                            Sube facturas y cuentas de cobro a los asociados
+                        <h1 className="flex items-center gap-2 font-display text-h3">
+                            <Receipt className="size-6 text-muted-foreground" />
+                            Facturación
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Facturas y cuentas de cobro emitidas a los
+                            asociados.
                         </p>
                     </div>
-                    <button
-                        onClick={() => setShowForm(v => !v)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-700 transition-all"
-                    >
-                        <Plus size={16} />
-                        Nueva Factura
-                    </button>
+                    <Button onClick={() => setShowCreate(true)}>
+                        <Plus className="size-4" /> Nueva factura
+                    </Button>
                 </div>
 
-                {/* Upload Form */}
-                {showForm && (
-                    <Card className="p-6 border-slate-200 rounded-2xl shadow-sm">
-                        <div className="flex items-center justify-between mb-5">
-                            <h2 className="font-black text-slate-900 text-base">Nueva Factura / Cuenta de Cobro</h2>
-                            <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-700">
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Associate */}
-                            <div className="md:col-span-2">
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
-                                    Asociado *
-                                </label>
-                                <select
-                                    value={data.associate_id}
-                                    onChange={e => setData('associate_id', e.target.value)}
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                                >
-                                    <option value="">Seleccionar asociado…</option>
-                                    {associates.map(a => (
-                                        <option key={a.id} value={a.id}>{a.company_name}</option>
-                                    ))}
-                                </select>
-                                {errors.associate_id && <p className="text-red-500 text-xs mt-1">{errors.associate_id}</p>}
-                            </div>
-
-                            {/* Type */}
-                            <div>
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Tipo *</label>
-                                <select
-                                    value={data.type}
-                                    onChange={e => setData('type', e.target.value)}
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                                >
-                                    <option value="factura">Factura</option>
-                                    <option value="cuenta_cobro">Cuenta de Cobro</option>
-                                </select>
-                            </div>
-
-                            {/* Cycle — solo una cuenta de cobro renueva la suscripción */}
-                            {data.type === 'cuenta_cobro' && (
-                                <div>
-                                    <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
-                                        Ciclo que renueva
-                                    </label>
-                                    <select
-                                        value={data.cycle}
-                                        onChange={e => setData('cycle', e.target.value)}
-                                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                                    >
-                                        <option value="monthly">Mensual (+1 mes)</option>
-                                        <option value="semiannual">Semestral (+6 meses)</option>
-                                        <option value="annual">Anual (+12 meses)</option>
-                                    </select>
-                                    <p className="text-[11px] font-medium text-slate-400 mt-1">
-                                        Al marcarse pagada, la vigencia avanza este periodo hasta el día 19.
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Period */}
-                            <div>
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Período *</label>
-                                <input
-                                    type="text"
-                                    placeholder="Ej: Marzo 2026"
-                                    value={data.period}
-                                    onChange={e => setData('period', e.target.value)}
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                                />
-                                {errors.period && <p className="text-red-500 text-xs mt-1">{errors.period}</p>}
-                            </div>
-
-                            {/* Amount */}
-                            <div>
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Valor (opcional)</label>
-                                <input
-                                    type="number"
-                                    placeholder="0"
-                                    value={data.amount}
-                                    onChange={e => setData('amount', e.target.value)}
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                                />
-                            </div>
-
-                            {/* Document */}
-                            <div>
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Documento (PDF / imagen)</label>
-                                <input
-                                    type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    onChange={e => setData('document', e.target.files?.[0] ?? null)}
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-600 file:mr-3 file:border-0 file:bg-slate-100 file:text-slate-700 file:font-bold file:rounded-lg file:px-3 file:py-1 focus:outline-none"
-                                />
-                                {errors.document && <p className="text-red-500 text-xs mt-1">{errors.document}</p>}
-                            </div>
-
-                            {/* External link */}
-                            <div className="md:col-span-2">
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Enlace externo (opcional)</label>
-                                <input
-                                    type="url"
-                                    placeholder="https://…"
-                                    value={data.external_link}
-                                    onChange={e => setData('external_link', e.target.value)}
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                                />
-                            </div>
-
-                            {/* Notes */}
-                            <div className="md:col-span-2">
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Observaciones</label>
-                                <textarea
-                                    rows={2}
-                                    value={data.notes}
-                                    onChange={e => setData('notes', e.target.value)}
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"
-                                />
-                            </div>
-
-                            <div className="md:col-span-2 flex justify-end gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => { reset(); setShowForm(false); }}
-                                    className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-all"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="px-5 py-2 text-sm font-bold text-white bg-slate-900 rounded-xl hover:bg-slate-700 transition-all disabled:opacity-50"
-                                >
-                                    {processing ? 'Subiendo…' : 'Subir Factura'}
-                                </button>
-                            </div>
-                        </form>
-                    </Card>
+                {notice && (
+                    <Alert variant={notice.variant}>
+                        {notice.variant === 'success' ? (
+                            <CheckCircle2 />
+                        ) : (
+                            <AlertCircle />
+                        )}
+                        <AlertTitle>{notice.msg}</AlertTitle>
+                    </Alert>
                 )}
 
-                {/* Invoice List */}
-                <Card className="border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                    {invoices.length === 0 ? (
-                        <div className="py-20 flex flex-col items-center text-center gap-3">
-                            <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-                                <Receipt size={24} className="text-slate-400" />
-                            </div>
-                            <p className="font-black text-slate-700">No hay facturas aún</p>
-                            <p className="text-sm text-slate-400">Usa el botón "Nueva Factura" para subir la primera.</p>
-                        </div>
-                    ) : (
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-100 bg-slate-50/60">
-                                    <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Asociado</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Período</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha</th>
-                                    <th className="px-4 py-3" />
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {invoices.map((inv, i) => (
-                                    <tr key={inv.id} className={cn("border-b border-slate-50 hover:bg-slate-50/40 transition-colors", i % 2 === 0 ? 'bg-white' : 'bg-slate-50/20')}>
-                                        <td className="px-5 py-3.5 font-bold text-slate-800">
-                                            <div className="flex items-center gap-2">
-                                                <Building2 size={14} className="text-slate-400 shrink-0" />
+                <div className="overflow-x-auto rounded-xl ring-1 ring-foreground/10">
+                    <Table className="min-w-[820px]">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Asociado</TableHead>
+                                <TableHead>Tipo</TableHead>
+                                <TableHead>Período</TableHead>
+                                <TableHead>Valor</TableHead>
+                                <TableHead>Estado</TableHead>
+                                <TableHead>Emitida</TableHead>
+                                <TableHead className="text-right">
+                                    Acciones
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {invoices.length === 0 && (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={7}
+                                        className="py-12 text-center text-muted-foreground"
+                                    >
+                                        No hay facturas aún. Usa «Nueva
+                                        factura».
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            {invoices.map((inv) => {
+                                const isPaid = inv.status === 'pagada';
+                                return (
+                                    <TableRow key={inv.id}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2 font-medium text-foreground">
+                                                <Building2 className="size-4 shrink-0 text-muted-foreground" />
                                                 {inv.associate_name}
                                             </div>
-                                        </td>
-                                        <td className="px-4 py-3.5">
-                                            <span className={cn(
-                                                "text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide",
-                                                inv.type === 'factura' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
-                                            )}>
-                                                {TYPE_LABELS[inv.type] ?? inv.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3.5 font-medium text-slate-600">
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="secondary">
+                                                {TYPE_LABELS[inv.type] ??
+                                                    inv.type}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
                                             {inv.period}
                                             {inv.due_date && (
-                                                <span className="block text-[10px] font-bold text-slate-400 mt-0.5">
+                                                <span className="mt-0.5 block text-xs">
                                                     Vence {inv.due_date}
                                                 </span>
                                             )}
-                                        </td>
-                                        <td className="px-4 py-3.5 font-bold text-slate-800">{formatCurrency(inv.amount)}</td>
-                                        <td className="px-4 py-3.5">
-                                            <span className={cn(
-                                                "text-[10px] font-black px-2 py-0.5 rounded-full uppercase",
-                                                inv.status === 'pagada' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                            )}>
+                                        </TableCell>
+                                        <TableCell className="font-medium tabular-nums text-foreground">
+                                            {formatCurrency(inv.amount)}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={
+                                                    isPaid
+                                                        ? 'default'
+                                                        : 'secondary'
+                                                }
+                                            >
                                                 {inv.status}
-                                            </span>
-                                            {inv.status === 'pagada' && inv.payment_method && (
-                                                <span className="block text-[10px] font-bold text-slate-400 mt-1">
-                                                    {METHOD_LABELS[inv.payment_method] ?? inv.payment_method}
-                                                    {inv.paid_at && ` · ${inv.paid_at}`}
-                                                    {inv.payer_name && ` · ${inv.payer_name}`}
+                                            </Badge>
+                                            {isPaid && inv.payment_method && (
+                                                <span className="mt-1 block text-xs text-muted-foreground">
+                                                    {METHOD_LABELS[
+                                                        inv.payment_method
+                                                    ] ?? inv.payment_method}
+                                                    {inv.paid_at &&
+                                                        ` · ${inv.paid_at}`}
                                                 </span>
                                             )}
-                                        </td>
-                                        <td className="px-4 py-3.5 text-slate-500 text-xs">{inv.created_at}</td>
-                                        <td className="px-4 py-3.5">
-                                            <div className="flex items-center gap-2 justify-end">
-                                                {inv.external_link && (
-                                                    <a href={inv.external_link} target="_blank" rel="noreferrer"
-                                                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">
-                                                        <ExternalLink size={14} />
-                                                    </a>
-                                                )}
-                                                {inv.status !== 'pagada' && (
-                                                    <>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openPayment(inv)}
-                                                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                                                            title="Registrar pago (efectivo u otro medio)"
+                                        </TableCell>
+                                        <TableCell className="text-xs text-muted-foreground">
+                                            {inv.created_at}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon-sm"
+                                                        aria-label={`Acciones de ${inv.associate_name}`}
+                                                    >
+                                                        <MoreHorizontal className="size-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    {!isPaid && (
+                                                        <>
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    payment.reset();
+                                                                    payment.clearErrors();
+                                                                    setPayingInvoice(
+                                                                        inv,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <Banknote className="size-4" />
+                                                                Registrar pago
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={() =>
+                                                                    router.patch(
+                                                                        route(
+                                                                            'admin.invoices.mark-paid',
+                                                                            inv.id,
+                                                                        ),
+                                                                        {},
+                                                                        {
+                                                                            preserveScroll: true,
+                                                                        },
+                                                                    )
+                                                                }
+                                                            >
+                                                                <CheckCircle2 className="size-4" />
+                                                                Marcar pagada
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                        </>
+                                                    )}
+                                                    {inv.external_link && (
+                                                        <DropdownMenuItem
+                                                            asChild
                                                         >
-                                                            <Banknote size={14} />
-                                                        </button>
-                                                        <Link
-                                                            href={route('admin.invoices.mark-paid', inv.id)}
-                                                            method="patch"
-                                                            as="button"
-                                                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                                                            title="Marcar como pagada sin detalle"
-                                                        >
-                                                            <CheckCircle2 size={14} />
-                                                        </Link>
-                                                    </>
-                                                )}
-                                                <Link
-                                                    href={route('admin.invoices.destroy', inv.id)}
-                                                    method="delete"
-                                                    as="button"
-                                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                    title="Eliminar"
-                                                    onClick={() => confirm('¿Eliminar esta factura?')}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </Link>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </Card>
+                                                            <a
+                                                                href={
+                                                                    inv.external_link
+                                                                }
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                            >
+                                                                <ExternalLink className="size-4" />
+                                                                Ver enlace
+                                                            </a>
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    <DropdownMenuItem
+                                                        variant="destructive"
+                                                        onClick={() =>
+                                                            setDeleting(inv)
+                                                        }
+                                                    >
+                                                        Eliminar
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+            </div>
 
-                {/* Registrar pago manual — riel 3 del motor de cobro */}
-                {payingInvoice && (
-                    <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="registrar-pago-titulo"
-                    >
-                        <Card className="w-full max-w-lg rounded-2xl border-slate-200 shadow-xl overflow-hidden">
-                            <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-slate-100">
-                                <div>
-                                    <h2 id="registrar-pago-titulo" className="text-lg font-black text-slate-900">Registrar pago</h2>
-                                    <p className="text-xs font-medium text-slate-500 mt-1">
-                                        {payingInvoice.associate_name} · {payingInvoice.period} · {formatCurrency(payingInvoice.amount)}
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setPayingInvoice(null)}
-                                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
-                                    aria-label="Cerrar"
+            {/* Nueva factura */}
+            <Dialog open={showCreate} onOpenChange={setShowCreate}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                    <form onSubmit={submitCreate}>
+                        <DialogHeader>
+                            <DialogTitle>
+                                Nueva factura / cuenta de cobro
+                            </DialogTitle>
+                            <DialogDescription>
+                                Se emite al asociado. Una cuenta de cobro, al
+                                pagarse, renueva su vigencia.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="my-4 space-y-4">
+                            <Field>
+                                <FieldLabel htmlFor="associate_id">
+                                    Asociado
+                                </FieldLabel>
+                                <Select
+                                    value={form.data.associate_id}
+                                    onValueChange={(v) =>
+                                        form.setData('associate_id', v)
+                                    }
                                 >
-                                    <X size={16} />
-                                </button>
-                            </div>
-
-                            <form onSubmit={submitPayment} className="px-6 py-5 space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label htmlFor="payment_method" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                                            Medio de pago
-                                        </label>
-                                        <select
-                                            id="payment_method"
-                                            value={payment.data.payment_method}
-                                            onChange={e => payment.setData('payment_method', e.target.value)}
-                                            className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                                        >
-                                            {Object.entries(METHOD_LABELS).map(([value, label]) => (
-                                                <option key={value} value={value}>{label}</option>
-                                            ))}
-                                        </select>
-                                        {payment.errors.payment_method && (
-                                            <p className="text-[11px] font-bold text-red-600 mt-1">{payment.errors.payment_method}</p>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="paid_at" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                                            Fecha real del pago
-                                        </label>
-                                        <input
-                                            id="paid_at"
-                                            type="date"
-                                            max={today()}
-                                            value={payment.data.paid_at}
-                                            onChange={e => payment.setData('paid_at', e.target.value)}
-                                            className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                                        />
-                                        {payment.errors.paid_at && (
-                                            <p className="text-[11px] font-bold text-red-600 mt-1">{payment.errors.paid_at}</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label htmlFor="payment_reference" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                                        Número de recibo o referencia <span className="text-slate-300">(opcional)</span>
-                                    </label>
-                                    <input
-                                        id="payment_reference"
-                                        type="text"
-                                        value={payment.data.payment_reference}
-                                        onChange={e => payment.setData('payment_reference', e.target.value)}
-                                        placeholder="Ej. Recibo 00123"
-                                        className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                                    />
-                                    {payment.errors.payment_reference && (
-                                        <p className="text-[11px] font-bold text-red-600 mt-1">{payment.errors.payment_reference}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label htmlFor="payment_notes" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                                        Observaciones <span className="text-slate-300">(opcional)</span>
-                                    </label>
-                                    <textarea
-                                        id="payment_notes"
-                                        rows={2}
-                                        value={payment.data.payment_notes}
-                                        onChange={e => payment.setData('payment_notes', e.target.value)}
-                                        placeholder="Quién entregó el dinero, dónde se recibió…"
-                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                                    />
-                                    {payment.errors.payment_notes && (
-                                        <p className="text-[11px] font-bold text-red-600 mt-1">{payment.errors.payment_notes}</p>
-                                    )}
-                                </div>
-
-                                {payingInvoice.type === 'cuenta_cobro' && (
-                                    <p className="text-[11px] font-bold text-slate-500 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100">
-                                        Al registrar el pago se extenderá la vigencia del asociado y, si su perfil
-                                        estaba oculto por vencimiento, volverá a publicarse.
+                                    <SelectTrigger id="associate_id">
+                                        <SelectValue placeholder="Seleccionar asociado…" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {associates.map((a) => (
+                                            <SelectItem
+                                                key={a.id}
+                                                value={String(a.id)}
+                                            >
+                                                {a.company_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {form.errors.associate_id && (
+                                    <p className="text-sm text-destructive">
+                                        {form.errors.associate_id}
                                     </p>
                                 )}
+                            </Field>
 
-                                <div className="flex justify-end gap-2 pt-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => setPayingInvoice(null)}
-                                        className="px-4 py-2 text-sm font-bold text-slate-600 rounded-xl hover:bg-slate-100 transition-all"
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <Field>
+                                    <FieldLabel htmlFor="type">Tipo</FieldLabel>
+                                    <Select
+                                        value={form.data.type}
+                                        onValueChange={(v) =>
+                                            form.setData('type', v)
+                                        }
                                     >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={payment.processing}
-                                        className="px-5 py-2 text-sm font-bold text-white bg-slate-900 rounded-xl hover:bg-slate-700 transition-all disabled:opacity-50"
+                                        <SelectTrigger id="type">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="factura">
+                                                Factura
+                                            </SelectItem>
+                                            <SelectItem value="cuenta_cobro">
+                                                Cuenta de cobro
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+
+                                {form.data.type === 'cuenta_cobro' && (
+                                    <Field>
+                                        <FieldLabel htmlFor="cycle">
+                                            Ciclo que renueva
+                                        </FieldLabel>
+                                        <Select
+                                            value={form.data.cycle}
+                                            onValueChange={(v) =>
+                                                form.setData('cycle', v)
+                                            }
+                                        >
+                                            <SelectTrigger id="cycle">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="monthly">
+                                                    Mensual (+1 mes)
+                                                </SelectItem>
+                                                <SelectItem value="semiannual">
+                                                    Semestral (+6 meses)
+                                                </SelectItem>
+                                                <SelectItem value="annual">
+                                                    Anual (+12 meses)
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </Field>
+                                )}
+
+                                <Field>
+                                    <FieldLabel htmlFor="period">
+                                        Período
+                                    </FieldLabel>
+                                    <Input
+                                        id="period"
+                                        value={form.data.period}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'period',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Ej. Marzo 2026"
+                                    />
+                                    {form.errors.period && (
+                                        <p className="text-sm text-destructive">
+                                            {form.errors.period}
+                                        </p>
+                                    )}
+                                </Field>
+
+                                <Field>
+                                    <FieldLabel htmlFor="amount">
+                                        Valor (opcional)
+                                    </FieldLabel>
+                                    <Input
+                                        id="amount"
+                                        type="number"
+                                        min={0}
+                                        value={form.data.amount}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'amount',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="0"
+                                    />
+                                </Field>
+                            </div>
+
+                            <Field>
+                                <FieldLabel htmlFor="document">
+                                    Documento (PDF / imagen, opcional)
+                                </FieldLabel>
+                                <Input
+                                    id="document"
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'document',
+                                            e.target.files?.[0] ?? null,
+                                        )
+                                    }
+                                />
+                                {form.errors.document && (
+                                    <p className="text-sm text-destructive">
+                                        {form.errors.document}
+                                    </p>
+                                )}
+                            </Field>
+
+                            <Field>
+                                <FieldLabel htmlFor="external_link">
+                                    Enlace externo (opcional)
+                                </FieldLabel>
+                                <Input
+                                    id="external_link"
+                                    type="url"
+                                    value={form.data.external_link}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'external_link',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="https://…"
+                                />
+                            </Field>
+
+                            <Field>
+                                <FieldLabel htmlFor="notes">
+                                    Observaciones
+                                </FieldLabel>
+                                <Textarea
+                                    id="notes"
+                                    rows={2}
+                                    value={form.data.notes}
+                                    onChange={(e) =>
+                                        form.setData('notes', e.target.value)
+                                    }
+                                />
+                            </Field>
+                        </div>
+
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="outline">
+                                    Cancelar
+                                </Button>
+                            </DialogClose>
+                            <Button type="submit" disabled={form.processing}>
+                                {form.processing
+                                    ? 'Subiendo…'
+                                    : 'Subir factura'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Registrar pago */}
+            <Dialog
+                open={!!payingInvoice}
+                onOpenChange={(o) => !o && setPayingInvoice(null)}
+            >
+                <DialogContent>
+                    <form onSubmit={submitPayment}>
+                        <DialogHeader>
+                            <DialogTitle>Registrar pago</DialogTitle>
+                            <DialogDescription>
+                                {payingInvoice &&
+                                    `${payingInvoice.associate_name} · ${payingInvoice.period} · ${formatCurrency(payingInvoice.amount)}`}
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="my-4 space-y-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <Field>
+                                    <FieldLabel htmlFor="payment_method">
+                                        Medio de pago
+                                    </FieldLabel>
+                                    <Select
+                                        value={payment.data.payment_method}
+                                        onValueChange={(v) =>
+                                            payment.setData('payment_method', v)
+                                        }
                                     >
-                                        {payment.processing ? 'Registrando…' : 'Registrar pago'}
-                                    </button>
-                                </div>
-                            </form>
-                        </Card>
-                    </div>
-                )}
-            </div>
+                                        <SelectTrigger id="payment_method">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(METHOD_LABELS).map(
+                                                ([value, label]) => (
+                                                    <SelectItem
+                                                        key={value}
+                                                        value={value}
+                                                    >
+                                                        {label}
+                                                    </SelectItem>
+                                                ),
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="paid_at">
+                                        Fecha real del pago
+                                    </FieldLabel>
+                                    <Input
+                                        id="paid_at"
+                                        type="date"
+                                        max={today()}
+                                        value={payment.data.paid_at}
+                                        onChange={(e) =>
+                                            payment.setData(
+                                                'paid_at',
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
+                                    {payment.errors.paid_at && (
+                                        <p className="text-sm text-destructive">
+                                            {payment.errors.paid_at}
+                                        </p>
+                                    )}
+                                </Field>
+                            </div>
+
+                            <Field>
+                                <FieldLabel htmlFor="payment_reference">
+                                    Recibo o referencia (opcional)
+                                </FieldLabel>
+                                <Input
+                                    id="payment_reference"
+                                    value={payment.data.payment_reference}
+                                    onChange={(e) =>
+                                        payment.setData(
+                                            'payment_reference',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Ej. Recibo 00123"
+                                />
+                            </Field>
+
+                            <Field>
+                                <FieldLabel htmlFor="payment_notes">
+                                    Observaciones (opcional)
+                                </FieldLabel>
+                                <Textarea
+                                    id="payment_notes"
+                                    rows={2}
+                                    value={payment.data.payment_notes}
+                                    onChange={(e) =>
+                                        payment.setData(
+                                            'payment_notes',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Quién entregó el dinero, dónde se recibió…"
+                                />
+                            </Field>
+
+                            {payingInvoice?.type === 'cuenta_cobro' && (
+                                <p className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                                    Al registrar el pago se extenderá la
+                                    vigencia del asociado y, si su perfil estaba
+                                    oculto por vencimiento, volverá a
+                                    publicarse.
+                                </p>
+                            )}
+                        </div>
+
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="outline">
+                                    Cancelar
+                                </Button>
+                            </DialogClose>
+                            <Button type="submit" disabled={payment.processing}>
+                                {payment.processing
+                                    ? 'Registrando…'
+                                    : 'Registrar pago'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Eliminar */}
+            <Dialog
+                open={!!deleting}
+                onOpenChange={(o) => !o && setDeleting(null)}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Eliminar factura</DialogTitle>
+                        <DialogDescription>
+                            {deleting &&
+                                `¿Eliminar «${deleting.period}» de ${deleting.associate_name}? Esta acción no se puede deshacer.`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button variant="outline">Cancelar</Button>
+                        </DialogClose>
+                        <Button variant="destructive" onClick={confirmDelete}>
+                            Eliminar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

@@ -1,14 +1,26 @@
-import React from 'react';
-import AppLayout from '@/Layouts/AppLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/Card';
-import { Button } from '@/Components/ui/Button';
-import { Input } from '@/Components/ui/Input';
-import { Label } from '@/Components/ui/Label';
-import { Switch } from '@/Components/ui/Switch';
-import { Separator } from '@/Components/ui/Separator';
-import { ArrowLeft, CreditCard, Building2, Save, User } from 'lucide-react';
-import InputError from '@/Components/InputError';
+import { ArrowLeft, Building2, Loader2, User } from 'lucide-react';
+
+import { Button } from '@/Components/base/Button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/Components/base/Card';
+import { Field, FieldLabel } from '@/Components/base/Field';
+import { Input } from '@/Components/base/Input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/base/Select';
+import { Switch } from '@/Components/base/Switch';
+import AppLayout from '@/Layouts/AppLayout';
+
+import FormField from '@/Pages/Associate/Company/BasicInfo/Parts/FormField';
 
 interface BankAccount {
     id?: number;
@@ -23,19 +35,21 @@ interface BankAccount {
     order: number;
 }
 
-export default function BankAccountForm({ account }: { account?: BankAccount }) {
+export default function BankAccountForm({
+    account,
+}: {
+    account?: BankAccount;
+}) {
     const isEditing = !!account;
 
     const { data, setData, post, patch, processing, errors } = useForm({
-        bank_name:            account?.bank_name || '',
-        account_type:         account?.account_type || 'ahorros',
-        account_number:       account?.account_number || '',
-        holder_name:          account?.holder_name || '',
-        holder_document:      account?.holder_document || '',
+        bank_name: account?.bank_name || '',
+        account_type: account?.account_type || 'ahorros',
+        account_number: account?.account_number || '',
+        holder_name: account?.holder_name || '',
+        holder_document: account?.holder_document || '',
         holder_document_type: account?.holder_document_type || 'NIT',
-        color_hex:            account?.color_hex || '#64748b',
-        is_active:            account?.is_active ?? true,
-        order:                account?.order ?? 0,
+        is_active: account?.is_active ?? true,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -49,175 +63,219 @@ export default function BankAccountForm({ account }: { account?: BankAccount }) 
 
     return (
         <AppLayout>
-            <Head title={isEditing ? `Editar Cuenta Bancaria` : 'Nueva Cuenta Bancaria'} />
+            <Head
+                title={
+                    isEditing
+                        ? 'Editar cuenta bancaria'
+                        : 'Nueva cuenta bancaria'
+                }
+            />
 
-            <div className="max-w-2xl mx-auto py-8">
-                {/* Header */}
-                <div className="flex items-center gap-4 mb-8">
-                    <Link href={route('admin.bank-accounts.index')} className="h-10 w-10 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all shadow-sm">
-                        <ArrowLeft size={18} />
-                    </Link>
+            <form
+                onSubmit={handleSubmit}
+                className="mx-auto max-w-2xl space-y-6 pb-20"
+            >
+                <div className="flex items-center gap-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        asChild
+                        aria-label="Volver a datos bancarios"
+                    >
+                        <Link href={route('admin.bank-accounts.index')}>
+                            <ArrowLeft className="size-4" />
+                        </Link>
+                    </Button>
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
-                            {isEditing ? 'Editar Cuenta' : 'Nueva Cuenta Bancaria'}
+                        <h1 className="font-display text-h3">
+                            {isEditing
+                                ? 'Editar cuenta'
+                                : 'Nueva cuenta bancaria'}
                         </h1>
-                        <p className="text-slate-500 text-sm mt-1 font-medium italic">
-                            {isEditing ? `Modificando ${account.bank_name}` : 'Agrega una cuenta para recibir pagos de membresía.'}
+                        <p className="text-sm text-muted-foreground">
+                            Cuenta para recibir pagos de membresía por
+                            transferencia.
                         </p>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Bank Info Card */}
-                    <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                        <div className="h-1.5 w-full transition-all" style={{ backgroundColor: data.color_hex }} />
-                        <CardHeader className="bg-slate-50/50 pb-6 border-b border-slate-100">
-                            <div className="flex items-center gap-2">
-                                <Building2 size={18} className="text-slate-400" />
-                                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-700">Datos del Banco</CardTitle>
-                            </div>
-                            <CardDescription className="text-xs font-medium italic text-slate-400">Información de la entidad financiera.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-8 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Nombre del Banco</Label>
-                                    <Input
-                                        value={data.bank_name}
-                                        onChange={e => setData('bank_name', e.target.value)}
-                                        placeholder="Ej: Bancolombia"
-                                        className="h-12 border-slate-200 rounded-xl focus:ring-slate-900 font-bold"
-                                    />
-                                    <InputError message={errors.bank_name} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Tipo de Cuenta</Label>
-                                    <select
-                                        value={data.account_type}
-                                        onChange={e => setData('account_type', e.target.value)}
-                                        className="h-12 w-full border border-slate-200 rounded-xl px-4 text-sm font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
-                                    >
-                                        <option value="ahorros">Cuenta de Ahorros</option>
-                                        <option value="corriente">Cuenta Corriente</option>
-                                    </select>
-                                    <InputError message={errors.account_type} />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Número de Cuenta</Label>
-                                    <Input
-                                        value={data.account_number}
-                                        onChange={e => setData('account_number', e.target.value)}
-                                        placeholder="000-000000-00"
-                                        className="h-12 border-slate-200 rounded-xl focus:ring-slate-900 font-mono font-bold"
-                                    />
-                                    <InputError message={errors.account_number} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Color Distintivo (HEX)</Label>
-                                    <div className="flex gap-3">
-                                        <div className="h-12 w-12 rounded-xl shadow-inner border border-slate-200 shrink-0" style={{ backgroundColor: data.color_hex }} />
-                                        <Input
-                                            value={data.color_hex}
-                                            onChange={e => setData('color_hex', e.target.value)}
-                                            placeholder="#1a56db"
-                                            className="h-12 border-slate-200 rounded-xl focus:ring-slate-900 uppercase font-mono font-bold"
-                                        />
-                                    </div>
-                                    <InputError message={errors.color_hex} />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Holder Info Card */}
-                    <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                        <CardHeader className="bg-slate-50/50 pb-6 border-b border-slate-100">
-                            <div className="flex items-center gap-2">
-                                <User size={18} className="text-slate-400" />
-                                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-700">Datos del Titular</CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-8 space-y-6">
-                            <div className="space-y-2">
-                                <Label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Nombre del Titular</Label>
+                {/* Datos del banco */}
+                <Card>
+                    <CardHeader className="border-b">
+                        <CardTitle className="flex items-center gap-2">
+                            <Building2 className="size-4 text-muted-foreground" />
+                            Datos del banco
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-5">
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                            <FormField
+                                id="bank_name"
+                                label="Nombre del banco"
+                                required
+                                error={errors.bank_name}
+                            >
                                 <Input
-                                    value={data.holder_name}
-                                    onChange={e => setData('holder_name', e.target.value)}
-                                    placeholder="Ej: CAMEP SAS"
-                                    className="h-12 border-slate-200 rounded-xl focus:ring-slate-900 font-bold"
+                                    id="bank_name"
+                                    value={data.bank_name}
+                                    onChange={(e) =>
+                                        setData('bank_name', e.target.value)
+                                    }
+                                    placeholder="Ej. Bancolombia"
                                 />
-                                <InputError message={errors.holder_name} />
-                            </div>
+                            </FormField>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="space-y-2">
-                                    <Label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Tipo de Documento</Label>
-                                    <select
-                                        value={data.holder_document_type}
-                                        onChange={e => setData('holder_document_type', e.target.value)}
-                                        className="h-12 w-full border border-slate-200 rounded-xl px-4 text-sm font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
-                                    >
-                                        <option value="NIT">NIT</option>
-                                        <option value="CC">Cédula (CC)</option>
-                                    </select>
-                                </div>
-                                <div className="col-span-2 space-y-2">
-                                    <Label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Número de Documento</Label>
-                                    <Input
-                                        value={data.holder_document}
-                                        onChange={e => setData('holder_document', e.target.value)}
-                                        placeholder="900.123.456-7"
-                                        className="h-12 border-slate-200 rounded-xl focus:ring-slate-900 font-mono font-bold"
-                                    />
-                                    <InputError message={errors.holder_document} />
-                                </div>
-                            </div>
+                            <Field
+                                data-invalid={
+                                    errors.account_type ? 'true' : undefined
+                                }
+                            >
+                                <FieldLabel htmlFor="account_type">
+                                    Tipo de cuenta
+                                </FieldLabel>
+                                <Select
+                                    value={data.account_type}
+                                    onValueChange={(v) =>
+                                        setData('account_type', v)
+                                    }
+                                >
+                                    <SelectTrigger id="account_type">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ahorros">
+                                            Cuenta de ahorros
+                                        </SelectItem>
+                                        <SelectItem value="corriente">
+                                            Cuenta corriente
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
 
-                            <Separator className="bg-slate-100" />
+                            <FormField
+                                id="account_number"
+                                label="Número de cuenta"
+                                required
+                                error={errors.account_number}
+                            >
+                                <Input
+                                    id="account_number"
+                                    value={data.account_number}
+                                    onChange={(e) =>
+                                        setData(
+                                            'account_number',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="000-000000-00"
+                                    className="font-mono"
+                                />
+                            </FormField>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                            <div className="flex flex-wrap gap-12">
-                                <div className="flex items-center gap-4">
-                                    <Switch checked={data.is_active} onCheckedChange={v => setData('is_active', v)} />
-                                    <div>
-                                        <Label className="text-[11px] font-black uppercase tracking-wider text-slate-900 block">Cuenta Activa</Label>
-                                        <span className="text-[10px] text-slate-400 font-medium italic">Visible para los socios</span>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Orden de aparición</Label>
-                                    <Input
-                                        type="number"
-                                        value={data.order}
-                                        onChange={e => setData('order', parseInt(e.target.value) || 0)}
-                                        className="h-12 w-24 border-slate-200 rounded-xl focus:ring-slate-900 font-bold text-center"
-                                    />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-end gap-4">
-                        <Link href={route('admin.bank-accounts.index')}>
-                            <Button type="button" variant="ghost" className="h-12 px-8 font-bold text-slate-500 hover:text-slate-900 uppercase tracking-widest text-xs">
-                                Cancelar
-                            </Button>
-                        </Link>
-                        <Button
-                            disabled={processing}
-                            className="h-12 px-10 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-slate-200 flex items-center gap-2"
+                {/* Datos del titular */}
+                <Card>
+                    <CardHeader className="border-b">
+                        <CardTitle className="flex items-center gap-2">
+                            <User className="size-4 text-muted-foreground" />
+                            Datos del titular
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-5">
+                        <FormField
+                            id="holder_name"
+                            label="Nombre del titular"
+                            required
+                            error={errors.holder_name}
                         >
-                            <Save size={18} />
-                            {processing ? 'Guardando...' : isEditing ? 'Actualizar Cuenta' : 'Guardar Cuenta'}
-                        </Button>
-                    </div>
-                </form>
-            </div>
+                            <Input
+                                id="holder_name"
+                                value={data.holder_name}
+                                onChange={(e) =>
+                                    setData('holder_name', e.target.value)
+                                }
+                                placeholder="Ej. CAMEP SAS"
+                            />
+                        </FormField>
+
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                            <Field>
+                                <FieldLabel htmlFor="holder_document_type">
+                                    Tipo de documento
+                                </FieldLabel>
+                                <Select
+                                    value={data.holder_document_type}
+                                    onValueChange={(v) =>
+                                        setData('holder_document_type', v)
+                                    }
+                                >
+                                    <SelectTrigger id="holder_document_type">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="NIT">NIT</SelectItem>
+                                        <SelectItem value="CC">
+                                            Cédula (CC)
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <FormField
+                                id="holder_document"
+                                label="Número de documento"
+                                required
+                                error={errors.holder_document}
+                                className="md:col-span-2"
+                            >
+                                <Input
+                                    id="holder_document"
+                                    value={data.holder_document}
+                                    onChange={(e) =>
+                                        setData(
+                                            'holder_document',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="900.123.456-7"
+                                    className="font-mono"
+                                />
+                            </FormField>
+                        </div>
+
+                        <Field orientation="horizontal" className="w-auto pt-1">
+                            <Switch
+                                id="is_active"
+                                checked={data.is_active}
+                                onCheckedChange={(v) => setData('is_active', v)}
+                            />
+                            <FieldLabel
+                                htmlFor="is_active"
+                                className="font-normal"
+                            >
+                                Cuenta activa (visible para los asociados)
+                            </FieldLabel>
+                        </Field>
+                    </CardContent>
+                </Card>
+
+                <div className="flex items-center justify-end gap-3">
+                    <Button type="button" variant="outline" asChild>
+                        <Link href={route('admin.bank-accounts.index')}>
+                            Cancelar
+                        </Link>
+                    </Button>
+                    <Button type="submit" disabled={processing}>
+                        {processing && (
+                            <Loader2 className="size-4 animate-spin" />
+                        )}
+                        {isEditing ? 'Guardar cambios' : 'Guardar cuenta'}
+                    </Button>
+                </div>
+            </form>
         </AppLayout>
     );
 }

@@ -1,10 +1,31 @@
-import React from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import {
+    AlertCircle,
+    Building2,
+    CheckCircle2,
+    CreditCard,
+    Hash,
+    Pencil,
+    Plus,
+    Trash2,
+    User,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import { Alert, AlertTitle } from '@/Components/base/Alert';
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import { Card, CardContent } from '@/Components/base/Card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/base/Dialog';
 import AppLayout from '@/Layouts/AppLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { Card, CardContent } from '@/Components/ui/Card';
-import { Button } from '@/Components/ui/Button';
-import { Badge } from '@/Components/ui/Badge';
-import { Plus, Building2, CreditCard, Edit2, Trash2, Hash, User, Check, X } from 'lucide-react';
 
 interface BankAccount {
     id: number;
@@ -19,118 +40,208 @@ interface BankAccount {
     order: number;
 }
 
-export default function BankAccountsIndex({ accounts }: { accounts: BankAccount[] }) {
-    const { delete: destroy } = useForm();
+export default function BankAccountsIndex({
+    accounts,
+}: {
+    accounts: BankAccount[];
+}) {
+    const flash = (usePage().props.flash ?? {}) as {
+        success?: string;
+        error?: string;
+    };
+    const [notice, setNotice] = useState<{
+        variant: 'success' | 'destructive';
+        msg: string;
+    } | null>(null);
+    const [deleting, setDeleting] = useState<BankAccount | null>(null);
 
-    const handleDelete = (id: number) => {
-        if (confirm('¿Eliminar esta cuenta bancaria?')) {
-            destroy(route('admin.bank-accounts.destroy', id));
+    useEffect(() => {
+        if (flash.success)
+            setNotice({ variant: 'success', msg: flash.success });
+        else if (flash.error)
+            setNotice({ variant: 'destructive', msg: flash.error });
+        if (flash.success || flash.error) {
+            const t = setTimeout(() => setNotice(null), 5000);
+            return () => clearTimeout(t);
         }
+    }, [flash.success, flash.error]);
+
+    const confirmDelete = () => {
+        if (!deleting) return;
+        router.delete(route('admin.bank-accounts.destroy', deleting.id), {
+            preserveScroll: true,
+            onFinish: () => setDeleting(null),
+        });
     };
 
     return (
         <AppLayout>
-            <Head title="Datos Bancarios - CAMEP" />
-
-            <div className="space-y-6 max-w-5xl mx-auto">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <Head title="Datos bancarios" />
+            <div className="mx-auto max-w-5xl space-y-6">
+                <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Datos Bancarios</h1>
-                        <p className="text-slate-500 text-sm mt-1 font-medium">Cuentas habilitadas para recibir pagos de membresía.</p>
+                        <h1 className="flex items-center gap-2 font-display text-h3">
+                            <CreditCard className="size-6 text-muted-foreground" />
+                            Datos bancarios
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Cuentas habilitadas para recibir pagos de membresía.
+                        </p>
                     </div>
-                    <Link href={route('admin.bank-accounts.create')}>
-                        <Button className="bg-slate-900 text-white hover:bg-slate-800 rounded-lg h-11 px-6 font-bold shadow-lg shadow-slate-200">
-                            <Plus size={18} className="mr-2" />
-                            Agregar Cuenta
-                        </Button>
-                    </Link>
+                    <Button asChild>
+                        <Link href={route('admin.bank-accounts.create')}>
+                            <Plus className="size-4" /> Agregar cuenta
+                        </Link>
+                    </Button>
                 </div>
 
-                {/* List of accounts */}
-                <div className="space-y-4">
-                    {accounts.map((account) => (
-                        <Card key={account.id} className="border-slate-200 shadow-sm rounded-2xl overflow-hidden group hover:shadow-lg transition-all duration-300">
-                            <div className="h-1.5 w-full" style={{ backgroundColor: account.color_hex }} />
-                            <CardContent className="p-6">
-                                <div className="flex flex-col md:flex-row md:items-center gap-6">
-                                    {/* Bank Icon */}
-                                    <div
-                                        className="h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm"
-                                        style={{ backgroundColor: `${account.color_hex}20`, border: `2px solid ${account.color_hex}40` }}
-                                    >
-                                        <Building2 size={24} style={{ color: account.color_hex }} />
-                                    </div>
+                {notice && (
+                    <Alert variant={notice.variant}>
+                        {notice.variant === 'success' ? (
+                            <CheckCircle2 />
+                        ) : (
+                            <AlertCircle />
+                        )}
+                        <AlertTitle>{notice.msg}</AlertTitle>
+                    </Alert>
+                )}
 
-                                    {/* Main Info */}
-                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Banco</p>
-                                            <p className="font-black text-slate-900 text-base">{account.bank_name}</p>
-                                            <Badge className="mt-1 text-[9px] font-black uppercase bg-slate-100 text-slate-600 border-slate-200">
-                                                {account.account_type}
-                                            </Badge>
-                                        </div>
-
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                                                <Hash size={10} /> Número de Cuenta
-                                            </p>
-                                            <p className="font-black text-slate-900 font-mono text-sm">{account.account_number}</p>
-                                        </div>
-
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                                                <User size={10} /> Titular
-                                            </p>
-                                            <p className="font-bold text-slate-800 text-sm">{account.holder_name}</p>
-                                            <p className="text-[10px] text-slate-400 font-mono">{account.holder_document_type}: {account.holder_document}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Status + Actions */}
-                                    <div className="flex items-center gap-3 shrink-0">
-                                        <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${
-                                            account.is_active
-                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                : 'bg-slate-100 text-slate-400 border-slate-200'
-                                        }`}>
-                                            {account.is_active ? <Check size={10} /> : <X size={10} />}
-                                            {account.is_active ? 'Activa' : 'Inactiva'}
+                {accounts.length === 0 ? (
+                    <Card>
+                        <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+                            <CreditCard className="size-10 text-muted-foreground" />
+                            <p className="font-medium text-foreground">
+                                No hay cuentas bancarias configuradas.
+                            </p>
+                            <Button asChild className="mt-2">
+                                <Link
+                                    href={route('admin.bank-accounts.create')}
+                                >
+                                    Agregar la primera
+                                </Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="space-y-3">
+                        {accounts.map((account) => (
+                            <Card key={account.id}>
+                                <CardContent>
+                                    <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                                        <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                            <Building2 className="size-5" />
                                         </span>
 
-                                        <Link href={route('admin.bank-accounts.edit', account.id)}>
-                                            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg">
-                                                <Edit2 size={15} />
-                                            </Button>
-                                        </Link>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleDelete(account.id)}
-                                            className="h-9 w-9 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                        >
-                                            <Trash2 size={15} />
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                        <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-3">
+                                            <div>
+                                                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                    Banco
+                                                </p>
+                                                <p className="font-medium text-foreground">
+                                                    {account.bank_name}
+                                                </p>
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="mt-1"
+                                                >
+                                                    {account.account_type}
+                                                </Badge>
+                                            </div>
+                                            <div>
+                                                <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+                                                    <Hash className="size-3" />{' '}
+                                                    Cuenta
+                                                </p>
+                                                <p className="font-mono text-sm text-foreground">
+                                                    {account.account_number}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+                                                    <User className="size-3" />{' '}
+                                                    Titular
+                                                </p>
+                                                <p className="text-sm text-foreground">
+                                                    {account.holder_name}
+                                                </p>
+                                                <p className="font-mono text-xs text-muted-foreground">
+                                                    {
+                                                        account.holder_document_type
+                                                    }
+                                                    : {account.holder_document}
+                                                </p>
+                                            </div>
+                                        </div>
 
-                    {accounts.length === 0 && (
-                        <div className="py-24 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center">
-                            <CreditCard size={48} className="text-slate-200 mb-4" />
-                            <p className="text-slate-500 font-bold text-lg">No hay cuentas bancarias configuradas.</p>
-                            <Link href={route('admin.bank-accounts.create')} className="mt-4">
-                                <Button variant="link" className="text-slate-900 font-black uppercase tracking-widest underline underline-offset-8">
-                                    Agregar la primera cuenta
-                                </Button>
-                            </Link>
-                        </div>
-                    )}
-                </div>
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            <Badge
+                                                variant={
+                                                    account.is_active
+                                                        ? 'default'
+                                                        : 'outline'
+                                                }
+                                            >
+                                                {account.is_active
+                                                    ? 'Activa'
+                                                    : 'Inactiva'}
+                                            </Badge>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                asChild
+                                                aria-label={`Editar ${account.bank_name}`}
+                                            >
+                                                <Link
+                                                    href={route(
+                                                        'admin.bank-accounts.edit',
+                                                        account.id,
+                                                    )}
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </Link>
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                aria-label={`Eliminar ${account.bank_name}`}
+                                                className="text-muted-foreground hover:text-destructive"
+                                                onClick={() =>
+                                                    setDeleting(account)
+                                                }
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
             </div>
+
+            <Dialog
+                open={!!deleting}
+                onOpenChange={(o) => !o && setDeleting(null)}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Eliminar cuenta bancaria</DialogTitle>
+                        <DialogDescription>
+                            {deleting &&
+                                `¿Eliminar la cuenta de ${deleting.bank_name} (${deleting.account_number})? Esta acción no se puede deshacer.`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button variant="outline">Cancelar</Button>
+                        </DialogClose>
+                        <Button variant="destructive" onClick={confirmDelete}>
+                            Eliminar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

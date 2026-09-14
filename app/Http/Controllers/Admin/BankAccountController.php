@@ -24,15 +24,13 @@ class BankAccountController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'bank_name'            => 'required|string|max:255',
-            'account_type'         => 'required|in:ahorros,corriente',
-            'account_number'       => 'required|string|max:50',
-            'holder_name'          => 'required|string|max:255',
-            'holder_document'      => 'required|string|max:50',
+            'bank_name' => 'required|string|max:255',
+            'account_type' => 'required|in:ahorros,corriente',
+            'account_number' => 'required|string|max:50',
+            'holder_name' => 'required|string|max:255',
+            'holder_document' => 'required|string|max:50',
             'holder_document_type' => 'required|in:NIT,CC',
-            'color_hex'            => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
-            'is_active'            => 'required|boolean',
-            'order'                => 'integer|min:0',
+            'is_active' => 'required|boolean',
         ]);
 
         BankAccount::create($data);
@@ -51,15 +49,13 @@ class BankAccountController extends Controller
     public function update(Request $request, BankAccount $bankAccount)
     {
         $data = $request->validate([
-            'bank_name'            => 'required|string|max:255',
-            'account_type'         => 'required|in:ahorros,corriente',
-            'account_number'       => 'required|string|max:50',
-            'holder_name'          => 'required|string|max:255',
-            'holder_document'      => 'required|string|max:50',
+            'bank_name' => 'required|string|max:255',
+            'account_type' => 'required|in:ahorros,corriente',
+            'account_number' => 'required|string|max:50',
+            'holder_name' => 'required|string|max:255',
+            'holder_document' => 'required|string|max:50',
             'holder_document_type' => 'required|in:NIT,CC',
-            'color_hex'            => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
-            'is_active'            => 'required|boolean',
-            'order'                => 'integer|min:0',
+            'is_active' => 'required|boolean',
         ]);
 
         $bankAccount->update($data);

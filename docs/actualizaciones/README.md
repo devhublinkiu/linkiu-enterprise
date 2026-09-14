@@ -34,5 +34,6 @@ se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas
 | [0015](0015-limpieza-y-particion.md) | Limpieza de huérfanos + ajustes de lista + partición | Hecho |
 | [0016](0016-membresias-modelo-y-admin.md) | Membresías: modelo unificado (cuota inicial) + admin de Planes + alta | Hecho |
 | [0017](0017-asociado-gestion-plan-facturas-pago.md) | Asociado · Gestión del Plan + Mis Facturas + Pago (a base/) | Hecho |
+| [0018](0018-admin-finanzas.md) | Admin · Finanzas (Pagos, Facturación, Datos bancarios) + menú | Hecho |
 
 Estados posibles: `Borrador` · `Aprobado (#go)` · `En curso` · `Hecho` · `Descartado`.

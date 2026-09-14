@@ -1,12 +1,54 @@
-import React, { useState } from 'react';
-import AppLayout from '@/Layouts/AppLayout';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Card } from '@/Components/ui/Card';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
-    Banknote, Building2, CheckCircle2, ExternalLink, FileText,
-    Hourglass, X, Zap, Wallet,
+    AlertCircle,
+    Banknote,
+    Building2,
+    CheckCircle2,
+    FileText,
+    Hourglass,
+    MoreHorizontal,
+    Wallet,
+    Zap,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
+
+import { Alert, AlertTitle } from '@/Components/base/Alert';
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/base/Dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/Components/base/DropdownMenu';
+import { Field, FieldLabel } from '@/Components/base/Field';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/base/Select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/Components/base/Table';
+import { Textarea } from '@/Components/base/Textarea';
+import AppLayout from '@/Layouts/AppLayout';
 
 interface PaymentRow {
     id: number;
@@ -35,36 +77,71 @@ interface Props {
     payments: PaymentRow[];
 }
 
-const STATUS_STYLES: Record<string, string> = {
-    pendiente: 'bg-amber-100 text-amber-700',
-    aprobado:  'bg-emerald-100 text-emerald-700',
-    rechazado: 'bg-red-100 text-red-700',
-    fallido:   'bg-slate-200 text-slate-600',
-    cancelado: 'bg-slate-100 text-slate-500',
+const STATUS_VARIANT: Record<
+    string,
+    'default' | 'secondary' | 'destructive' | 'outline'
+> = {
+    pendiente: 'secondary',
+    aprobado: 'default',
+    rechazado: 'destructive',
+    fallido: 'outline',
+    cancelado: 'outline',
 };
 
-const TABS = [
+const FILTERS = [
     { key: 'pendiente', label: 'Por revisar' },
-    { key: 'aprobado',  label: 'Aprobados' },
+    { key: 'aprobado', label: 'Aprobados' },
     { key: 'rechazado', label: 'Rechazados' },
-    { key: 'todos',     label: 'Todos' },
+    { key: 'todos', label: 'Todos' },
 ];
 
-export default function PaymentsIndex({ filter, counts, payments }: Props) {
-    const [rejecting, setRejecting] = useState<PaymentRow | null>(null);
+const formatCurrency = (v: string | null) =>
+    v != null
+        ? new Intl.NumberFormat('es-CO', {
+              style: 'currency',
+              currency: 'COP',
+              maximumFractionDigits: 0,
+          }).format(parseFloat(v))
+        : '—';
 
+export default function PaymentsIndex({ filter, counts, payments }: Props) {
+    const flash = (usePage().props.flash ?? {}) as {
+        success?: string;
+        error?: string;
+    };
+    const [notice, setNotice] = useState<{
+        variant: 'success' | 'destructive';
+        msg: string;
+    } | null>(null);
+    const [approving, setApproving] = useState<PaymentRow | null>(null);
+    const [rejecting, setRejecting] = useState<PaymentRow | null>(null);
     const rejection = useForm({ admin_notes: '' });
 
-    const formatCurrency = (v: string | null) =>
-        v != null
-            ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
-                  .format(parseFloat(v))
-            : '—';
+    useEffect(() => {
+        if (flash.success)
+            setNotice({ variant: 'success', msg: flash.success });
+        else if (flash.error)
+            setNotice({ variant: 'destructive', msg: flash.error });
+        if (flash.success || flash.error) {
+            const t = setTimeout(() => setNotice(null), 5000);
+            return () => clearTimeout(t);
+        }
+    }, [flash.success, flash.error]);
 
-    const openReject = (payment: PaymentRow) => {
-        rejection.reset();
-        rejection.clearErrors();
-        setRejecting(payment);
+    const applyFilter = (estado: string) =>
+        router.get(
+            route('admin.payments.index', { estado }),
+            {},
+            { preserveScroll: true, preserveState: true },
+        );
+
+    const confirmApprove = () => {
+        if (!approving) return;
+        router.patch(
+            route('admin.payments.approve', approving.id),
+            {},
+            { preserveScroll: true, onFinish: () => setApproving(null) },
+        );
     };
 
     const submitReject = (e: React.FormEvent) => {
@@ -78,255 +155,297 @@ export default function PaymentsIndex({ filter, counts, payments }: Props) {
 
     return (
         <AppLayout>
-            <Head title="Pagos — CAMEP" />
-
-            <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-black text-slate-900">Pagos</h1>
-                    <p className="text-sm text-slate-500 font-medium mt-1">
-                        Todo lo que ha entrado, sin importar por dónde: pasarela, transferencia o efectivo.
-                    </p>
+            <Head title="Pagos" />
+            <div className="mx-auto max-w-6xl space-y-6">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                        <h1 className="flex items-center gap-2 font-display text-h3">
+                            <Wallet className="size-6 text-muted-foreground" />
+                            Pagos
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Todo lo que ha entrado, sin importar el riel:
+                            pasarela, transferencia o efectivo.
+                        </p>
+                    </div>
+                    <Select value={filter} onValueChange={applyFilter}>
+                        <SelectTrigger className="w-48">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {FILTERS.map((f) => (
+                                <SelectItem key={f.key} value={f.key}>
+                                    {f.label}
+                                    {f.key !== 'todos' &&
+                                        counts[f.key as keyof typeof counts] >
+                                            0 &&
+                                        ` (${counts[f.key as keyof typeof counts]})`}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
-                {/* Filtros */}
-                <div className="flex flex-wrap gap-2">
-                    {TABS.map(tab => {
-                        const count = tab.key === 'todos' ? null : counts[tab.key as keyof typeof counts];
-                        return (
-                            <Link
-                                key={tab.key}
-                                href={route('admin.payments.index', { estado: tab.key })}
-                                className={cn(
-                                    'px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wide transition-all border',
-                                    filter === tab.key
-                                        ? 'bg-slate-900 text-white border-slate-900'
-                                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-                                )}
-                            >
-                                {tab.label}
-                                {count != null && count > 0 && (
-                                    <span className={cn(
-                                        'ml-2 px-1.5 py-0.5 rounded-full text-[10px]',
-                                        filter === tab.key ? 'bg-white/20' : 'bg-slate-100 text-slate-600'
-                                    )}>
-                                        {count}
-                                    </span>
-                                )}
-                            </Link>
-                        );
-                    })}
-                </div>
+                {notice && (
+                    <Alert variant={notice.variant}>
+                        {notice.variant === 'success' ? (
+                            <CheckCircle2 />
+                        ) : (
+                            <AlertCircle />
+                        )}
+                        <AlertTitle>{notice.msg}</AlertTitle>
+                    </Alert>
+                )}
 
-                <Card className="border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                    {payments.length === 0 ? (
-                        <div className="py-20 flex flex-col items-center text-center gap-3">
-                            <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-                                <Wallet size={24} className="text-slate-400" />
-                            </div>
-                            <p className="font-black text-slate-700">No hay pagos aquí</p>
-                            <p className="text-sm text-slate-400">
-                                {filter === 'pendiente'
-                                    ? 'Nada esperando revisión. Todo al día.'
-                                    : 'Prueba con otro filtro.'}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm min-w-[860px]">
-                                <thead>
-                                    <tr className="border-b border-slate-100 bg-slate-50/60">
-                                        <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Asociado</th>
-                                        <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Concepto</th>
-                                        <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Medio</th>
-                                        <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Monto</th>
-                                        <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</th>
-                                        <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Enviado</th>
-                                        <th className="px-4 py-3" />
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {payments.map((p, i) => (
-                                        <tr
-                                            key={p.id}
-                                            className={cn(
-                                                'border-b border-slate-50 hover:bg-slate-50/40 transition-colors',
-                                                i % 2 === 0 ? 'bg-white' : 'bg-slate-50/20'
+                <div className="overflow-x-auto rounded-xl ring-1 ring-foreground/10">
+                    <Table className="min-w-[860px]">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Asociado</TableHead>
+                                <TableHead>Concepto</TableHead>
+                                <TableHead>Medio</TableHead>
+                                <TableHead>Monto</TableHead>
+                                <TableHead>Estado</TableHead>
+                                <TableHead>Enviado</TableHead>
+                                <TableHead className="text-right">
+                                    Acciones
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {payments.length === 0 && (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={7}
+                                        className="py-12 text-center text-muted-foreground"
+                                    >
+                                        {filter === 'pendiente'
+                                            ? 'Nada esperando revisión. Todo al día.'
+                                            : 'No hay pagos con este filtro.'}
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            {payments.map((p) => (
+                                <TableRow key={p.id}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2 font-medium text-foreground">
+                                            <Building2 className="size-4 shrink-0 text-muted-foreground" />
+                                            {p.associate_name}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground">
+                                        {p.invoice_period}
+                                        {p.reference && (
+                                            <span className="mt-0.5 block font-mono text-xs">
+                                                {p.reference}
+                                            </span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <span className="inline-flex items-center gap-1.5 text-sm text-foreground">
+                                            {p.method === 'bold' ? (
+                                                <Zap className="size-3.5 text-primary" />
+                                            ) : (
+                                                <Banknote className="size-3.5 text-muted-foreground" />
                                             )}
+                                            {p.method_label}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="font-medium tabular-nums text-foreground">
+                                        {formatCurrency(p.amount)}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant={
+                                                STATUS_VARIANT[p.status] ??
+                                                'outline'
+                                            }
                                         >
-                                            <td className="px-5 py-3.5 font-bold text-slate-800">
-                                                <div className="flex items-center gap-2">
-                                                    <Building2 size={14} className="text-slate-400 shrink-0" />
-                                                    {p.associate_name}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3.5 font-medium text-slate-600">
-                                                {p.invoice_period}
-                                                {p.reference && (
-                                                    <span className="block text-[10px] font-mono text-slate-400 mt-0.5">{p.reference}</span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3.5">
-                                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600">
-                                                    {p.method === 'bold'
-                                                        ? <Zap size={13} className="text-emerald-500" />
-                                                        : <Banknote size={13} className="text-slate-400" />}
-                                                    {p.method_label}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3.5 font-bold text-slate-800 tabular-nums">{formatCurrency(p.amount)}</td>
-                                            <td className="px-4 py-3.5">
-                                                <span className={cn(
-                                                    'text-[10px] font-black px-2 py-0.5 rounded-full uppercase',
-                                                    STATUS_STYLES[p.status] ?? 'bg-slate-100 text-slate-600'
-                                                )}>
-                                                    {p.status}
-                                                </span>
-                                                {p.applied && (
-                                                    <span className="block text-[10px] font-bold text-emerald-600 mt-1">vigencia aplicada</span>
-                                                )}
-                                                {p.admin_notes && (
-                                                    <span className="block text-[10px] font-medium text-slate-400 mt-1 max-w-[220px]">
-                                                        {p.admin_notes}
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3.5 text-slate-500 text-xs">
-                                                {p.created_at}
-                                                {p.reviewer_name && (
-                                                    <span className="block text-[10px] text-slate-400 mt-0.5">por {p.reviewer_name}</span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3.5">
-                                                <div className="flex items-center gap-2 justify-end">
-                                                    {p.proof_url && (
-                                                        <a
-                                                            href={p.proof_url}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                                                            title="Ver comprobante"
-                                                        >
-                                                            <FileText size={14} />
-                                                        </a>
-                                                    )}
+                                            {p.status}
+                                        </Badge>
+                                        {p.applied && (
+                                            <span className="mt-1 block text-xs text-primary">
+                                                vigencia aplicada
+                                            </span>
+                                        )}
+                                        {p.admin_notes && (
+                                            <span className="mt-1 block max-w-[220px] text-xs text-muted-foreground">
+                                                {p.admin_notes}
+                                            </span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-muted-foreground">
+                                        {p.created_at}
+                                        {p.reviewer_name && (
+                                            <span className="mt-0.5 block">
+                                                por {p.reviewer_name}
+                                            </span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {p.status === 'pendiente' &&
+                                        p.method === 'bold' &&
+                                        !p.can_review ? (
+                                            <span
+                                                className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+                                                title="Esperando la confirmación de la pasarela"
+                                            >
+                                                <Hourglass className="size-3.5" />
+                                                pasarela
+                                            </span>
+                                        ) : (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon-sm"
+                                                        aria-label={`Acciones de ${p.associate_name}`}
+                                                    >
+                                                        <MoreHorizontal className="size-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
                                                     {p.can_review && (
                                                         <>
-                                                            <button
-                                                                type="button"
+                                                            <DropdownMenuItem
+                                                                onClick={() =>
+                                                                    setApproving(
+                                                                        p,
+                                                                    )
+                                                                }
+                                                            >
+                                                                Aprobar y
+                                                                aplicar
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
                                                                 onClick={() => {
-                                                                    if (confirm('¿Aprobar este pago? Se aplicará la vigencia al asociado.')) {
-                                                                        router.patch(route('admin.payments.approve', p.id), {}, { preserveScroll: true });
-                                                                    }
+                                                                    rejection.reset();
+                                                                    rejection.clearErrors();
+                                                                    setRejecting(
+                                                                        p,
+                                                                    );
                                                                 }}
-                                                                className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                                                                title="Aprobar y aplicar"
                                                             >
-                                                                <CheckCircle2 size={14} />
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => openReject(p)}
-                                                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                                title="Rechazar"
-                                                            >
-                                                                <X size={14} />
-                                                            </button>
+                                                                Rechazar
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
                                                         </>
                                                     )}
-                                                    {p.status === 'pendiente' && p.method === 'bold' && (
-                                                        <span
-                                                            className="p-1.5 text-slate-300"
-                                                            title="Esperando la confirmación de la pasarela"
+                                                    {p.proof_url && (
+                                                        <DropdownMenuItem
+                                                            asChild
                                                         >
-                                                            <Hourglass size={14} />
-                                                        </span>
+                                                            <a
+                                                                href={
+                                                                    p.proof_url
+                                                                }
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                            >
+                                                                <FileText className="size-4" />
+                                                                Ver comprobante
+                                                            </a>
+                                                        </DropdownMenuItem>
                                                     )}
-                                                    <Link
-                                                        href={route('admin.invoices.index')}
-                                                        className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all"
-                                                        title="Ver en facturación"
-                                                    >
-                                                        <ExternalLink size={14} />
-                                                    </Link>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </Card>
-
-                {/* Rechazo */}
-                {rejecting && (
-                    <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="rechazar-pago-titulo"
-                    >
-                        <Card className="w-full max-w-lg rounded-2xl border-slate-200 shadow-xl overflow-hidden">
-                            <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-slate-100">
-                                <div>
-                                    <h2 id="rechazar-pago-titulo" className="text-lg font-black text-slate-900">Rechazar pago</h2>
-                                    <p className="text-xs font-medium text-slate-500 mt-1">
-                                        {rejecting.associate_name} · {rejecting.invoice_period} · {formatCurrency(rejecting.amount)}
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setRejecting(null)}
-                                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
-                                    aria-label="Cerrar"
-                                >
-                                    <X size={16} />
-                                </button>
-                            </div>
-
-                            <form onSubmit={submitReject} className="px-6 py-5 space-y-4">
-                                <div>
-                                    <label htmlFor="admin_notes" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                                        Motivo del rechazo
-                                    </label>
-                                    <textarea
-                                        id="admin_notes"
-                                        rows={3}
-                                        value={rejection.data.admin_notes}
-                                        onChange={e => rejection.setData('admin_notes', e.target.value)}
-                                        placeholder="El asociado verá esto. Sé concreto: qué falló y qué debe hacer."
-                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                                    />
-                                    {rejection.errors.admin_notes && (
-                                        <p className="text-[11px] font-bold text-red-600 mt-1">{rejection.errors.admin_notes}</p>
-                                    )}
-                                </div>
-
-                                <p className="text-[11px] font-bold text-slate-500 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100">
-                                    La cuenta de cobro sigue pendiente y el asociado podrá volver a intentarlo.
-                                </p>
-
-                                <div className="flex justify-end gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setRejecting(null)}
-                                        className="px-4 py-2 text-sm font-bold text-slate-600 rounded-xl hover:bg-slate-100 transition-all"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={rejection.processing}
-                                        className="px-5 py-2 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all disabled:opacity-50"
-                                    >
-                                        {rejection.processing ? 'Rechazando…' : 'Rechazar pago'}
-                                    </button>
-                                </div>
-                            </form>
-                        </Card>
-                    </div>
-                )}
+                                                    <DropdownMenuItem asChild>
+                                                        <Link
+                                                            href={route(
+                                                                'admin.invoices.index',
+                                                            )}
+                                                        >
+                                                            Ver en facturación
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
+
+            {/* Aprobar */}
+            <Dialog
+                open={!!approving}
+                onOpenChange={(o) => !o && setApproving(null)}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Aprobar pago</DialogTitle>
+                        <DialogDescription>
+                            {approving &&
+                                `${approving.associate_name} · ${approving.invoice_period} · ${formatCurrency(approving.amount)}. Se aplicará la vigencia al asociado.`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button variant="outline">Cancelar</Button>
+                        </DialogClose>
+                        <Button onClick={confirmApprove}>
+                            Aprobar y aplicar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Rechazar */}
+            <Dialog
+                open={!!rejecting}
+                onOpenChange={(o) => !o && setRejecting(null)}
+            >
+                <DialogContent>
+                    <form onSubmit={submitReject}>
+                        <DialogHeader>
+                            <DialogTitle>Rechazar pago</DialogTitle>
+                            <DialogDescription>
+                                {rejecting &&
+                                    `${rejecting.associate_name} · ${rejecting.invoice_period} · ${formatCurrency(rejecting.amount)}. La cuenta de cobro sigue pendiente y el asociado podrá reintentar.`}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <Field className="my-4">
+                            <FieldLabel htmlFor="admin_notes">
+                                Motivo del rechazo
+                            </FieldLabel>
+                            <Textarea
+                                id="admin_notes"
+                                rows={3}
+                                value={rejection.data.admin_notes}
+                                onChange={(e) =>
+                                    rejection.setData(
+                                        'admin_notes',
+                                        e.target.value,
+                                    )
+                                }
+                                placeholder="El asociado verá esto. Sé concreto: qué falló y qué debe hacer."
+                            />
+                            {rejection.errors.admin_notes && (
+                                <p className="text-sm text-destructive">
+                                    {rejection.errors.admin_notes}
+                                </p>
+                            )}
+                        </Field>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="outline">
+                                    Cancelar
+                                </Button>
+                            </DialogClose>
+                            <Button
+                                type="submit"
+                                variant="destructive"
+                                disabled={rejection.processing}
+                            >
+                                {rejection.processing
+                                    ? 'Rechazando…'
+                                    : 'Rechazar pago'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

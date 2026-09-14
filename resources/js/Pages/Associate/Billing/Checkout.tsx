@@ -51,6 +51,7 @@ interface Props {
     bankAccounts: BankAccount[];
     associateStatus?: string;
     isSignupOnly?: boolean;
+    onlineEnabled?: boolean;
     openInvoice?: OpenInvoice | null;
 }
 
@@ -65,6 +66,7 @@ export default function Checkout({
     plan,
     bankAccounts,
     isSignupOnly = false,
+    onlineEnabled = false,
     openInvoice = null,
 }: Props) {
     // El alta unificada (plan 0016): la primera vez se cobra la cuota inicial
@@ -138,12 +140,8 @@ export default function Checkout({
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     {/* Resumen y total */}
                     <div className="space-y-4 lg:col-span-1">
-                        <Card className="gap-0 p-0">
-                            <div
-                                className="h-1.5 w-full"
-                                style={{ backgroundColor: plan.color_hex }}
-                            />
-                            <CardContent className="space-y-2 p-5">
+                        <Card>
+                            <CardContent className="space-y-2">
                                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                     Plan seleccionado
                                 </p>
@@ -191,29 +189,47 @@ export default function Checkout({
                         </Card>
                     </div>
 
-                    {/* Cuentas bancarias + CTA */}
+                    {/* Métodos de pago activos + CTA */}
                     <div className="space-y-4 lg:col-span-2">
                         <div>
                             <h3 className="flex items-center gap-2 font-medium text-foreground">
                                 <CreditCard className="size-4 text-muted-foreground" />
-                                Cuentas bancarias de CAMEP
+                                Cómo vas a pagar
                             </h3>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                Si prefieres transferir, estas son las cuentas.
-                                También podrás pagar en línea en el siguiente
-                                paso.
+                                Eliges el método en el siguiente paso. Estos son
+                                los disponibles hoy.
                             </p>
                         </div>
 
+                        {onlineEnabled && (
+                            <Card>
+                                <CardContent className="flex items-center gap-3">
+                                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                        <CreditCard className="size-4" />
+                                    </span>
+                                    <div>
+                                        <p className="font-medium text-foreground">
+                                            Pago en línea
+                                        </p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Tarjeta, PSE o Nequi. Se confirma
+                                            solo, en segundos.
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {bankAccounts.length > 0 && (
+                            <p className="text-sm font-medium text-foreground">
+                                Transferencia bancaria
+                            </p>
+                        )}
+
                         {bankAccounts.map((account) => (
-                            <Card key={account.id} className="gap-0 p-0">
-                                <div
-                                    className="h-1 w-full"
-                                    style={{
-                                        backgroundColor: account.color_hex,
-                                    }}
-                                />
-                                <CardContent className="p-5">
+                            <Card key={account.id}>
+                                <CardContent>
                                     <div className="flex items-start gap-4">
                                         <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                                             <Building2 className="size-5" />
@@ -263,12 +279,12 @@ export default function Checkout({
                             </Card>
                         ))}
 
-                        {bankAccounts.length === 0 && (
+                        {bankAccounts.length === 0 && !onlineEnabled && (
                             <Card>
                                 <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                                    No hay cuentas bancarias configuradas
-                                    todavía. Contacta a CAMEP para más
-                                    información.
+                                    No hay métodos de pago disponibles por
+                                    ahora. Contacta a CAMEP para coordinar tu
+                                    pago.
                                 </CardContent>
                             </Card>
                         )}
@@ -288,9 +304,8 @@ export default function Checkout({
                             </Button>
                             <p className="mt-3 text-center text-xs text-muted-foreground">
                                 Generamos tu cuenta de cobro por{' '}
-                                {formatCurrency(total)} y eliges cómo pagarla:
-                                en línea, por transferencia con comprobante, o
-                                coordinando con CAMEP.
+                                {formatCurrency(total)} y eliges cómo pagarla en
+                                el siguiente paso.
                             </p>
                         </form>
                     </div>

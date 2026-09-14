@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Services\BillingService;
+use App\Services\Bold\BoldGateway;
 use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,7 +25,10 @@ use Inertia\Inertia;
  */
 class CheckoutController extends Controller
 {
-    public function __construct(private BillingService $billing) {}
+    public function __construct(
+        private BillingService $billing,
+        private BoldGateway $bold,
+    ) {}
 
     public function show(Plan $plan)
     {
@@ -52,6 +56,9 @@ class CheckoutController extends Controller
             // solo la cuota inicial (exonera el mes 1). El ciclo recurrente es mensual.
             'isSignupOnly' => $isFirstPayment && $plan->signup_fee > 0,
             'currentCycle' => $associate?->billing_cycle ?? 'monthly',
+            // Solo los métodos de pago AUTOSERVICIO activos (plan 0017). El efectivo
+            // lo asienta el admin, no se ofrece aquí.
+            'onlineEnabled' => $this->bold->isEnabled(),
             'openInvoice' => $openInvoice ? [
                 'id' => $openInvoice->id,
                 'period' => $openInvoice->period,

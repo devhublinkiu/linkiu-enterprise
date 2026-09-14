@@ -1,15 +1,17 @@
-import React from 'react';
-import AppLayout from '@/Layouts/AppLayout';
-import { Link } from '@inertiajs/react';
-import { Card } from '@/Components/ui/Card';
+import { Head, Link } from '@inertiajs/react';
 import {
-    Receipt,
-    FileText,
-    ExternalLink,
-    Download,
     CreditCard,
+    Download,
+    ExternalLink,
+    FileText,
     Inbox,
+    Receipt,
 } from 'lucide-react';
+
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import { Card, CardContent } from '@/Components/base/Card';
+import AppLayout from '@/Layouts/AppLayout';
 import { cn } from '@/lib/utils';
 
 interface InvoiceItem {
@@ -31,146 +33,163 @@ interface Props {
 
 const TYPE_LABELS: Record<string, string> = {
     factura: 'Factura',
-    cuenta_cobro: 'Cuenta de Cobro',
+    cuenta_cobro: 'Cuenta de cobro',
 };
 
-const TYPE_COLORS: Record<string, string> = {
-    factura: 'bg-blue-100 text-blue-700',
-    cuenta_cobro: 'bg-purple-100 text-purple-700',
-};
+const formatCurrency = (v: number | null) =>
+    v != null
+        ? new Intl.NumberFormat('es-CO', {
+              style: 'currency',
+              currency: 'COP',
+              maximumFractionDigits: 0,
+          }).format(v)
+        : null;
 
 export default function AssociateInvoicesIndex({ invoices }: Props) {
-    const formatCurrency = (v: number | null) =>
-        v != null
-            ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v)
-            : null;
-
-    const unread = invoices.filter(i => i.is_unread).length;
+    const unread = invoices.filter((i) => i.is_unread).length;
 
     return (
         <AppLayout>
-            <div className="space-y-6">
-                {/* Header */}
+            <Head title="Mis Facturas" />
+
+            <div className="mx-auto max-w-4xl space-y-6">
                 <div>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-black text-slate-900">Mis Facturas</h1>
+                    <h1 className="flex items-center gap-2 font-display text-h3">
+                        <Receipt className="size-6 text-muted-foreground" />
+                        Mis Facturas
                         {unread > 0 && (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black">
+                            <Badge>
                                 {unread} nueva{unread > 1 ? 's' : ''}
-                            </span>
+                            </Badge>
                         )}
-                    </div>
-                    <p className="text-sm text-slate-500 font-medium mt-1">
-                        Facturas y cuentas de cobro emitidas por CAMEP
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        Facturas y cuentas de cobro emitidas por CAMEP.
                     </p>
                 </div>
 
                 {invoices.length === 0 ? (
-                    <Card className="border-slate-200 rounded-2xl shadow-sm">
-                        <div className="py-20 flex flex-col items-center text-center gap-3">
-                            <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-                                <Inbox size={24} className="text-slate-400" />
-                            </div>
-                            <p className="font-black text-slate-700">Sin facturas por ahora</p>
-                            <p className="text-sm text-slate-400">Aquí aparecerán las facturas y cuentas de cobro de CAMEP.</p>
-                        </div>
+                    <Card>
+                        <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+                            <Inbox className="size-10 text-muted-foreground" />
+                            <p className="font-medium text-foreground">
+                                Sin facturas por ahora
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                Aquí aparecerán las facturas y cuentas de cobro
+                                de CAMEP.
+                            </p>
+                        </CardContent>
                     </Card>
                 ) : (
-                    <div className="grid gap-4">
-                        {invoices.map(inv => (
-                            <Card
-                                key={inv.id}
-                                className={cn(
-                                    "border rounded-2xl shadow-sm overflow-hidden transition-all",
-                                    inv.is_unread ? "border-indigo-200 bg-indigo-50/30" : "border-slate-200 bg-white"
-                                )}
-                            >
-                                <div className="p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                                    {/* Icon */}
-                                    <div className={cn(
-                                        "h-11 w-11 rounded-xl flex items-center justify-center shrink-0",
-                                        inv.type === 'factura' ? 'bg-blue-100' : 'bg-purple-100'
-                                    )}>
-                                        {inv.type === 'factura'
-                                            ? <Receipt size={20} className="text-blue-600" />
-                                            : <FileText size={20} className="text-purple-600" />
-                                        }
-                                    </div>
-
-                                    {/* Info */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className={cn(
-                                                "text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide",
-                                                TYPE_COLORS[inv.type] ?? 'bg-slate-100 text-slate-600'
-                                            )}>
-                                                {TYPE_LABELS[inv.type] ?? inv.type}
-                                            </span>
-                                            {inv.is_unread && (
-                                                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 uppercase">
-                                                    Nueva
-                                                </span>
+                    <div className="space-y-3">
+                        {invoices.map((inv) => {
+                            const isPaid = inv.status === 'pagada';
+                            return (
+                                <Card
+                                    key={inv.id}
+                                    className={cn(
+                                        'gap-0 p-0',
+                                        inv.is_unread && 'ring-primary/30',
+                                    )}
+                                >
+                                    <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+                                        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                            {inv.type === 'factura' ? (
+                                                <Receipt className="size-5" />
+                                            ) : (
+                                                <FileText className="size-5" />
                                             )}
-                                            <span className={cn(
-                                                "text-[10px] font-black px-2 py-0.5 rounded-full uppercase",
-                                                inv.status === 'pagada' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                            )}>
-                                                {inv.status}
-                                            </span>
+                                        </span>
+
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <Badge variant="secondary">
+                                                    {TYPE_LABELS[inv.type] ??
+                                                        inv.type}
+                                                </Badge>
+                                                {inv.is_unread && (
+                                                    <Badge>Nueva</Badge>
+                                                )}
+                                                <Badge
+                                                    variant={
+                                                        isPaid
+                                                            ? 'secondary'
+                                                            : 'outline'
+                                                    }
+                                                >
+                                                    {inv.status}
+                                                </Badge>
+                                            </div>
+                                            <p className="mt-1 font-medium text-foreground">
+                                                {inv.period}
+                                            </p>
+                                            {inv.amount != null && (
+                                                <p className="text-sm text-muted-foreground">
+                                                    {formatCurrency(inv.amount)}
+                                                </p>
+                                            )}
+                                            {inv.notes && (
+                                                <p className="mt-1 text-xs text-muted-foreground">
+                                                    {inv.notes}
+                                                </p>
+                                            )}
+                                            <p className="mt-1 text-xs text-muted-foreground">
+                                                Emitida el {inv.created_at}
+                                            </p>
                                         </div>
-                                        <p className="font-black text-slate-900 mt-1">{inv.period}</p>
-                                        {inv.amount != null && (
-                                            <p className="text-sm font-bold text-slate-600">{formatCurrency(inv.amount)}</p>
-                                        )}
-                                        {inv.notes && (
-                                            <p className="text-xs text-slate-500 mt-1">{inv.notes}</p>
-                                        )}
-                                        <p className="text-[10px] text-slate-400 mt-1">Emitida el {inv.created_at}</p>
-                                    </div>
 
-                                    {/* Actions */}
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        {inv.status !== 'pagada' && (
-                                            <Link
-                                                href={route('associate.invoice.pay', inv.id)}
-                                                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-all"
-                                            >
-                                                <CreditCard size={13} />
-                                                Pagar
-                                            </Link>
-                                        )}
-                                        {inv.external_link && (
-                                            <a
-                                                href={inv.external_link}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all"
-                                            >
-                                                <ExternalLink size={13} />
-                                                Ver enlace
-                                            </a>
-                                        )}
-                                        {inv.document_url && (
-                                            <a
-                                                href={inv.document_url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
-                                            >
-                                                <Download size={13} />
-                                                Descargar
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Status bar */}
-                                <div className={cn(
-                                    "h-1",
-                                    inv.status === 'pagada' ? 'bg-emerald-400' : 'bg-amber-400'
-                                )} />
-                            </Card>
-                        ))}
+                                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                            {!isPaid && (
+                                                <Button size="sm" asChild>
+                                                    <Link
+                                                        href={route(
+                                                            'associate.invoice.pay',
+                                                            inv.id,
+                                                        )}
+                                                    >
+                                                        <CreditCard className="size-4" />{' '}
+                                                        Pagar
+                                                    </Link>
+                                                </Button>
+                                            )}
+                                            {inv.external_link && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    asChild
+                                                >
+                                                    <a
+                                                        href={inv.external_link}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                    >
+                                                        <ExternalLink className="size-4" />{' '}
+                                                        Ver enlace
+                                                    </a>
+                                                </Button>
+                                            )}
+                                            {inv.document_url && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    asChild
+                                                >
+                                                    <a
+                                                        href={inv.document_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                    >
+                                                        <Download className="size-4" />{' '}
+                                                        Descargar
+                                                    </a>
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
                     </div>
                 )}
             </div>

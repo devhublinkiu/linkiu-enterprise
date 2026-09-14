@@ -191,12 +191,8 @@ function PlanCard({ plan, onDelete }: { plan: Plan; onDelete: () => void }) {
     const includedModules = plan.modules.filter((m) => m.enabled);
 
     return (
-        <Card className="relative flex flex-col gap-0 p-0">
-            <div
-                className="h-1.5 w-full"
-                style={{ backgroundColor: plan.color_hex }}
-            />
-            <CardContent className="flex flex-1 flex-col gap-4 p-5">
+        <Card className="flex flex-col">
+            <CardContent className="flex flex-1 flex-col gap-4">
                 <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                         <div className="flex items-center gap-2">

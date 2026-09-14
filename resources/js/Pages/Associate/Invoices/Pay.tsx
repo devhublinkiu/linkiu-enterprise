@@ -1,13 +1,33 @@
-import React, { useState } from 'react';
-import AppLayout from '@/Layouts/AppLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Card, CardContent } from '@/Components/ui/Card';
-import { Button } from '@/Components/ui/Button';
-import { Badge } from '@/Components/ui/Badge';
 import {
-    ArrowLeft, ArrowRight, Building2, Hash, User, CreditCard,
-    Upload, CheckCircle, FileText, Hourglass, XOctagon, Zap, AlertTriangle,
+    AlertTriangle,
+    ArrowLeft,
+    ArrowRight,
+    Building2,
+    CheckCircle2,
+    CreditCard,
+    FileText,
+    Hash,
+    Hourglass,
+    Upload,
+    User,
+    Zap,
 } from 'lucide-react';
+import { useState } from 'react';
+
+import { Alert, AlertDescription, AlertTitle } from '@/Components/base/Alert';
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/Components/base/Card';
+import { Input } from '@/Components/base/Input';
+import { Label } from '@/Components/base/Label';
+import AppLayout from '@/Layouts/AppLayout';
+import { cn } from '@/lib/utils';
 
 interface BankAccount {
     id: number;
@@ -39,10 +59,20 @@ interface Props {
     bankAccounts: BankAccount[];
     onlineEnabled: boolean;
     pendingReview: { id: number; created_at: string } | null;
-    lastRejected: { method: string; admin_notes: string | null; reviewed_at: string | null } | null;
+    lastRejected: {
+        method: string;
+        admin_notes: string | null;
+        reviewed_at: string | null;
+    } | null;
 }
 
-export default function Pay({ invoice, bankAccounts, onlineEnabled, pendingReview, lastRejected }: Props) {
+export default function Pay({
+    invoice,
+    bankAccounts,
+    onlineEnabled,
+    pendingReview,
+    lastRejected,
+}: Props) {
     const [preview, setPreview] = useState<string | null>(null);
 
     const { data, setData, post, processing, errors } = useForm<{
@@ -65,12 +95,18 @@ export default function Pay({ invoice, bankAccounts, onlineEnabled, pendingRevie
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] ?? null;
         setData('proof', file);
-        setPreview(file && file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+        setPreview(
+            file && file.type.startsWith('image/')
+                ? URL.createObjectURL(file)
+                : null,
+        );
     };
 
     const submitProof = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('associate.invoice.proof', invoice.id), { forceFormData: true });
+        post(route('associate.invoice.proof', invoice.id), {
+            forceFormData: true,
+        });
     };
 
     const isPaid = invoice.status === 'pagada';
@@ -79,197 +115,244 @@ export default function Pay({ invoice, bankAccounts, onlineEnabled, pendingRevie
         <AppLayout>
             <Head title={`Pagar — ${invoice.period}`} />
 
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="mx-auto max-w-4xl space-y-5">
                 {/* Header */}
-                <div className="flex items-center gap-4">
-                    <Link
-                        href={route('associate.company.billing')}
-                        className="h-10 w-10 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-slate-900 transition-all shadow-sm"
+                <div className="flex items-center gap-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        asChild
                         aria-label="Volver a facturación"
                     >
-                        <ArrowLeft size={18} />
-                    </Link>
+                        <Link href={route('associate.company.billing')}>
+                            <ArrowLeft className="size-4" />
+                        </Link>
+                    </Button>
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Pagar</h1>
-                        <p className="text-slate-500 text-sm mt-0.5 font-medium">{invoice.period}</p>
+                        <h1 className="font-display text-h3">Pagar</h1>
+                        <p className="text-sm text-muted-foreground">
+                            {invoice.period}
+                        </p>
                     </div>
                 </div>
 
                 {/* Resumen del cobro */}
-                <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                    <div className={`h-2 ${isPaid ? 'bg-emerald-500' : invoice.is_overdue ? 'bg-red-500' : 'bg-slate-900'}`} />
-                    <CardContent className="p-6 flex flex-wrap items-center gap-x-8 gap-y-4">
-                        <div className="flex-1 min-w-[200px]">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Concepto</p>
-                            <p className="text-lg font-black text-slate-900 mt-0.5">{invoice.period}</p>
-                            {invoice.notes && <p className="text-xs font-medium text-slate-500 mt-1">{invoice.notes}</p>}
+                <Card>
+                    <CardContent className="flex flex-wrap items-center gap-x-8 gap-y-4">
+                        <div className="min-w-[200px] flex-1">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                                Concepto
+                            </p>
+                            <p className="mt-0.5 font-semibold text-foreground">
+                                {invoice.period}
+                            </p>
+                            {invoice.notes && (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    {invoice.notes}
+                                </p>
+                            )}
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                 {invoice.is_overdue ? 'Venció' : 'Vence'}
                             </p>
-                            <p className={`text-sm font-black mt-0.5 ${invoice.is_overdue ? 'text-red-600' : 'text-slate-900'}`}>
+                            <p
+                                className={cn(
+                                    'mt-0.5 font-medium',
+                                    invoice.is_overdue
+                                        ? 'text-destructive'
+                                        : 'text-foreground',
+                                )}
+                            >
                                 {invoice.due_date ?? '—'}
                             </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total</p>
-                            <p className="text-2xl font-black text-slate-900 tabular-nums">{formatCurrency(invoice.amount)}</p>
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                                Total
+                            </p>
+                            <p className="font-display text-2xl tabular-nums text-foreground">
+                                {formatCurrency(invoice.amount)}
+                            </p>
                         </div>
-                        {isPaid && (
-                            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-black uppercase">
-                                <CheckCircle size={10} className="mr-1" /> Pagada
-                            </Badge>
-                        )}
+                        {isPaid && <Badge variant="secondary">Pagada</Badge>}
                     </CardContent>
                 </Card>
 
                 {invoice.document_url && (
                     <a
                         href={invoice.document_url}
-                        className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-900"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
                     >
-                        <FileText size={15} />
+                        <FileText className="size-4" />
                         Descargar el documento de esta cuenta de cobro
                     </a>
                 )}
 
-                {/* Comprobante en revisión */}
                 {pendingReview && (
-                    <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/60 p-5 flex items-start gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
-                            <Hourglass size={20} />
-                        </div>
-                        <div>
-                            <h3 className="font-black text-sm uppercase text-indigo-800">Comprobante en revisión</h3>
-                            <p className="text-xs font-medium mt-1 text-indigo-600">
-                                Lo enviaste el {pendingReview.created_at}. CAMEP lo está revisando y te avisaremos
-                                cuando quede aplicado. Si subes otro, reemplazará a este.
-                            </p>
-                        </div>
-                    </div>
+                    <Alert>
+                        <Hourglass />
+                        <AlertTitle>Comprobante en revisión</AlertTitle>
+                        <AlertDescription>
+                            Lo enviaste el {pendingReview.created_at}. CAMEP lo
+                            está revisando y te avisaremos cuando quede
+                            aplicado. Si subes otro, reemplazará a este.
+                        </AlertDescription>
+                    </Alert>
                 )}
 
-                {/* Intento anterior rechazado */}
                 {lastRejected && !pendingReview && !isPaid && (
-                    <div className="rounded-2xl border-2 border-red-200 bg-red-50/60 p-5 flex items-start gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
-                            <XOctagon size={20} />
-                        </div>
-                        <div>
-                            <h3 className="font-black text-sm uppercase text-red-800">Tu intento anterior no se pudo aplicar</h3>
+                    <Alert variant="destructive">
+                        <AlertTriangle />
+                        <AlertTitle>
+                            Tu intento anterior no se pudo aplicar
+                        </AlertTitle>
+                        <AlertDescription>
                             {lastRejected.admin_notes && (
-                                <p className="text-xs font-medium mt-1 text-red-600">
-                                    <strong>Motivo:</strong> {lastRejected.admin_notes}
-                                </p>
+                                <span>
+                                    <strong>Motivo:</strong>{' '}
+                                    {lastRejected.admin_notes}.{' '}
+                                </span>
                             )}
-                            <p className="text-xs font-medium mt-1 text-red-500">
-                                Puedes intentarlo de nuevo por cualquiera de los medios de abajo.
-                            </p>
-                        </div>
-                    </div>
+                            Puedes intentarlo de nuevo por cualquiera de los
+                            medios de abajo.
+                        </AlertDescription>
+                    </Alert>
                 )}
 
                 {isPaid ? (
-                    <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50/60 p-6 flex items-start gap-4">
-                        <CheckCircle size={22} className="text-emerald-600 shrink-0 mt-0.5" />
-                        <div>
-                            <h3 className="font-black text-sm uppercase text-emerald-800">Esta cuenta de cobro ya está pagada</h3>
-                            <p className="text-xs font-medium mt-1 text-emerald-700">
-                                No tienes que hacer nada más. Puedes consultarla en tus facturas.
-                            </p>
-                            <Link href={route('associate.company.invoices.index')} className="inline-block mt-3">
-                                <Button className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase px-5">
+                    <Alert>
+                        <CheckCircle2 />
+                        <AlertTitle>
+                            Esta cuenta de cobro ya está pagada
+                        </AlertTitle>
+                        <AlertDescription>
+                            No tienes que hacer nada más.
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                asChild
+                                className="mt-2 w-fit"
+                            >
+                                <Link
+                                    href={route(
+                                        'associate.company.invoices.index',
+                                    )}
+                                >
                                     Ver mis facturas
-                                </Button>
-                            </Link>
-                        </div>
-                    </div>
+                                </Link>
+                            </Button>
+                        </AlertDescription>
+                    </Alert>
                 ) : (
                     <>
-                        {/* Opción 1 — pago en línea */}
-                        <div>
-                            <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-3">
-                                Elige cómo quieres pagar
-                            </h2>
+                        <h2 className="font-display text-lg text-foreground">
+                            Elige cómo quieres pagar
+                        </h2>
 
-                            {onlineEnabled ? (
-                                <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                                    <div className="h-1.5 bg-emerald-500" />
-                                    <CardContent className="p-6 flex flex-wrap items-center gap-4">
-                                        <div className="h-12 w-12 rounded-xl bg-emerald-50 border-2 border-emerald-100 flex items-center justify-center shrink-0">
-                                            <Zap size={20} className="text-emerald-600" />
-                                        </div>
-                                        <div className="flex-1 min-w-[220px]">
-                                            <p className="font-black text-slate-900 uppercase text-sm">Pago en línea</p>
-                                            <p className="text-xs font-medium text-slate-500 mt-0.5">
-                                                Tarjeta, PSE o Nequi. Se confirma solo, en segundos, y tu suscripción
-                                                queda al día sin que nadie tenga que revisar nada.
-                                            </p>
-                                        </div>
-                                        <Link href={route('associate.invoice.online', invoice.id)}>
-                                            <Button className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase px-5 flex items-center gap-2">
-                                                Pagar en línea
-                                                <ArrowRight size={15} />
-                                            </Button>
+                        {/* Pago en línea */}
+                        {onlineEnabled ? (
+                            <Card>
+                                <CardContent className="flex flex-wrap items-center gap-4">
+                                    <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                        <Zap className="size-5" />
+                                    </span>
+                                    <div className="min-w-[220px] flex-1">
+                                        <p className="font-medium text-foreground">
+                                            Pago en línea
+                                        </p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Tarjeta, PSE o Nequi. Se confirma
+                                            solo, en segundos, y tu suscripción
+                                            queda al día.
+                                        </p>
+                                    </div>
+                                    <Button asChild>
+                                        <Link
+                                            href={route(
+                                                'associate.invoice.online',
+                                                invoice.id,
+                                            )}
+                                        >
+                                            Pagar en línea
+                                            <ArrowRight className="size-4" />
                                         </Link>
-                                    </CardContent>
-                                </Card>
-                            ) : (
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 flex items-start gap-3">
-                                    <AlertTriangle size={18} className="text-slate-400 shrink-0 mt-0.5" />
-                                    <p className="text-xs font-medium text-slate-500">
-                                        El pago en línea no está disponible por ahora. Puedes pagar por transferencia
-                                        bancaria siguiendo los pasos de abajo.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <Alert>
+                                <AlertTriangle />
+                                <AlertDescription>
+                                    El pago en línea no está disponible por
+                                    ahora. Puedes pagar por transferencia
+                                    siguiendo los pasos de abajo.
+                                </AlertDescription>
+                            </Alert>
+                        )}
 
-                        {/* Opción 2 — transferencia */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <CreditCard size={18} className="text-slate-400" />
-                                <h3 className="font-black text-slate-900 uppercase tracking-tight text-sm">
+                        {/* Transferencia */}
+                        <div className="space-y-3">
+                            <div>
+                                <h3 className="flex items-center gap-2 font-medium text-foreground">
+                                    <CreditCard className="size-4 text-muted-foreground" />
                                     Transferencia bancaria
                                 </h3>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Transfiere a cualquiera de estas cuentas y
+                                    sube el comprobante. CAMEP lo revisa y
+                                    aplica el pago.
+                                </p>
                             </div>
-                            <p className="text-xs font-medium text-slate-500 -mt-2">
-                                Transfiere a cualquiera de estas cuentas y sube el comprobante. CAMEP lo revisa y aplica el pago.
-                            </p>
 
-                            {bankAccounts.map(account => (
-                                <Card key={account.id} className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                                    <div className="h-1.5" style={{ backgroundColor: account.color_hex }} />
-                                    <CardContent className="p-6">
+                            {bankAccounts.map((account) => (
+                                <Card key={account.id}>
+                                    <CardContent>
                                         <div className="flex items-start gap-4">
-                                            <div
-                                                className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0"
-                                                style={{ backgroundColor: `${account.color_hex}20`, border: `2px solid ${account.color_hex}40` }}
-                                            >
-                                                <Building2 size={20} style={{ color: account.color_hex }} />
-                                            </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+                                            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                                <Building2 className="size-5" />
+                                            </span>
+                                            <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-3">
                                                 <div>
-                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Banco</p>
-                                                    <p className="font-black text-slate-900">{account.bank_name}</p>
-                                                    <Badge className="mt-1 text-[8px] font-black uppercase bg-slate-100 text-slate-600 border-slate-200">
+                                                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                        Banco
+                                                    </p>
+                                                    <p className="font-medium text-foreground">
+                                                        {account.bank_name}
+                                                    </p>
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="mt-1"
+                                                    >
                                                         {account.account_type}
                                                     </Badge>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5 flex items-center gap-1">
-                                                        <Hash size={9} />Cuenta
+                                                    <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+                                                        <Hash className="size-3" />{' '}
+                                                        Cuenta
                                                     </p>
-                                                    <p className="font-black text-slate-900 font-mono text-sm select-all">{account.account_number}</p>
+                                                    <p className="select-all font-mono text-sm text-foreground">
+                                                        {account.account_number}
+                                                    </p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5 flex items-center gap-1">
-                                                        <User size={9} />Titular
+                                                    <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+                                                        <User className="size-3" />{' '}
+                                                        Titular
                                                     </p>
-                                                    <p className="font-bold text-slate-800 text-sm">{account.holder_name}</p>
-                                                    <p className="text-[9px] text-slate-400 font-mono">
-                                                        {account.holder_document_type}: {account.holder_document}
+                                                    <p className="text-sm text-foreground">
+                                                        {account.holder_name}
+                                                    </p>
+                                                    <p className="font-mono text-xs text-muted-foreground">
+                                                        {
+                                                            account.holder_document_type
+                                                        }
+                                                        :{' '}
+                                                        {
+                                                            account.holder_document
+                                                        }
                                                     </p>
                                                 </div>
                                             </div>
@@ -279,39 +362,58 @@ export default function Pay({ invoice, bankAccounts, onlineEnabled, pendingRevie
                             ))}
 
                             {bankAccounts.length === 0 && (
-                                <div className="py-10 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 text-center">
-                                    <p className="text-slate-400 font-bold">No hay cuentas bancarias configuradas.</p>
-                                    <p className="text-slate-400 text-xs mt-1">Contacta a CAMEP para coordinar el pago.</p>
-                                </div>
+                                <Card>
+                                    <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                                        No hay cuentas bancarias configuradas.
+                                        Contacta a CAMEP para coordinar el pago.
+                                    </CardContent>
+                                </Card>
                             )}
 
-                            {/* Subida del comprobante */}
-                            <Card className="border-slate-200 shadow-sm rounded-2xl">
-                                <CardContent className="p-6">
-                                    <form onSubmit={submitProof} className="space-y-4">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                            Ya transferí — subir comprobante
-                                        </p>
-
+                            {/* Subir comprobante */}
+                            <Card>
+                                <CardHeader className="border-b">
+                                    <CardTitle className="text-sm">
+                                        Ya transferí — subir comprobante
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <form
+                                        onSubmit={submitProof}
+                                        className="space-y-4"
+                                    >
                                         <label
-                                            className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${
+                                            className={cn(
+                                                'flex h-40 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors',
                                                 data.proof
-                                                    ? 'border-emerald-400 bg-emerald-50'
-                                                    : 'border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-slate-100'
-                                            }`}
+                                                    ? 'border-primary/40 bg-primary/5'
+                                                    : 'border-border bg-muted/40 hover:bg-muted',
+                                            )}
                                         >
                                             {preview ? (
-                                                <img src={preview} alt="Vista previa del comprobante" className="h-36 w-full object-contain rounded-xl p-1" />
+                                                <img
+                                                    src={preview}
+                                                    alt="Vista previa del comprobante"
+                                                    className="h-36 w-full rounded-md object-contain p-1"
+                                                />
                                             ) : data.proof ? (
-                                                <div className="flex flex-col items-center gap-2">
-                                                    <CheckCircle size={32} className="text-emerald-500" />
-                                                    <p className="text-emerald-700 font-bold text-sm">{data.proof.name}</p>
+                                                <div className="flex flex-col items-center gap-2 text-primary">
+                                                    <CheckCircle2 className="size-8" />
+                                                    <p className="text-sm font-medium">
+                                                        {data.proof.name}
+                                                    </p>
                                                 </div>
                                             ) : (
-                                                <div className="flex flex-col items-center gap-2 text-slate-400">
-                                                    <Upload size={28} />
-                                                    <p className="font-bold text-sm">Arrastra o haz clic para subir</p>
-                                                    <p className="text-[11px] font-medium">JPG, PNG o PDF — máx 5 MB</p>
+                                                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                                    <Upload className="size-7" />
+                                                    <p className="text-sm font-medium">
+                                                        Arrastra o haz clic para
+                                                        subir
+                                                    </p>
+                                                    <p className="text-xs">
+                                                        JPG, PNG o PDF — máx 5
+                                                        MB
+                                                    </p>
                                                 </div>
                                             )}
                                             <input
@@ -321,39 +423,51 @@ export default function Pay({ invoice, bankAccounts, onlineEnabled, pendingRevie
                                                 onChange={handleFileChange}
                                             />
                                         </label>
-                                        {errors.proof && <p className="text-red-600 text-xs font-bold">{errors.proof}</p>}
+                                        {errors.proof && (
+                                            <p className="text-sm text-destructive">
+                                                {errors.proof}
+                                            </p>
+                                        )}
 
-                                        <div>
-                                            <label htmlFor="notes" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                                                Nota para CAMEP <span className="text-slate-300">(opcional)</span>
-                                            </label>
-                                            <input
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="notes">
+                                                Nota para CAMEP{' '}
+                                                <span className="text-muted-foreground">
+                                                    (opcional)
+                                                </span>
+                                            </Label>
+                                            <Input
                                                 id="notes"
-                                                type="text"
                                                 value={data.notes}
-                                                onChange={e => setData('notes', e.target.value)}
-                                                placeholder="Ej. transferencia desde otra cuenta, número de operación…"
-                                                className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'notes',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Ej. número de operación…"
                                             />
-                                            {errors.notes && <p className="text-red-600 text-xs font-bold mt-1">{errors.notes}</p>}
+                                            {errors.notes && (
+                                                <p className="text-sm text-destructive">
+                                                    {errors.notes}
+                                                </p>
+                                            )}
                                         </div>
 
                                         <Button
                                             type="submit"
                                             disabled={processing || !data.proof}
-                                            className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase tracking-widest text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                                            className="w-full"
                                         >
-                                            <Upload size={17} />
-                                            {processing ? 'Enviando…' : 'Enviar comprobante'}
+                                            <Upload className="size-4" />
+                                            {processing
+                                                ? 'Enviando…'
+                                                : 'Enviar comprobante'}
                                         </Button>
                                     </form>
                                 </CardContent>
                             </Card>
                         </div>
-
-                        <p className="text-xs font-medium text-slate-400 text-center pb-4">
-                            ¿Vas a pagar en efectivo o por otro medio? Coordina con CAMEP y el equipo registrará el pago por ti.
-                        </p>
                     </>
                 )}
             </div>

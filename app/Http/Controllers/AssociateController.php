@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\InteractsWithAssociateFiles;
 use App\Mail\AssociateDocsSubmitted;
 use App\Models\Associate;
-use App\Models\PaymentRequest;
+use App\Models\Feature;
 use App\Models\Plan;
 use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Services\BillingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -1174,35 +1175,16 @@ class AssociateController extends Controller
             }
         }
 
-        $paymentRequestRaw = PaymentRequest::with('plan')
-            ->where('user_id', $user->id)
-            ->whereIn('status', ['pending', 'rejected'])
-            ->latest()
-            ->first();
+        // Catálogo de módulos: el panel del plan muestra los módulos reales
+        // (ADR-0002 + plan 0016), no las banderas booleanas muertas. Los restos de
+        // payment_requests (banners) se retiraron del lado asociado (plan 0017);
+        // el estado de un pago pendiente/rechazado vive por factura en la pantalla de pago.
+        $catalog = Feature::orderBy('sort')->get();
 
-        $paymentRequest = null;
-        if ($paymentRequestRaw) {
-            $showRequest = true;
-
-            if ($paymentRequestRaw->status === 'rejected' && $subscriptionStatus === 'active') {
-                if ($associate && $associate->plan_id == $paymentRequestRaw->plan_id) {
-                    $showRequest = false;
-                }
-            }
-
-            if ($showRequest) {
-                $paymentRequest = [
-                    'id' => $paymentRequestRaw->id,
-                    'status' => $paymentRequestRaw->status,
-                    'plan_name' => $paymentRequestRaw->plan->name ?? 'Plan',
-                    'plan_color' => $paymentRequestRaw->plan->color_hex ?? '#000000',
-                    'admin_notes' => $paymentRequestRaw->admin_notes,
-                    'created_at' => $paymentRequestRaw->created_at?->format('d/m/Y H:i') ?? '',
-                ];
-            }
-        }
-
-        $availablePlans = Plan::where('is_active', true)->orderBy('price_monthly')->get();
+        $availablePlans = Plan::with('features')->where('is_active', true)->orderBy('price_monthly')->get()
+            ->map(fn (Plan $p) => array_merge($p->toArray(), [
+                'modules' => $this->resolvePlanModules($p, $catalog),
+            ]));
 
         // Un asociado que venció y no tiene nada pendiente que pagar se queda
         // sin salida: el cron dejó de emitirle y no hay documento que saldar.
@@ -1214,7 +1196,6 @@ class AssociateController extends Controller
         if ($associate
             && in_array($subscriptionStatus, ['grace', 'expired'], true)
             && $pendingInvoices->isEmpty()
-            && ! $paymentRequest
         ) {
             $reactivation = $billing->issueReactivationInvoice($associate);
 
@@ -1224,15 +1205,26 @@ class AssociateController extends Controller
             }
         }
 
+        // Plan actual con módulos reales + límites resueltos para las barras de uso.
+        $plan = $associate?->plan;
+        $currentPlan = $plan
+            ? array_merge($plan->toArray(), [
+                'modules' => $this->resolvePlanModules($plan, $catalog),
+                'limits' => [
+                    'services' => $plan->limitFor('servicios'),
+                    'gallery' => $plan->limitFor('galeria'),
+                ],
+            ])
+            : null;
+
         return Inertia::render('Associate/Billing/Index', [
-            'currentPlan' => $associate?->plan,
+            'currentPlan' => $currentPlan,
             'subscriptionStatus' => $subscriptionStatus,
             'daysRemaining' => $daysRemaining,
             'planExpiresAt' => $associate?->plan_expires_at?->format('d/m/Y'),
             'billingCycle' => $associate?->billing_cycle ?? 'monthly',
             'usage' => ['services' => $servicesCount, 'gallery' => $galleryCount],
             'availablePlans' => $availablePlans,
-            'paymentRequest' => $paymentRequest,
             'pendingInvoices' => $pendingInvoices->map(fn ($inv) => [
                 'id' => $inv->id,
                 'period' => $inv->period,
@@ -1242,5 +1234,38 @@ class AssociateController extends Controller
                 'notes' => $inv->notes,
             ])->values(),
         ]);
+    }
+
+    /**
+     * Módulos del plan resueltos contra el catálogo, para el panel del asociado.
+     * `coming_soon` = módulo apagado globalmente (Próximamente). Ver plan 0017.
+     *
+     * @param  Collection<int, Feature>  $catalog
+     * @return array<int, array<string, mixed>>
+     */
+    private function resolvePlanModules(Plan $plan, $catalog): array
+    {
+        $plan->loadMissing('features');
+
+        $pivots = $plan->features->mapWithKeys(fn ($f) => [
+            $f->key => [
+                'enabled' => (bool) $f->pivot->enabled,
+                'limit_value' => $f->pivot->limit_value,
+            ],
+        ]);
+
+        return $catalog->map(function (Feature $f) use ($pivots) {
+            $pivot = $pivots->get($f->key);
+
+            return [
+                'key' => $f->key,
+                'name' => $f->name,
+                'type' => $f->type,
+                'group' => $f->group,
+                'coming_soon' => ! $f->is_enabled,
+                'enabled' => (bool) ($pivot['enabled'] ?? false),
+                'limit_value' => $pivot['limit_value'] ?? null,
+            ];
+        })->all();
     }
 }

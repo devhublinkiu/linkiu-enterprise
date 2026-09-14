@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\LicitacionController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PaymentRequestController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\ServiceCategoryController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\UserController;
@@ -259,6 +260,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/services', [AssociateController::class, 'editServices'])->name('services');
         Route::post('/services', [AssociateController::class, 'updateServices'])->name('update.services');
         Route::post('/services/draft', [AssociateController::class, 'saveServicesDraft'])->name('save.services.draft');
+        Route::post('/services/reopen', [AssociateController::class, 'reopenServices'])->name('reopen.services');
 
         Route::get('/documentation', [AssociateController::class, 'editDocumentation'])->name('documentation');
         Route::post('/documentation', [AssociateController::class, 'updateDocumentation'])->name('update.documentation');
@@ -293,8 +295,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/report/{type}/{id}', [ForumController::class, 'report'])->name('report');
     });
 
-    // Admin Panel for CAMEP
-    Route::name('admin.')->prefix('admin')->group(function () {
+    // Admin Panel for CAMEP — solo admin/superadmin (ADR-0006). Antes estaba solo bajo 'auth'.
+    Route::name('admin.')->prefix('admin')->middleware('admin')->group(function () {
         // Users
         Route::get('users', [UserController::class, 'index'])->name('users.index');
         Route::post('users/{user}/password', [UserController::class, 'updatePassword'])->name('users.update-password');
@@ -323,6 +325,12 @@ Route::middleware('auth')->group(function () {
         Route::post('services', [ServiceController::class, 'store'])->name('services.store');
         Route::patch('services/{service}', [ServiceController::class, 'update'])->name('services.update');
         Route::delete('services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+
+        // Categorías de servicios
+        Route::post('service-categories', [ServiceCategoryController::class, 'store'])->name('service-categories.store');
+        Route::patch('service-categories/{category}', [ServiceCategoryController::class, 'update'])->name('service-categories.update');
+        Route::delete('service-categories/{category}', [ServiceCategoryController::class, 'destroy'])->name('service-categories.destroy');
+        Route::post('service-categories/order', [ServiceCategoryController::class, 'order'])->name('service-categories.order');
 
         // Documentos requeridos (catálogo de docs que los asociados deben subir)
         Route::get('document-requirements', [DocumentRequirementController::class, 'index'])->name('document-requirements.index');

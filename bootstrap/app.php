@@ -1,8 +1,15 @@
 <?php
 
+use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\CheckFeature;
+use App\Http\Middleware\CheckSubscription;
+use App\Http\Middleware\HandleAssociateOnboarding;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SuperAdminMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,15 +20,16 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            HandleInertiaRequests::class,
+            AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         $middleware->alias([
-            'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
-            'subscription.active' => \App\Http\Middleware\CheckSubscription::class,
-            'associate.onboarding' => \App\Http\Middleware\HandleAssociateOnboarding::class,
-            'feature' => \App\Http\Middleware\CheckFeature::class,
+            'admin' => AdminMiddleware::class,
+            'superadmin' => SuperAdminMiddleware::class,
+            'subscription.active' => CheckSubscription::class,
+            'associate.onboarding' => HandleAssociateOnboarding::class,
+            'feature' => CheckFeature::class,
         ]);
 
         // Los avisos de la pasarela no traen sesión ni token: se autentican por

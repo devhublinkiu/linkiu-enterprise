@@ -2,22 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUniqueSlug;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
 class ServiceCategory extends Model
 {
-    protected $fillable = ['name', 'slug'];
+    use HasUniqueSlug;
 
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(function ($category) {
-            if (empty($category->slug)) {
-                $category->slug = Str::slug($category->name);
-            }
-        });
-    }
+    protected $fillable = ['name', 'slug', 'order'];
+
+    protected $casts = [
+        'order' => 'integer',
+    ];
 
     public function services()
     {

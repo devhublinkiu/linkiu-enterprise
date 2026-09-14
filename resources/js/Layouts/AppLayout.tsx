@@ -1,5 +1,18 @@
 import AppSidebar from '@/Components/AppSidebar';
+import { matchBreadcrumbs } from '@/Components/AppSidebar/parts/breadcrumbs';
+import {
+    buildAdminItems,
+    buildAssociateItems,
+} from '@/Components/AppSidebar/parts/nav-items';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/base/Avatar';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/Components/base/Breadcrumb';
 import { Button } from '@/Components/base/Button';
 import {
     DropdownMenu,
@@ -21,7 +34,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { Bell, LogOut, UserCircle } from 'lucide-react';
-import { PropsWithChildren, ReactNode } from 'react';
+import { Fragment, PropsWithChildren, ReactNode } from 'react';
 
 type LayoutAuth = {
     user: {
@@ -36,14 +49,29 @@ type LayoutAuth = {
 export default function AppLayout({
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const page = usePage<PageProps>().props;
-    const tenant = page.tenant;
-    const auth = page.auth as unknown as LayoutAuth;
+    const page = usePage<PageProps>();
+    const url = page.url;
+    const auth = page.props.auth as unknown as LayoutAuth;
     const user = auth.user;
     const associate = auth.associate;
     const { notifications, dismiss } = useNotifications();
 
     const isAdmin = user.is_superadmin || user.role === 'admin';
+
+    // Migas: "Inicio" + el tramo de sección derivado de la navegación del sidebar.
+    const navItems = isAdmin
+        ? buildAdminItems({ approved: 0, pending: 0, inactive: 0 }, 0)
+        : buildAssociateItems({
+              isCompanyLocked: false,
+              isGeneralLocked: false,
+              isBillingLocked: false,
+              unreadInvoices: 0,
+          });
+    const homeHref = route('dashboard');
+    const crumbs = [
+        { label: 'Inicio', href: homeHref },
+        ...matchBreadcrumbs(url, navItems, homeHref),
+    ];
 
     return (
         <TooltipProvider delayDuration={0}>
@@ -55,9 +83,35 @@ export default function AppLayout({
                         <div className="flex min-w-0 items-center gap-2">
                             <SidebarTrigger />
                             <Separator orientation="vertical" className="h-6" />
-                            <h2 className="max-w-[200px] truncate text-sm font-medium text-muted-foreground">
-                                {tenant?.company_name || 'Panel de Gestión'}
-                            </h2>
+                            <Breadcrumb>
+                                <BreadcrumbList>
+                                    {crumbs.map((c, i) => {
+                                        const isLast = i === crumbs.length - 1;
+                                        return (
+                                            <Fragment key={i}>
+                                                <BreadcrumbItem>
+                                                    {isLast ? (
+                                                        <BreadcrumbPage>
+                                                            {c.label}
+                                                        </BreadcrumbPage>
+                                                    ) : c.href ? (
+                                                        <BreadcrumbLink asChild>
+                                                            <Link href={c.href}>
+                                                                {c.label}
+                                                            </Link>
+                                                        </BreadcrumbLink>
+                                                    ) : (
+                                                        <span>{c.label}</span>
+                                                    )}
+                                                </BreadcrumbItem>
+                                                {!isLast && (
+                                                    <BreadcrumbSeparator />
+                                                )}
+                                            </Fragment>
+                                        );
+                                    })}
+                                </BreadcrumbList>
+                            </Breadcrumb>
                         </div>
 
                         <div className="flex items-center gap-3">

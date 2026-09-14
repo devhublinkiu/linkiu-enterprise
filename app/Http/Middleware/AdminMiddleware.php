@@ -6,19 +6,20 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Protege el panel de administración (/admin/*). Consistente con el `isAdmin` del front
+ * (HandleInertiaRequests / AppLayout): superadmin o rol admin. Ver ADR-0006.
+ */
 class AdminMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check() && auth()->user()->isAdmin()) {
+        $user = $request->user();
+
+        if ($user && ($user->is_superadmin || $user->role === 'admin')) {
             return $next($request);
         }
 
-        return response('No tienes permisos para acceder a esta área administrativa.', 403);
+        abort(403, 'No tienes acceso a esta área.');
     }
 }

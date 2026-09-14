@@ -220,3 +220,32 @@ Facebook:                facebook.com/psllano
 LinkedIn:                linkedin.com/company/psllano
 Sitio web:               https://psllano.com.co
 ```
+
+---
+
+## Servicios
+
+Datos coherentes con la sección (plan 0011 / ADR-0005-d): propuesta de valor + servicios elegidos del
+**catálogo sembrado** (plan 0010). El límite depende del plan del asociado.
+
+### Propuesta de valor
+
+> Con más de 15 años en la cuenca de los Llanos, PSL integra perforación, obras civiles y gestión
+> ambiental bajo un mismo estándar HSE. Hemos ejecutado proyectos para operadoras de primer nivel,
+> con equipo propio y personal certificado, priorizando la seguridad, el cumplimiento y el contenido
+> local de Puerto Gaitán.
+
+### Servicios elegidos (del catálogo)
+
+| Servicio | Categoría |
+|---|---|
+| Perforación de pozos | Operaciones petroleras |
+| Construcción de vías industriales | Obras civiles |
+| Consultoría ambiental | Servicios ambientales |
+| Manejo de residuos peligrosos | Servicios ambientales |
+
+```
+Propuesta de valor:  (ver texto arriba)
+Servicios:           Perforación de pozos · Construcción de vías industriales ·
+                     Consultoría ambiental · Manejo de residuos peligrosos
+```

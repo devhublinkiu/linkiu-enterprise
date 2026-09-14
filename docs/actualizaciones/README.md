@@ -26,5 +26,7 @@ se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas
 | [0007](0007-ficha-informacion-basica.md) | Ficha del asociado · Información Básica | Borrador |
 | [0008](0008-ficha-caracterizacion.md) | Ficha del asociado · Caracterización | Borrador |
 | [0009](0009-ficha-contactos.md) | Ficha del asociado · Contactos y Referencias | Borrador |
+| [0010](0010-admin-servicios.md) | Admin · Módulo de Servicios | Borrador |
+| [0011](0011-ficha-servicios.md) | Ficha del asociado · Servicios | Borrador |
 
 Estados posibles: `Borrador` · `Aprobado (#go)` · `En curso` · `Hecho` · `Descartado`.

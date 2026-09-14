@@ -141,19 +141,13 @@ interface DocumentCatalog {
 
 export default function Show({
     associate,
-    availableServices,
     documentCatalog,
 }: {
     associate: Associate;
-    availableServices: unknown[];
     documentCatalog: DocumentCatalog;
 }) {
     const [activeTab, setActiveTab] = useState('overview');
-    const { data, setData, put, post, processing } = useForm({
-        description: associate.description || '',
-        service_ids: associate.services?.map((s) => s.id) || [],
-    });
-    const [isEditingServices, setIsEditingServices] = useState(false);
+    const { post, processing } = useForm({});
 
     // ── Section audit handler ─────────────────────────────────────────────────
     const handleAuditSection = (
@@ -187,19 +181,6 @@ export default function Show({
 
     const handleApproveAll = () =>
         post(route('admin.associates.approve', associate.id));
-
-    const handleUpdate = () =>
-        put(route('admin.associates.update', associate.id), {
-            preserveScroll: true,
-        });
-
-    const toggleService = (id: number) => {
-        const current = [...data.service_ids];
-        const index = current.indexOf(id);
-        if (index > -1) current.splice(index, 1);
-        else current.push(id);
-        setData('service_ids', current);
-    };
 
     // ── Section-level progress ────────────────────────────────────────────────
     const sectionStats = REVIEWABLE_SECTIONS.reduce(
@@ -469,15 +450,6 @@ export default function Show({
                                 associate={associate}
                                 sectionReview={getSectionReview('services')}
                                 onAuditSection={handleAuditSection}
-                                onAuditChangeRequest={handleAuditChangeRequest}
-                                isEditingServices={isEditingServices}
-                                setIsEditingServices={setIsEditingServices}
-                                data={data}
-                                setData={setData}
-                                availableServices={availableServices}
-                                toggleService={toggleService}
-                                handleUpdate={handleUpdate}
-                                processing={processing}
                             />
                             <TabDocumentation
                                 associate={associate}

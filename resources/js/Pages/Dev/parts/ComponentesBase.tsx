@@ -13,6 +13,15 @@ import {
     AvatarImage,
 } from '@/Components/base/Avatar';
 import { Badge } from '@/Components/base/Badge';
+import {
+    Breadcrumb,
+    BreadcrumbEllipsis,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/Components/base/Breadcrumb';
 import { Button } from '@/Components/base/Button';
 import {
     Card,
@@ -84,6 +93,15 @@ import {
 } from '@/Components/base/InputOTP';
 import { Label } from '@/Components/base/Label';
 import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/Components/base/Pagination';
+import {
     Popover,
     PopoverContent,
     PopoverDescription,
@@ -133,6 +151,16 @@ import {
 } from '@/Components/base/Sidebar';
 import { Skeleton } from '@/Components/base/Skeleton';
 import { Spinner } from '@/Components/base/Spinner';
+import { Switch } from '@/Components/base/Switch';
+import {
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/Components/base/Table';
 import { Textarea } from '@/Components/base/Textarea';
 import {
     Tooltip,
@@ -1206,6 +1234,209 @@ export default function ComponentesBase() {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Breadcrumb */}
+            <div className="space-y-6 rounded-lg border p-5">
+                <p className="text-small font-medium">Breadcrumb</p>
+                <div className="space-y-5">
+                    {/* Básico (separador por defecto) */}
+                    <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">Básico</p>
+                        <Breadcrumb>
+                            <BreadcrumbList>
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink href="#">
+                                        Inicio
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator />
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink href="#">
+                                        Mi empresa
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator />
+                                <BreadcrumbItem>
+                                    <BreadcrumbPage>Contactos</BreadcrumbPage>
+                                </BreadcrumbItem>
+                            </BreadcrumbList>
+                        </Breadcrumb>
+                    </div>
+
+                    {/* Colapsado (con ellipsis) */}
+                    <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                            Colapsado
+                        </p>
+                        <Breadcrumb>
+                            <BreadcrumbList>
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink href="#">
+                                        Inicio
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator />
+                                <BreadcrumbItem>
+                                    <BreadcrumbEllipsis />
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator />
+                                <BreadcrumbItem>
+                                    <BreadcrumbPage>Contactos</BreadcrumbPage>
+                                </BreadcrumbItem>
+                            </BreadcrumbList>
+                        </Breadcrumb>
+                    </div>
+                </div>
+            </div>
+
+            {/* Table */}
+            <div className="space-y-6 rounded-lg border p-5">
+                <p className="text-small font-medium">Table</p>
+                <Table>
+                    <TableCaption>
+                        Servicios registrados (ejemplo).
+                    </TableCaption>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Servicio</TableHead>
+                            <TableHead>Categoría</TableHead>
+                            <TableHead className="text-center">
+                                Empresas
+                            </TableHead>
+                            <TableHead className="text-right">Estado</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {[
+                            {
+                                name: 'Consultoría ambiental',
+                                cat: 'Medio ambiente',
+                                n: 8,
+                                active: true,
+                            },
+                            {
+                                name: 'Transporte de carga',
+                                cat: 'Logística',
+                                n: 3,
+                                active: true,
+                            },
+                            {
+                                name: 'Perforación',
+                                cat: 'Operaciones',
+                                n: 0,
+                                active: false,
+                            },
+                        ].map((s) => (
+                            <TableRow key={s.name}>
+                                <TableCell className="font-medium">
+                                    {s.name}
+                                </TableCell>
+                                <TableCell>{s.cat}</TableCell>
+                                <TableCell className="text-center">
+                                    <Badge variant="secondary">{s.n}</Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Badge
+                                        variant={
+                                            s.active ? 'secondary' : 'outline'
+                                        }
+                                    >
+                                        {s.active ? 'Activo' : 'Inactivo'}
+                                    </Badge>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+
+            {/* Switch */}
+            <div className="space-y-6 rounded-lg border p-5">
+                <p className="text-small font-medium">Switch</p>
+                <div className="grid gap-8 sm:grid-cols-2">
+                    {/* Con descripción (choice) */}
+                    <Field orientation="horizontal" className="max-w-sm">
+                        <FieldContent>
+                            <FieldLabel htmlFor="sw-desc">
+                                Servicio activo
+                            </FieldLabel>
+                            <FieldDescription>
+                                Si se desactiva, deja de ofrecerse a las
+                                empresas.
+                            </FieldDescription>
+                        </FieldContent>
+                        <Switch id="sw-desc" defaultChecked />
+                    </Field>
+
+                    {/* Tamaños */}
+                    <FieldGroup className="w-full max-w-[10rem]">
+                        <Field orientation="horizontal">
+                            <Switch id="sw-sm" size="sm" />
+                            <FieldLabel htmlFor="sw-sm">Pequeño</FieldLabel>
+                        </Field>
+                        <Field orientation="horizontal">
+                            <Switch id="sw-default" size="default" />
+                            <FieldLabel htmlFor="sw-default">Normal</FieldLabel>
+                        </Field>
+                    </FieldGroup>
+
+                    {/* Deshabilitado */}
+                    <Field
+                        orientation="horizontal"
+                        data-disabled
+                        className="w-fit"
+                    >
+                        <Switch id="sw-dis" disabled />
+                        <FieldLabel htmlFor="sw-dis">Deshabilitado</FieldLabel>
+                    </Field>
+
+                    {/* Inválido */}
+                    <Field
+                        orientation="horizontal"
+                        className="max-w-sm"
+                        data-invalid
+                    >
+                        <FieldContent>
+                            <FieldLabel htmlFor="sw-inv">
+                                Acepta los términos
+                            </FieldLabel>
+                            <FieldDescription>
+                                Debes aceptar para continuar.
+                            </FieldDescription>
+                        </FieldContent>
+                        <Switch id="sw-inv" aria-invalid />
+                    </Field>
+                </div>
+            </div>
+
+            {/* Pagination */}
+            <div className="space-y-4 rounded-lg border p-5">
+                <p className="text-small font-medium">Pagination</p>
+                <Pagination>
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious href="#" />
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationLink href="#">1</PaginationLink>
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationLink href="#" isActive>
+                                2
+                            </PaginationLink>
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationLink href="#">3</PaginationLink>
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationEllipsis />
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationNext href="#" />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
             </div>
 
             {/* Textarea */}

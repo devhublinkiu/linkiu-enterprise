@@ -956,11 +956,11 @@ class AssociateController extends Controller
         $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
-        // basicinfo, characterization y contacts ya no usan el flujo de solicitud de cambio: se
-        // reabren con "Editar" (reopen…). Ver ADR-0005 / planes 0007-0009. Las demás secciones
-        // siguen igual hasta que se migren.
+        // basicinfo, characterization, contacts y services ya no usan el flujo de solicitud de
+        // cambio: se reabren con "Editar" (reopen…). Ver ADR-0005 / planes 0007-0011. Solo
+        // Documentación lo conserva hasta migrarse.
         $request->validate([
-            'section' => 'required|in:documentation,services',
+            'section' => 'required|in:documentation',
             'reason' => 'required|string|max:500',
         ]);
 
@@ -1050,7 +1050,7 @@ class AssociateController extends Controller
     public function auditChangeRequest(Request $request, Associate $associate)
     {
         $request->validate([
-            'section' => 'required|in:documentation,services',
+            'section' => 'required|in:documentation',
             'action' => 'required|in:approve,reject',
             'reason' => 'required_if:action,reject|nullable|string|max:1000',
         ]);
@@ -1117,9 +1117,9 @@ class AssociateController extends Controller
         }
 
         $availableServices = Service::with('category')->where('is_active', true)->get();
-        $serviceCategories = ServiceCategory::all();
+        $serviceCategories = ServiceCategory::orderBy('order')->orderBy('name')->get();
 
-        return Inertia::render('Associate/Company/Services', [
+        return Inertia::render('Associate/Company/Services/Index', [
             'initialAssociate' => $associate,
             'availableServices' => $availableServices,
             'serviceCategories' => $serviceCategories,
@@ -1137,17 +1137,19 @@ class AssociateController extends Controller
             'service_ids.*' => 'exists:services,id',
         ]);
 
-        $associate->description = $data['description'] ?? $associate->description;
-
-        $sectionStatus = $associate->getSectionStatus('services');
-        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
-            $associate->setSectionStatus('services', Associate::SEC_DRAFT);
+        // Sección bloqueada salvo en draft/rejected (el servidor es la autoridad; ADR-0005).
+        if (! $associate->canEditSection('services')) {
+            return back()->with('error', 'Esta sección no puede editarse en su estado actual.');
         }
 
+        if (array_key_exists('description', $data)) {
+            $associate->description = $data['description'];
+        }
+        $associate->setSectionStatus('services', Associate::SEC_DRAFT);
         $associate->save();
 
-        if (! empty($data['service_ids'])) {
-            $associate->services()->sync($data['service_ids']);
+        if (array_key_exists('service_ids', $data)) {
+            $associate->services()->sync($data['service_ids'] ?? []);
         }
 
         return back()->with('draft_saved', $this->localTimestamp());
@@ -1185,6 +1187,23 @@ class AssociateController extends Controller
         $associate->services()->sync($data['service_ids']);
 
         return back()->with('success', 'Servicios enviados a revisión.');
+    }
+
+    public function reopenServices()
+    {
+        $user = auth()->user();
+        $associate = Associate::findOrFail($user->associate_id);
+
+        if (! $associate->canReopenSection('services')) {
+            return back()->with('error', 'Solo puedes editar una sección que ya fue aprobada.');
+        }
+
+        $associate->setSectionStatus('services', Associate::SEC_DRAFT, [
+            'reopened_at' => now()->toIso8601String(),
+        ]);
+        $associate->save();
+
+        return back()->with('success', 'Sección reabierta para edición. Envíala a revisión cuando termines.');
     }
 
     // =========================================================================
@@ -1338,44 +1357,22 @@ class AssociateController extends Controller
 
     public function show(Associate $associate)
     {
-        $associate->load(['contacts', 'references', 'users', 'services']);
+        $associate->load(['contacts', 'references', 'users', 'services.category']);
         $this->appendFileUrls($associate);
 
         return Inertia::render('Admin/Associates/Show', [
             'associate' => $associate,
             'documentCatalog' => $this->documentCatalog(),
-            'availableServices' => ServiceCategory::with(['services' => function ($q) {
-                $q->where('is_active', true);
-            }])->get(),
         ]);
     }
 
     public function update(Request $request, Associate $associate)
     {
-        $request->validate([
-            // Services
-            'description' => 'nullable|string',
-            'service_ids' => 'nullable|array',
-            'service_ids.*' => 'exists:services,id',
-            // Información Básica, Caracterización y Contactos: el admin NO edita
-            // (ADR-0005 / 0005-b / 0005-c). Sus campos se retiran de este endpoint; el asociado
-            // los cambia por su flujo de revisión (draft→pending→approved). Corrección = rechazo
-            // con motivo.
-        ]);
-
-        $fields = $request->only([
-            'description', // servicios (la descripción vive en la sección de servicios)
-        ]);
-
-        if (! empty($fields)) {
-            $associate->update($fields);
-        }
-
-        if ($request->has('service_ids')) {
-            $associate->services()->sync($request->service_ids);
-        }
-
-        return back()->with('success', 'Información actualizada correctamente.');
+        // El admin NO edita la ficha por este endpoint (ADR-0005): todas las secciones migradas
+        // (básica, caracterización, contactos, servicios) usan su flujo de revisión
+        // draft→pending→approved; la corrección es rechazo con motivo. El endpoint queda sin
+        // campos y se retira por completo (ruta incluida) en el corte 11-C del plan 0011.
+        return back();
     }
 
     public function adminGalleryUpload(Request $request, Associate $associate)

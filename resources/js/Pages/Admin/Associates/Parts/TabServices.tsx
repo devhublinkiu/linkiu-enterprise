@@ -1,130 +1,239 @@
-import React from 'react';
-import { Layers, Pencil, Save } from 'lucide-react';
-import { Card } from '@/Components/ui/Card';
-import { Button } from '@/Components/ui/Button';
-import { Badge } from '@/Components/ui/Badge';
-import { Label } from '@/Components/ui/Label';
-import { TabsContent } from '@/Components/ui/Tabs';
-import { SearchableSelect } from '@/Components/ui/SearchableSelect';
-import { SectionAuditPanel, SectionReviewData } from './SectionAuditPanel';
+import {
+    AlertCircle,
+    Check,
+    CheckCircle2,
+    Clock,
+    Layers,
+    ShieldCheck,
+    Target,
+    X,
+} from 'lucide-react';
+import { useState } from 'react';
 
-interface TabServicesProps {
-    associate: any;
+import { Alert, AlertDescription, AlertTitle } from '@/Components/base/Alert';
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/Components/base/Card';
+import { Textarea } from '@/Components/base/Textarea';
+import { TabsContent } from '@/Components/ui/Tabs';
+
+import { SectionReviewData } from './SectionAuditPanel';
+
+// Solo los campos de Servicios que se muestran (lectura). El admin no edita (ADR-0005 / 0005-d).
+interface AssociateService {
+    id: number;
+    name?: string;
+    category?: { id: number; name: string } | null;
+}
+
+interface AssociateServices {
+    description?: string;
+    services?: AssociateService[];
+}
+
+interface Props {
+    associate: AssociateServices;
     sectionReview: SectionReviewData;
-    onAuditSection: (section: string, status: 'approved' | 'rejected', reason?: string) => void;
-    onAuditChangeRequest: (section: string, action: 'approve' | 'reject', reason?: string) => void;
-    isEditingServices: boolean;
-    setIsEditingServices: (value: boolean) => void;
-    data: any;
-    setData: (key: string, value: any) => void;
-    availableServices: any[];
-    toggleService: (id: number) => void;
-    handleUpdate: () => void;
-    processing: boolean;
+    onAuditSection: (
+        section: string,
+        status: 'approved' | 'rejected',
+        reason?: string,
+    ) => void;
+}
+
+// Panel de auditoría (solo Servicios): aprobar / rechazar. Sin change_pending (ADR-0005-d).
+function AuditPanel({
+    review,
+    onAuditSection,
+}: {
+    review: SectionReviewData;
+    onAuditSection: Props['onAuditSection'];
+}) {
+    const [rejecting, setRejecting] = useState(false);
+    const [reason, setReason] = useState('');
+    const status = review.status;
+
+    if (status === 'draft') {
+        return (
+            <Alert>
+                <Clock />
+                <AlertTitle>Borrador</AlertTitle>
+                <AlertDescription>
+                    El asociado aún no ha enviado esta sección.
+                </AlertDescription>
+            </Alert>
+        );
+    }
+
+    if (status === 'approved') {
+        return (
+            <Alert variant="success">
+                <CheckCircle2 />
+                <AlertTitle>Sección aprobada</AlertTitle>
+                <AlertDescription>
+                    {review.reviewed_by
+                        ? `Aprobada por ${review.reviewed_by}.`
+                        : 'Esta sección está aprobada.'}
+                </AlertDescription>
+            </Alert>
+        );
+    }
+
+    if (status === 'rejected') {
+        return (
+            <div className="space-y-3">
+                <Alert variant="destructive">
+                    <AlertCircle />
+                    <AlertTitle>Sección rechazada</AlertTitle>
+                    <AlertDescription>
+                        {review.rejected_reason
+                            ? `Motivo: ${review.rejected_reason}`
+                            : 'A la espera de que el asociado corrija y reenvíe.'}
+                    </AlertDescription>
+                </Alert>
+                <div className="flex justify-end">
+                    <Button
+                        size="sm"
+                        onClick={() => onAuditSection('services', 'approved')}
+                    >
+                        <Check /> Re-aprobar
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    // status === 'pending'
+    return (
+        <div className="space-y-3">
+            <Alert>
+                <ShieldCheck />
+                <AlertTitle>Pendiente de revisión</AlertTitle>
+                <AlertDescription>
+                    Revisa los datos y aprueba o rechaza la sección.
+                </AlertDescription>
+            </Alert>
+
+            {!rejecting ? (
+                <div className="flex gap-2">
+                    <Button
+                        size="sm"
+                        onClick={() => onAuditSection('services', 'approved')}
+                    >
+                        <Check /> Aprobar sección
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setRejecting(true)}
+                    >
+                        <X /> Rechazar
+                    </Button>
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    <Textarea
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="Motivo del rechazo (se enviará al asociado)…"
+                        maxLength={1000}
+                        autoFocus
+                    />
+                    <div className="flex gap-2">
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={!reason.trim()}
+                            onClick={() => {
+                                onAuditSection('services', 'rejected', reason);
+                                setRejecting(false);
+                                setReason('');
+                            }}
+                        >
+                            <X /> Confirmar rechazo
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                                setRejecting(false);
+                                setReason('');
+                            }}
+                        >
+                            Cancelar
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 export function TabServices({
     associate,
     sectionReview,
     onAuditSection,
-    onAuditChangeRequest,
-    isEditingServices,
-    setIsEditingServices,
-    data,
-    setData,
-    availableServices,
-    toggleService,
-    handleUpdate,
-    processing
-}: TabServicesProps) {
-    return (
-        <TabsContent value="services" className="space-y-6">
+}: Props) {
+    const services = associate.services ?? [];
 
-            <SectionAuditPanel
-                sectionKey="services"
+    return (
+        <TabsContent value="services" className="space-y-4">
+            <AuditPanel
                 review={sectionReview}
                 onAuditSection={onAuditSection}
-                onAuditChangeRequest={onAuditChangeRequest}
             />
 
-            <Card className="md:col-span-3 border-slate-200 overflow-hidden rounded-2xl shadow-sm">
-                <div className="px-6 py-4 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Layers size={18} className="text-slate-400" />
-                        <h4 className="text-sm font-bold uppercase text-slate-700 tracking-wide">Descripción y Portafolio</h4>
-                    </div>
-                    {!isEditingServices ? (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setIsEditingServices(true)}
-                            className="h-8 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:text-slate-900 hover:bg-white shadow-sm border border-slate-200"
-                        >
-                            <Pencil size={12} className="mr-1.5" /> Modificar Servicios
-                        </Button>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                        <Target className="size-4 text-muted-foreground" />
+                        Propuesta de valor
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {associate.description ? (
+                        <p className="whitespace-pre-line text-sm text-foreground">
+                            {associate.description}
+                        </p>
                     ) : (
-                        <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => {
-                                setIsEditingServices(false);
-                                setData('service_ids', associate.services?.map((s: any) => s.id) || []);
-                            }} className="h-8 text-[10px] font-bold uppercase border-slate-200">Cancelar</Button>
-                            <Button size="sm" disabled={processing} onClick={() => {
-                                handleUpdate();
-                                setIsEditingServices(false);
-                            }} className="h-8 text-[10px] font-bold uppercase bg-slate-900 text-white hover:bg-slate-800">
-                                <Save size={12} className="mr-1.5" /> Guardar
-                            </Button>
-                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            Sin propuesta de valor.
+                        </p>
                     )}
-                </div>
+                </CardContent>
+            </Card>
 
-                <div className="p-8 space-y-8 bg-white">
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Propuesta de Valor</Label>
-                        {!isEditingServices ? (
-                            <p className="text-sm text-slate-600 leading-relaxed bg-slate-50/50 p-6 rounded-2xl border border-slate-100 italic">
-                                "{associate.description || 'Sin descripción'}"
-                            </p>
-                        ) : (
-                            <textarea
-                                value={data.description}
-                                onChange={e => setData('description', e.target.value)}
-                                className="w-full min-h-[150px] p-4 rounded-xl border border-slate-200 focus:border-slate-900 transition-all text-sm resize-none outline-none"
-                            />
-                        )}
-                    </div>
-
-                    <div className="space-y-3 pt-4 border-t border-slate-100">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catálogo de Servicios</Label>
-                        {!isEditingServices ? (
-                            <div className="flex flex-wrap gap-2">
-                                {associate.services?.length > 0 ? (
-                                    associate.services.map((s: any) => (
-                                        <Badge key={s.id} variant="outline" className="bg-slate-50 border-slate-200 text-slate-700 font-bold px-3 py-1">
-                                            {s.name}
-                                        </Badge>
-                                    ))
-                                ) : (
-                                    <p className="text-slate-400 text-xs italic">No hay servicios seleccionados</p>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="space-y-4 pb-12">
-                                {availableServices.map((cat: any) => (
-                                    <SearchableSelect
-                                        key={cat.id}
-                                        label={cat.name}
-                                        multiple={true}
-                                        value={cat.services.filter((s: any) => data.service_ids.includes(s.id)).map((s: any) => s.name)}
-                                        onChange={(opt: any) => toggleService(opt.id)}
-                                        options={cat.services}
-                                        placeholder={`Selec. ${cat.name}`}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
+            <Card>
+                <CardHeader className="flex-row items-center justify-between space-y-0">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                        <Layers className="size-4 text-muted-foreground" />
+                        Portafolio de servicios
+                    </CardTitle>
+                    <Badge variant="secondary">{services.length}</Badge>
+                </CardHeader>
+                <CardContent>
+                    {services.length ? (
+                        <div className="flex flex-wrap gap-2">
+                            {services.map((s) => (
+                                <Badge key={s.id} variant="secondary">
+                                    {s.name}
+                                    {s.category?.name
+                                        ? ` · ${s.category.name}`
+                                        : ''}
+                                </Badge>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">
+                            Sin servicios seleccionados.
+                        </p>
+                    )}
+                </CardContent>
             </Card>
         </TabsContent>
     );

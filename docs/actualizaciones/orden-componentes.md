@@ -34,7 +34,7 @@ Sin dependencias; casi todo lo demás los usa. Empezar aquí.
 - [x] Textarea ↻ *(base/Textarea.tsx · en galería · Corte 7-E del plan 0007)*
 - [x] Checkbox ↻ *(base/Checkbox.tsx · en galería · integrado con los grupos de Field)*
 - [x] Radio Group *(base/RadioGroup.tsx · Radix · en galería (sí/no, niveles, choice cards, disabled, invalid) · Corte 8-A del plan 0008 · retira `ui/YesNoToggle`)*
-- [ ] Switch ↻
+- [x] Switch *(base/Switch.tsx · Radix · en galería (con descripción, tamaños, disabled, invalid) · Corte 10-A del plan 0010 · para `is_active`)*
 - [ ] Toggle
 - [x] Badge ↻ *(base/Badge.tsx · cva + Slot (asChild) · variantes default/secondary/destructive/outline/ghost/link · en galería · Corte 6B del plan 0006)*
 - [x] Separator ↻ *(base/Separator.tsx · en galería · conectado en FieldSeparator)*
@@ -92,8 +92,8 @@ Dependen de la fase 3 (y de cmdk / react-day-picker).
 
 ## Fase 6 · Navegación
 
-- [ ] Breadcrumb
-- [ ] Pagination
+- [x] Breadcrumb *(base/Breadcrumb.tsx · shadcn · en galería · usado en el topbar de AppLayout con migas derivadas de la navegación (helper `matchBreadcrumbs`))*
+- [x] Pagination *(base/Pagination.tsx · shadcn · en galería · Corte 10-A del plan 0010 · reutilizable en todo el admin)*
 - [ ] Navigation Menu
 - [x] Sidebar *(base/Sidebar.tsx · familia completa + `useSidebar`/`useIsMobile` · en galería · Corte 5C del plan 0005)*
 
@@ -105,7 +105,7 @@ Dependen de la fase 3 (y de cmdk / react-day-picker).
 ## Fase 8 · Datos y visualización (compuestos complejos)
 Van al final porque dependen de varias fases anteriores.
 
-- [ ] Table ↻
+- [x] Table *(base/Table.tsx · shadcn · en galería · Corte 10-A del plan 0010 · reutilizable en todo el admin)*
 - [ ] Data Table *(→ [Table, Checkbox, Button, Dropdown Menu, Pagination] + TanStack Table)*
 - [ ] Chart *(Recharts)*
 - [ ] Carousel

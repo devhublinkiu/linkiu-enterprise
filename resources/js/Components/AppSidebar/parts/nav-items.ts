@@ -18,7 +18,7 @@ import {
     Rss,
     ShieldCheck,
     Star,
-    Ticket,
+    Trophy,
     Users,
 } from 'lucide-react';
 
@@ -29,6 +29,7 @@ export type NavChild = {
     href: string;
     locked?: boolean;
     count?: number;
+    soon?: boolean;
 };
 
 export type NavItem = {
@@ -38,6 +39,9 @@ export type NavItem = {
     locked?: boolean;
     count?: number | string;
     children?: NavChild[];
+    // Módulo anunciado pero aún no disponible: se muestra con badge "Próximamente"
+    // y no navega. La compuerta real de plan vive en el servidor (ADR-0002).
+    soon?: boolean;
 };
 
 export type AssociateLocks = {
@@ -81,8 +85,8 @@ export function buildAdminItems(
             ],
         },
         { name: 'Usuarios', icon: Users, href: route('admin.users.index') },
-        { name: 'Roles y permisos', icon: ShieldCheck, href: '#' },
-        { name: 'Reseñas', icon: Star, href: '#' },
+        { name: 'Roles y permisos', icon: ShieldCheck, href: '#', soon: true },
+        { name: 'Reseñas', icon: Star, href: '#', soon: true },
         {
             name: 'Servicios',
             icon: Layers,
@@ -228,7 +232,7 @@ export function buildAssociateItems(locks: AssociateLocks): NavItem[] {
             name: 'EmpleAmep',
             icon: Briefcase,
             href: '#',
-            locked: isGeneralLocked,
+            soon: true,
         },
         {
             name: 'Red Camep',
@@ -236,7 +240,8 @@ export function buildAssociateItems(locks: AssociateLocks): NavItem[] {
             href: route('forums.index'),
             locked: isGeneralLocked,
         },
-        { name: 'Reseñas', icon: Star, href: '#', locked: isGeneralLocked },
+        { name: 'Reseñas', icon: Star, href: '#', soon: true },
+        { name: 'Mi Ranking', icon: Trophy, href: '#', soon: true },
         {
             // Siempre accesible — puerta a la renovación.
             name: 'Gestión del Plan',
@@ -250,12 +255,6 @@ export function buildAssociateItems(locks: AssociateLocks): NavItem[] {
             href: route('associate.company.invoices.index'),
             locked: isGeneralLocked,
             count: unreadInvoices || undefined,
-        },
-        {
-            name: 'Soporte Técnico',
-            icon: Ticket,
-            href: '#',
-            locked: isGeneralLocked,
         },
     ];
 }

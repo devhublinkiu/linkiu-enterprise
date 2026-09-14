@@ -1,6 +1,7 @@
 import {
     Sidebar,
     SidebarContent,
+    SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
     SidebarHeader,
@@ -10,11 +11,7 @@ import { usePage } from '@inertiajs/react';
 
 import { buildAdminItems, buildAssociateItems } from './parts/nav-items';
 import { NavMenu } from './parts/nav-menu';
-import {
-    NoPlanNotice,
-    PlanWidget,
-    type Subscription,
-} from './parts/plan-widget';
+import { PlanWidget, type Subscription } from './parts/plan-widget';
 
 type SidebarProps = {
     auth: {
@@ -81,12 +78,6 @@ export default function AppSidebar() {
                         className="h-14 w-auto max-w-full object-contain object-left group-data-[collapsible=icon]:h-8"
                     />
                 </div>
-                {!isAdmin && (
-                    <PlanWidget
-                        sub={sub}
-                        needsProfileCompletion={needsProfileCompletion}
-                    />
-                )}
             </SidebarHeader>
 
             <SidebarContent>
@@ -95,8 +86,17 @@ export default function AppSidebar() {
                         <NavMenu items={items} />
                     </SidebarGroupContent>
                 </SidebarGroup>
-                {!isAdmin && <NoPlanNotice hasNoPlan={hasNoPlan} />}
             </SidebarContent>
+
+            {!isAdmin && (
+                <SidebarFooter>
+                    <PlanWidget
+                        sub={sub}
+                        needsProfileCompletion={needsProfileCompletion}
+                        hasNoPlan={hasNoPlan}
+                    />
+                </SidebarFooter>
+            )}
 
             <SidebarRail />
         </Sidebar>

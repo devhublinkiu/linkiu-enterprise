@@ -36,5 +36,6 @@ se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas
 | [0017](0017-asociado-gestion-plan-facturas-pago.md) | Asociado · Gestión del Plan + Mis Facturas + Pago (a base/) | Hecho |
 | [0018](0018-admin-finanzas.md) | Admin · Finanzas (Pagos, Facturación, Datos bancarios) + menú | Hecho |
 | [0019](0019-integraciones-bold-y-limpieza-legacy.md) | Integraciones (Bold) + retiro del legado de solicitudes | Hecho |
+| [0020](0020-asociado-dashboard-galeria-sidebar.md) | Asociado · Dashboard + Galería (a base/) + card del plan al pie y badge "Próximamente" | Hecho |
 
 Estados posibles: `Borrador` · `Aprobado (#go)` · `En curso` · `Hecho` · `Descartado`.

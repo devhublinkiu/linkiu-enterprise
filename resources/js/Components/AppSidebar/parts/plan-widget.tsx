@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
-import { AlertCircle, Clock } from 'lucide-react';
+import { AlertCircle, ArrowRight, CalendarClock, Clock } from 'lucide-react';
 
 export type Subscription = {
     status: 'none' | 'active' | 'grace' | 'expired';
@@ -17,32 +17,35 @@ const STATUS_LABEL: Record<'active' | 'grace' | 'expired', string> = {
     expired: 'Vencido',
 };
 
-// Widget de estado del plan + avisos. Solo se muestra con el sidebar expandido
-// (se oculta en modo icono). Los colores de estado salen de tokens; el color del plan
-// (`plan_color`) viene de datos y va en estilo en línea.
+// Ciclo nominal mensual (corte del cliente al día 19). Se usa como total cuando el
+// backend no entrega `days_total`, para que la barra de avance siempre sea correcta.
+const NOMINAL_CYCLE_DAYS = 30;
+
+// Card de estado del plan + avisos. Va en el PIE del sidebar (SidebarFooter) y solo
+// con el sidebar expandido (se oculta en modo icono). Los colores de estado salen de
+// tokens; el color del plan (`plan_color`) viene de datos y va en estilo en línea.
 export function PlanWidget({
     sub,
     needsProfileCompletion,
+    hasNoPlan,
 }: {
     sub: Subscription | null;
     needsProfileCompletion: boolean;
+    hasNoPlan: boolean;
 }) {
     const planProgress = (() => {
-        if (
-            !sub ||
-            sub.status !== 'active' ||
-            sub.days_remaining === null ||
-            !sub.days_total
-        ) {
+        if (!sub || sub.status !== 'active' || sub.days_remaining === null) {
             return null;
         }
-        const elapsed = sub.days_total - sub.days_remaining;
-        const pct = Math.min(Math.round((elapsed / sub.days_total) * 100), 100);
-        return { pct, elapsed, remaining: sub.days_remaining };
+        const total = sub.days_total || NOMINAL_CYCLE_DAYS;
+        const remaining = Math.max(0, Math.min(sub.days_remaining, total));
+        const elapsed = total - remaining;
+        const pct = Math.min(Math.round((elapsed / total) * 100), 100);
+        return { pct, remaining };
     })();
 
     return (
-        <div className="flex flex-col gap-2 px-2 group-data-[collapsible=icon]:hidden">
+        <div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
             {/* Estado del plan */}
             {sub && sub.status !== 'none' && (
                 <div
@@ -98,26 +101,60 @@ export function PlanWidget({
                                 />
                             </div>
                             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                                <span>{planProgress.elapsed}d de uso</span>
-                                <span className="flex items-center gap-1 text-foreground">
+                                <span className="flex items-center gap-1">
                                     <Clock className="size-2.5" />
                                     {planProgress.remaining}d restantes
                                 </span>
+                                {sub.expires_at && (
+                                    <span className="flex items-center gap-1">
+                                        <CalendarClock className="size-2.5" />
+                                        {sub.expires_at}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     )}
 
                     {sub.status === 'grace' && (
-                        <p className="mt-1 text-[11px] text-accent-strong">
-                            Prórroga — {sub.days_remaining}d restantes
-                        </p>
+                        <>
+                            <p className="text-[11px] text-accent-strong">
+                                Prórroga — {sub.days_remaining}d restantes
+                                {sub.expires_at
+                                    ? ` (venció el ${sub.expires_at})`
+                                    : ''}
+                            </p>
+                            <RenewCta className="mt-2" label="Renovar ahora" />
+                        </>
                     )}
 
                     {sub.status === 'expired' && (
-                        <p className="mt-1 text-[11px] text-destructive">
-                            Vencido el {sub.expires_at}
-                        </p>
+                        <>
+                            <p className="text-[11px] text-destructive">
+                                Vencido el {sub.expires_at}
+                            </p>
+                            <RenewCta
+                                className="mt-2"
+                                label="Pagar y reactivar"
+                            />
+                        </>
                     )}
+                </div>
+            )}
+
+            {/* Sin suscripción */}
+            {hasNoPlan && (
+                <div className="rounded-lg bg-primary p-3 text-primary-foreground">
+                    <p className="text-[11px] font-medium">Sin suscripción</p>
+                    <p className="mt-1 text-[11px] text-primary-foreground/70">
+                        Activa tu membresía para habilitar todas las funciones.
+                    </p>
+                    <Link
+                        href={route('associate.company.billing')}
+                        className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium underline-offset-2 hover:underline"
+                    >
+                        Ver planes
+                        <ArrowRight className="size-3" />
+                    </Link>
                 </div>
             )}
 
@@ -144,18 +181,19 @@ export function PlanWidget({
     );
 }
 
-// Aviso "sin suscripción". Va DESPUÉS de los ítems del menú (no en el encabezado).
-export function NoPlanNotice({ hasNoPlan }: { hasNoPlan: boolean }) {
-    if (!hasNoPlan) return null;
-
+// Botón de renovación/pago. Facturación nunca se bloquea (ADR-0001), así que el
+// vencido/en gracia siempre puede llegar aquí.
+function RenewCta({ label, className }: { label: string; className?: string }) {
     return (
-        <div className="px-2 group-data-[collapsible=icon]:hidden">
-            <div className="rounded-lg bg-primary p-3 text-primary-foreground">
-                <p className="text-[11px] font-medium">Sin suscripción</p>
-                <p className="mt-1 text-[11px] text-primary-foreground/70">
-                    Activa tu membresía para habilitar todas las funciones.
-                </p>
-            </div>
-        </div>
+        <Link
+            href={route('associate.company.billing')}
+            className={cn(
+                'flex items-center justify-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-[11px] font-medium text-background transition-colors hover:bg-foreground/90',
+                className,
+            )}
+        >
+            {label}
+            <ArrowRight className="size-3" />
+        </Link>
     );
 }

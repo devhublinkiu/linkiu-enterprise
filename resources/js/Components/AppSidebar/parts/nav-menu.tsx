@@ -121,6 +121,25 @@ export function NavMenu({ items }: { items: NavItem[] }) {
             {items.map((item) => {
                 const Icon = item.icon;
 
+                // Ítem "próximamente" (anunciado, sin navegación). Badge en vez de candado.
+                if (item.soon) {
+                    return (
+                        <SidebarMenuItem key={item.name}>
+                            <SidebarMenuButton
+                                disabled
+                                tooltip={`${item.name} · Próximamente`}
+                                className="opacity-70"
+                            >
+                                <Icon />
+                                <span className="truncate">{item.name}</span>
+                                <span className="ml-auto shrink-0 whitespace-nowrap rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
+                                    Próximamente
+                                </span>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    );
+                }
+
                 // Ítem bloqueado (sin navegación).
                 if (item.locked) {
                     return (

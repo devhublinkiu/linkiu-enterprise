@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Services\BillingService;
+use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -23,13 +24,11 @@ use Inertia\Inertia;
  */
 class CheckoutController extends Controller
 {
-    public function __construct(private BillingService $billing)
-    {
-    }
+    public function __construct(private BillingService $billing) {}
 
     public function show(Plan $plan)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = $user->associate;
 
         // "Primer pago" sigue significando lo mismo: empresa admitida que
@@ -46,15 +45,17 @@ class CheckoutController extends Controller
             : null;
 
         return Inertia::render('Associate/Billing/Checkout', [
-            'plan'            => $plan,
-            'bankAccounts'    => BankAccount::where('is_active', true)->orderBy('order')->get(),
+            'plan' => $plan,
+            'bankAccounts' => BankAccount::where('is_active', true)->orderBy('order')->get(),
             'associateStatus' => $associate?->status,
-            'isSignupOnly'    => $isFirstPayment && (bool) $plan->signup_only_first_period && $plan->signup_fee > 0,
-            'currentCycle'    => $associate?->billing_cycle ?? 'monthly',
-            'openInvoice'     => $openInvoice ? [
-                'id'      => $openInvoice->id,
-                'period'  => $openInvoice->period,
-                'amount'  => $openInvoice->amount,
+            // Alta unificada (plan 0016): primera vez con cuota inicial → se cobra
+            // solo la cuota inicial (exonera el mes 1). El ciclo recurrente es mensual.
+            'isSignupOnly' => $isFirstPayment && $plan->signup_fee > 0,
+            'currentCycle' => $associate?->billing_cycle ?? 'monthly',
+            'openInvoice' => $openInvoice ? [
+                'id' => $openInvoice->id,
+                'period' => $openInvoice->period,
+                'amount' => $openInvoice->amount,
                 'pay_url' => route('associate.invoice.pay', $openInvoice->id),
             ] : null,
         ]);
@@ -65,36 +66,32 @@ class CheckoutController extends Controller
      */
     public function store(Request $request, Plan $plan)
     {
-        $user      = auth()->user();
+        $user = auth()->user();
         $associate = $user->associate;
 
-        if (!$associate) {
+        if (! $associate) {
             return back()->with('error', 'Primero debes registrar los datos de tu empresa.');
         }
 
         $isFirstPayment = $associate->status === 'verified';
-        $signupOnly     = $isFirstPayment && $plan->signup_only_first_period && $plan->signup_fee > 0;
 
-        $rules = [];
-        if (!$signupOnly) {
-            $rules['billing_cycle'] = 'required|in:monthly,semiannual,annual';
-        }
-        $request->validate($rules);
+        // Modelo de alta unificado (plan 0016, ADR-0008): una sola regla.
+        //   - Primera vez con cuota inicial (> 0): se cobra SOLO la cuota inicial,
+        //     que exonera el mes 1 (otorga un mes de vigencia). La mensualidad se
+        //     empieza a cobrar el mes 2 vía el cron.
+        //   - Primera vez sin cuota inicial (= 0): se cobra la primera mensualidad.
+        //   - Renovación / cambio de plan / reactivación: se cobra el ciclo, sin
+        //     cuota inicial.
+        // El ciclo recurrente arranca SIEMPRE mensual; se cambia luego en Gestión
+        // del Plan. Por eso el alta no ofrece elegir ciclo.
+        $signupOnly = $isFirstPayment && $plan->signup_fee > 0;
 
-        // El importe sigue las mismas tres reglas de siempre:
-        //   - inscripción sola: solo la cuota de inscripción
-        //   - primer pago normal: ciclo + inscripción
-        //   - renovación o cambio de plan: solo el ciclo
         if ($signupOnly) {
             $amount = (float) $plan->signup_fee;
-            $cycle  = 'signup';
+            $cycle = 'signup';
         } else {
-            $cycle  = $request->billing_cycle;
+            $cycle = SubscriptionService::DEFAULT_CYCLE;   // 'monthly'
             $amount = BillingService::amountFor($plan, $cycle);
-
-            if ($isFirstPayment && $plan->signup_fee > 0) {
-                $amount += (float) $plan->signup_fee;
-            }
         }
 
         // Se cancela cualquier intento de pago en curso sobre facturas de
@@ -103,11 +100,8 @@ class CheckoutController extends Controller
 
         $invoice = $this->billing->issueSignupInvoice($associate, $plan, $cycle, $amount, $signupOnly);
 
-        // Dejamos anotado el ciclo elegido para que la facturación recurrente
-        // cobre lo que corresponde.
-        if (!$signupOnly) {
-            $associate->update(['billing_cycle' => $cycle]);
-        }
+        // El ciclo recurrente arranca mensual (la mensualidad la emite el cron).
+        $associate->update(['billing_cycle' => SubscriptionService::DEFAULT_CYCLE]);
 
         return redirect()
             ->route('associate.invoice.pay', $invoice->id)
@@ -125,7 +119,7 @@ class CheckoutController extends Controller
             ->whereNotNull('plan_id')
             ->where(function ($q) {
                 $q->where('period', 'like', 'Afiliación%')
-                  ->orWhere('period', 'like', 'Inscripción%');
+                    ->orWhere('period', 'like', 'Inscripción%');
             })
             ->get();
 

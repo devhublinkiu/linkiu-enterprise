@@ -13,7 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Feature extends Model
 {
     public const TYPE_BOOLEAN = 'boolean';
-    public const TYPE_LIMIT   = 'limit';
+
+    public const TYPE_LIMIT = 'limit';
 
     /**
      * Correspondencia entre cada módulo y la bandera booleana histórica de
@@ -24,13 +25,14 @@ class Feature extends Model
      * línea) no aparecen aquí; su valor por defecto lo decide el seeder.
      */
     public const LEGACY_COLUMN = [
-        'directorio_prioritario' => 'has_priority_directory',
-        'licitaciones'           => 'can_download_tenders',
-        'servicios'              => 'limit_services',
-        'galeria'                => 'limit_gallery',
-        'soporte_prioritario'    => 'has_priority_support',
-        'resenas'                => 'has_reviews',
-        'bolsa_empleo'           => 'has_job_board',
+        // 'bienes_servicios' es el rename de la antigua 'licitaciones' (plan 0016);
+        // conserva la columna histórica como capa de compatibilidad.
+        'bienes_servicios' => 'can_download_tenders',
+        'servicios' => 'limit_services',
+        'galeria' => 'limit_gallery',
+        'soporte_prioritario' => 'has_priority_support',
+        'resenas' => 'has_reviews',
+        'bolsa_empleo' => 'has_job_board',
     ];
 
     protected $fillable = [
@@ -45,7 +47,7 @@ class Feature extends Model
 
     protected $casts = [
         'is_enabled' => 'boolean',
-        'sort'       => 'integer',
+        'sort' => 'integer',
     ];
 
     public function plans(): BelongsToMany

@@ -32,5 +32,6 @@ se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas
 | [0013](0013-ficha-documentacion.md) | Ficha del asociado · Documentación (+ cierre ADR-0005) | Hecho |
 | [0014](0014-admin-asociados-estado-y-vistas.md) | Admin · Asociados: estado unificado + Index & Show | Hecho |
 | [0015](0015-limpieza-y-particion.md) | Limpieza de huérfanos + ajustes de lista + partición | Hecho |
+| [0016](0016-membresias-modelo-y-admin.md) | Membresías: modelo unificado (cuota inicial) + admin de Planes + alta | Hecho |
 
 Estados posibles: `Borrador` · `Aprobado (#go)` · `En curso` · `Hecho` · `Descartado`.

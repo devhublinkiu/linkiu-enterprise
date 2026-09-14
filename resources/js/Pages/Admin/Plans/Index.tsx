@@ -1,261 +1,335 @@
-import React from 'react';
-import AppLayout from '@/Layouts/AppLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { Card, CardContent } from '@/Components/ui/Card';
-import { Button } from '@/Components/ui/Button';
-import { Badge } from '@/Components/ui/Badge';
-import { 
-    Plus, 
-    Layers, 
-    Image as ImageIcon, 
-    ShieldCheck, 
-    Download, 
-    Briefcase, 
-    Network, 
-    Star, 
-    Headphones,
-    Edit2,
-    Trash2,
-    Check,
-    X,
-    LayoutGrid,
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import {
+    AlertCircle,
+    CheckCircle2,
     Crown,
-    CheckCircle2
+    Layers,
+    Pencil,
+    Plus,
+    Trash2,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import { Alert, AlertTitle } from '@/Components/base/Alert';
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import { Card, CardContent } from '@/Components/base/Card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/base/Dialog';
+import AppLayout from '@/Layouts/AppLayout';
 import { cn } from '@/lib/utils';
 
+interface PlanModule {
+    key: string;
+    name: string;
+    type: 'boolean' | 'limit';
+    group: string | null;
+    coming_soon: boolean;
+    enabled: boolean;
+    limit_value: number | null;
+}
 
 interface Plan {
     id: number;
     name: string;
     slug: string;
-    description: string;
+    description: string | null;
     price_monthly: string;
     price_semiannual: string;
     price_annual: string;
-    currency: string;
-    limit_services: number;
-    limit_gallery: number;
-    has_priority_directory: boolean;
-    can_download_tenders: boolean;
-    has_job_board: boolean;
-    has_network: boolean;
-    has_reviews: boolean;
-    has_priority_support: boolean;
     color_hex: string;
     grace_days: number;
     is_active: boolean;
     is_popular: boolean;
     signup_fee: string;
-    signup_only_first_period: boolean;
+    associates_count: number;
+    modules: PlanModule[];
 }
 
+const formatCurrency = (value: string | number) =>
+    new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0,
+    }).format(typeof value === 'string' ? parseFloat(value) : value);
+
 export default function Index({ plans }: { plans: Plan[] }) {
-    const { delete: destroy } = useForm();
-
-    const handleDelete = (id: number) => {
-        if (confirm('¿Estás seguro de eliminar este plan? Solo podrás hacerlo si no tiene socios vinculados.')) {
-            destroy(route('admin.plans.destroy', id));
-        }
+    const flash = (usePage().props.flash ?? {}) as {
+        success?: string;
+        error?: string;
     };
+    const [notice, setNotice] = useState<{
+        variant: 'success' | 'destructive';
+        msg: string;
+    } | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<Plan | null>(null);
 
-    const formatCurrency = (value: string) => {
-        return new Intl.NumberFormat('es-CO', {
-            style: 'currency',
-            currency: 'COP',
-            maximumFractionDigits: 0
-        }).format(parseFloat(value));
+    useEffect(() => {
+        if (flash.success)
+            setNotice({ variant: 'success', msg: flash.success });
+        else if (flash.error)
+            setNotice({ variant: 'destructive', msg: flash.error });
+        if (flash.success || flash.error) {
+            const t = setTimeout(() => setNotice(null), 5000);
+            return () => clearTimeout(t);
+        }
+    }, [flash.success, flash.error]);
+
+    const confirmDelete = () => {
+        if (!deleteTarget) return;
+        router.delete(route('admin.plans.destroy', deleteTarget.id), {
+            preserveScroll: true,
+            onFinish: () => setDeleteTarget(null),
+        });
     };
 
     return (
         <AppLayout>
-            <Head title="Gestión de Membresías - CAMEP" />
-
-            <div className="max-w-7xl mx-auto space-y-8 pb-20 mt-4">
-                {/* Section Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-slate-950 rounded-xl flex items-center justify-center text-white shadow-xl shadow-slate-200">
-                            <Crown size={24} />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-black text-slate-900 uppercase leading-none">Planes y Membresías</h1>
-                            <p className="text-[11px] font-bold text-slate-500 uppercase mt-1">Configuración comercial de niveles de afiliación</p>
-                        </div>
+            <Head title="Membresías" />
+            <div className="mx-auto max-w-6xl space-y-6">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                        <h1 className="flex items-center gap-2 font-display text-h3">
+                            <Crown className="size-6 text-muted-foreground" />
+                            Membresías
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Los niveles de afiliación y los módulos que incluye
+                            cada uno ({plans.length}).
+                        </p>
                     </div>
-                    
-                    <Link href={route('admin.plans.create')}>
-                        <Button className="bg-slate-950 text-white hover:bg-emerald-600 rounded-lg h-12 px-8 font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-slate-200 flex items-center gap-2">
-                            <Plus size={18} />
-                            Crear Nuevo Nivel
-                        </Button>
-                    </Link>
+                    <Button asChild>
+                        <Link href={route('admin.plans.create')}>
+                            <Plus className="size-4" /> Nueva membresía
+                        </Link>
+                    </Button>
                 </div>
 
-                {/* Plans Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {plans.map((plan) => (
-                        <Card key={plan.id} className="border-slate-200 bg-white shadow-sm overflow-hidden rounded-xl flex flex-col group hover:shadow-2xl transition-all duration-500 border-t-0 relative">
-                            {/* Color Accent Bar */}
-                            <div 
-                                className="h-2 w-full absolute top-0 left-0" 
-                                style={{ backgroundColor: plan.color_hex }}
-                            />
-                            
-                            <CardContent className="p-8 flex-1 flex flex-col pt-10">
-                                <div className="flex items-start justify-between mb-6">
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="text-xl font-black text-slate-950 uppercase">{plan.name}</h3>
-                                            {plan.is_popular && (
-                                                <Badge className="bg-emerald-600 text-white border-none text-[10px] font-black uppercase px-2 py-0.5 rounded-md">Popular</Badge>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[11px] font-bold text-slate-400 uppercase">Slug: {plan.slug}</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex gap-2">
-                                        <Link href={route('admin.plans.edit', plan.id)}>
-                                            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-950 hover:bg-slate-100 rounded-lg transition-all">
-                                                <Edit2 size={16} />
-                                            </Button>
-                                        </Link>
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            onClick={() => handleDelete(plan.id)}
-                                            className="h-9 w-9 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                        >
-                                            <Trash2 size={16} />
-                                        </Button>
-                                    </div>
-                                </div>
+                {notice && (
+                    <Alert variant={notice.variant}>
+                        {notice.variant === 'success' ? (
+                            <CheckCircle2 />
+                        ) : (
+                            <AlertCircle />
+                        )}
+                        <AlertTitle>{notice.msg}</AlertTitle>
+                    </Alert>
+                )}
 
-                                <p className="text-slate-500 text-xs font-bold uppercase leading-relaxed mb-8 line-clamp-2">
-                                    {plan.description || "Consolidado de beneficios estructurado para socios."}
-                                </p>
-
-                                {/* Pricing Section */}
-                                <div className="space-y-3 mb-8 bg-slate-50 p-6 rounded-xl border border-slate-100 shadow-inner">
-                                    {parseFloat(plan.signup_fee) > 0 && (
-                                        <div className="flex justify-between items-center px-1 pb-2 border-b border-indigo-200/30 mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[11px] font-black text-indigo-500 uppercase">Inscripción</span>
-                                                {plan.signup_only_first_period && (
-                                                    <Badge className="bg-indigo-600 text-white border-none text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md">
-                                                        Solo mes 1
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                            <span className="text-base font-black text-indigo-700">{formatCurrency(plan.signup_fee)}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between items-center px-1">
-                                        <span className="text-[11px] font-black text-slate-400 uppercase">Mes (Base)</span>
-                                        <span className="text-base font-black text-slate-950">{formatCurrency(plan.price_monthly)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center px-1 border-t border-slate-200/50 pt-2">
-                                        <span className="text-[11px] font-black text-slate-400 uppercase">Semestre</span>
-                                        <span className="text-sm font-black text-slate-950">{formatCurrency(plan.price_semiannual)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center px-1 border-t border-slate-200/50 pt-2">
-                                        <span className="text-[11px] font-black text-slate-400 uppercase">Anualidad</span>
-                                        <span className="text-sm font-black text-slate-950">{formatCurrency(plan.price_annual)}</span>
-                                    </div>
-                                </div>
-
-                                {/* Feature List */}
-                                <div className="space-y-4 mb-8 flex-1">
-                                    <div className="flex items-center gap-3 text-slate-900 group/item">
-                                        <div className="h-7 w-7 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 group-hover/item:bg-slate-950 group-hover/item:text-white transition-all">
-                                            <Layers size={14} />
-                                        </div>
-                                        <span className="text-[11px] font-black uppercase">Servicios: <span className="text-slate-950 ml-1">{plan.limit_services === 0 ? 'Ilimitados' : plan.limit_services}</span></span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-slate-900 group/item">
-                                        <div className="h-7 w-7 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 group-hover/item:bg-slate-950 group-hover/item:text-white transition-all">
-                                            <ImageIcon size={14} />
-                                        </div>
-                                        <span className="text-[11px] font-black uppercase">Galería: <span className="text-slate-950 ml-1">{plan.limit_gallery} fotos</span></span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-slate-900 group/item">
-                                        <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center transition-all", plan.has_priority_directory ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-300")}>
-                                            <ShieldCheck size={14} />
-                                        </div>
-                                        <span className={cn("text-[11px] font-black uppercase", plan.has_priority_directory ? "text-slate-900" : "text-slate-300 line-through")}>Prioridad Directorio</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-slate-900 group/item">
-                                        <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center transition-all", plan.can_download_tenders ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-300")}>
-                                            <Download size={14} />
-                                        </div>
-                                        <span className={cn("text-[11px] font-black uppercase", plan.can_download_tenders ? "text-slate-900" : "text-slate-300 line-through")}>Licitaciones Amep</span>
-                                    </div>
-                                </div>
-
-                                {/* Roadmap Section */}
-                                <div className="pt-6 border-t border-slate-100 mt-auto flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-2">
-                                        <Briefcase size={14} className={plan.has_job_board ? "text-slate-950" : "text-slate-200"} strokeWidth={plan.has_job_board ? 2.5 : 2} />
-                                        <Network size={14} className={plan.has_network ? "text-slate-950" : "text-slate-200"} strokeWidth={plan.has_network ? 2.5 : 2} />
-                                        <Star size={14} className={plan.has_reviews ? "text-slate-950" : "text-slate-200"} strokeWidth={plan.has_reviews ? 2.5 : 2} />
-                                        <Headphones size={14} className={plan.has_priority_support ? "text-slate-950" : "text-slate-200"} strokeWidth={plan.has_priority_support ? 2.5 : 2} />
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg shadow-lg shadow-slate-200">
-                                        <span className="text-[10px] font-black text-white uppercase">Prórroga:</span>
-                                        <span className="text-[11px] font-black text-emerald-400 uppercase">{plan.grace_days}d</span>
-                                    </div>
-                                </div>
-                            </CardContent>
-                            
-                            {/* Availability Bar */}
-                            <div className={cn(
-                                "py-4 px-8 border-t border-slate-100 flex items-center justify-between transition-colors",
-                                plan.is_active ? 'bg-emerald-50/30' : 'bg-slate-50'
-                            )}>
-                                <span className={cn(
-                                    "text-xs font-black uppercase flex items-center gap-2",
-                                    plan.is_active ? 'text-emerald-700' : 'text-slate-400'
-                                )}>
-                                    {plan.is_active ? (
-                                        <>
-                                            <CheckCircle2 size={14} /> Activo Comercial
-                                        </>
-                                    ) : (
-                                        <>
-                                            <X size={14} /> Inactivo
-                                        </>
-                                    )}
-                                </span>
-                                
-                                <div className="h-1.5 w-12 rounded-full bg-slate-200 overflow-hidden">
-                                     <div className={cn("h-full", plan.is_active ? "bg-emerald-500" : "bg-slate-300")} style={{ width: plan.is_active ? '100%' : '30%' }} />
-                                </div>
-                            </div>
-                        </Card>
-                    ))}
-
-                    {/* Empty State */}
-                    {plans.length === 0 && (
-                        <div className="col-span-full py-32 bg-white rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center text-center shadow-inner">
-                            <div className="h-20 w-20 bg-slate-50 rounded-2xl flex items-center justify-center mb-8 text-slate-200 shadow-sm">
-                                <Layers size={40} strokeWidth={1} />
-                            </div>
-                            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Sin Niveles de Afiliación</h3>
-                            <p className="text-slate-500 text-sm mt-3 max-w-sm mx-auto font-medium leading-relaxed uppercase tracking-widest">
-                                Debes configurar al menos un plan para que los nuevos socios puedan registrarse y pagar.
+                {plans.length === 0 ? (
+                    <Card>
+                        <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+                            <Layers className="size-10 text-muted-foreground" />
+                            <p className="font-medium text-foreground">
+                                Aún no hay membresías configuradas.
                             </p>
-                            <Link href={route('admin.plans.create')} className="mt-8">
-                                <Button className="bg-slate-950 hover:bg-emerald-600 h-12 px-10 text-xs font-black uppercase tracking-widest rounded-lg shadow-xl shadow-slate-200">
-                                    Comenzar Configuración
+                            <p className="max-w-sm text-sm text-muted-foreground">
+                                Crea al menos una para que los asociados puedan
+                                registrarse y pagar.
+                            </p>
+                            <Button asChild className="mt-2">
+                                <Link href={route('admin.plans.create')}>
+                                    Crear la primera
+                                </Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+                        {plans.map((plan) => (
+                            <PlanCard
+                                key={plan.id}
+                                plan={plan}
+                                onDelete={() => setDeleteTarget(plan)}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <Dialog
+                open={!!deleteTarget}
+                onOpenChange={(o) => !o && setDeleteTarget(null)}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Eliminar membresía</DialogTitle>
+                        <DialogDescription>
+                            {deleteTarget && deleteTarget.associates_count > 0
+                                ? `No puedes eliminar «${deleteTarget?.name}»: tiene ${deleteTarget?.associates_count} empresa(s) asociada(s). Desactívala en su lugar (interruptor "Activa") para que no aparezca en el registro.`
+                                : `¿Eliminar «${deleteTarget?.name}»? Esta acción no se puede deshacer.`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button variant="outline">Cerrar</Button>
+                        </DialogClose>
+                        {deleteTarget &&
+                            deleteTarget.associates_count === 0 && (
+                                <Button
+                                    variant="destructive"
+                                    onClick={confirmDelete}
+                                >
+                                    Eliminar
                                 </Button>
-                            </Link>
+                            )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </AppLayout>
+    );
+}
+
+function PlanCard({ plan, onDelete }: { plan: Plan; onDelete: () => void }) {
+    const includedModules = plan.modules.filter((m) => m.enabled);
+
+    return (
+        <Card className="relative flex flex-col gap-0 p-0">
+            <div
+                className="h-1.5 w-full"
+                style={{ backgroundColor: plan.color_hex }}
+            />
+            <CardContent className="flex flex-1 flex-col gap-4 p-5">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                            <h3 className="truncate font-display text-lg text-foreground">
+                                {plan.name}
+                            </h3>
+                            {plan.is_popular && <Badge>Recomendada</Badge>}
                         </div>
+                        <Badge
+                            variant={plan.is_active ? 'secondary' : 'outline'}
+                            className={cn(
+                                'mt-1',
+                                !plan.is_active && 'text-muted-foreground',
+                            )}
+                        >
+                            {plan.is_active ? 'Activa' : 'Inactiva'}
+                        </Badge>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            asChild
+                            aria-label={`Editar ${plan.name}`}
+                        >
+                            <Link href={route('admin.plans.edit', plan.id)}>
+                                <Pencil className="size-4" />
+                            </Link>
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Eliminar ${plan.name}`}
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={onDelete}
+                        >
+                            <Trash2 className="size-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                {plan.description && (
+                    <p className="line-clamp-2 text-sm text-muted-foreground">
+                        {plan.description}
+                    </p>
+                )}
+
+                {/* Precios */}
+                <div className="space-y-1.5 rounded-lg bg-muted/50 p-4">
+                    <PriceRow
+                        label="Cuota inicial"
+                        value={plan.signup_fee}
+                        emphasis
+                    />
+                    <PriceRow label="Mensual" value={plan.price_monthly} />
+                    <PriceRow label="Semestral" value={plan.price_semiannual} />
+                    <PriceRow label="Anual" value={plan.price_annual} />
+                </div>
+
+                {/* Módulos */}
+                <div className="flex-1">
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Incluye
+                    </p>
+                    {includedModules.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                            Sin módulos configurados.
+                        </p>
+                    ) : (
+                        <ul className="space-y-1.5">
+                            {includedModules.map((m) => (
+                                <li
+                                    key={m.key}
+                                    className="flex items-center gap-2 text-sm text-foreground"
+                                >
+                                    <CheckCircle2 className="size-4 shrink-0 text-primary" />
+                                    <span>
+                                        {m.name}
+                                        {m.type === 'limit' && (
+                                            <span className="text-muted-foreground">
+                                                {' '}
+                                                ·{' '}
+                                                {m.limit_value === null
+                                                    ? 'ilimitado'
+                                                    : m.limit_value}
+                                            </span>
+                                        )}
+                                    </span>
+                                    {m.coming_soon && (
+                                        <Badge
+                                            variant="secondary"
+                                            className="ml-auto"
+                                        >
+                                            Pronto
+                                        </Badge>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
                     )}
                 </div>
-            </div>
-        </AppLayout>
+
+                <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
+                    <span>Prórroga: {plan.grace_days} días</span>
+                    <span>{plan.associates_count} asociada(s)</span>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function PriceRow({
+    label,
+    value,
+    emphasis,
+}: {
+    label: string;
+    value: string;
+    emphasis?: boolean;
+}) {
+    return (
+        <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">{label}</span>
+            <span
+                className={cn(
+                    'tabular-nums',
+                    emphasis
+                        ? 'font-semibold text-foreground'
+                        : 'text-foreground',
+                )}
+            >
+                {formatCurrency(value)}
+            </span>
+        </div>
     );
 }

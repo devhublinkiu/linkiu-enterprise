@@ -27,7 +27,7 @@ class BillingService
      */
     public static function periodLabel(Carbon $date, string $prefix = 'Mensualidad'): string
     {
-        return $prefix . ' - ' . ucfirst($date->copy()->locale('es')->isoFormat('MMMM YYYY'));
+        return $prefix.' - '.ucfirst($date->copy()->locale('es')->isoFormat('MMMM YYYY'));
     }
 
     /**
@@ -61,11 +61,11 @@ class BillingService
         ?string $notes = null
     ): ?Invoice {
         $plan = $associate->plan;
-        if (!$plan) {
+        if (! $plan) {
             return null;
         }
 
-        $cycle       = $associate->billing_cycle ?: SubscriptionService::DEFAULT_CYCLE;
+        $cycle = $associate->billing_cycle ?: SubscriptionService::DEFAULT_CYCLE;
         $periodLabel = self::periodLabel($period, self::prefixFor($cycle));
 
         if ($this->periodAlreadyBilled($associate, $periodLabel)) {
@@ -74,15 +74,15 @@ class BillingService
 
         return Invoice::create([
             'associate_id' => $associate->id,
-            'created_by'   => $createdBy,
-            'plan_id'      => $plan->id,
-            'type'         => 'cuenta_cobro',
-            'period'       => $periodLabel,
-            'cycle'        => $cycle,
-            'amount'       => self::amountFor($plan, $cycle),
-            'due_date'     => $period->copy()->day(Associate::BILLING_DAY),
-            'notes'        => $notes ?? 'Cuenta de cobro generada automáticamente. Fecha de pago: día ' . Associate::BILLING_DAY . '.',
-            'status'       => 'pendiente',
+            'created_by' => $createdBy,
+            'plan_id' => $plan->id,
+            'type' => 'cuenta_cobro',
+            'period' => $periodLabel,
+            'cycle' => $cycle,
+            'amount' => self::amountFor($plan, $cycle),
+            'due_date' => $period->copy()->day(Associate::BILLING_DAY),
+            'notes' => $notes ?? 'Cuenta de cobro generada automáticamente. Fecha de pago: día '.Associate::BILLING_DAY.'.',
+            'status' => 'pendiente',
         ]);
     }
 
@@ -97,11 +97,11 @@ class BillingService
     public function issueReactivationInvoice(Associate $associate): ?Invoice
     {
         $plan = $associate->plan;
-        if (!$plan) {
+        if (! $plan) {
             return null;
         }
 
-        $cycle       = $associate->billing_cycle ?: SubscriptionService::DEFAULT_CYCLE;
+        $cycle = $associate->billing_cycle ?: SubscriptionService::DEFAULT_CYCLE;
         $periodLabel = self::periodLabel(Carbon::now(), 'Reactivación');
 
         if ($this->periodAlreadyBilled($associate, $periodLabel)) {
@@ -110,15 +110,15 @@ class BillingService
 
         return Invoice::create([
             'associate_id' => $associate->id,
-            'created_by'   => null,
-            'plan_id'      => $plan->id,
-            'type'         => 'cuenta_cobro',
-            'period'       => $periodLabel,
-            'cycle'        => $cycle,
-            'amount'       => self::amountFor($plan, $cycle),
-            'due_date'     => Carbon::now()->addDays(self::REACTIVATION_DUE_DAYS),
-            'notes'        => 'Cuenta de cobro para reactivar la suscripción vencida.',
-            'status'       => 'pendiente',
+            'created_by' => null,
+            'plan_id' => $plan->id,
+            'type' => 'cuenta_cobro',
+            'period' => $periodLabel,
+            'cycle' => $cycle,
+            'amount' => self::amountFor($plan, $cycle),
+            'due_date' => Carbon::now()->addDays(self::REACTIVATION_DUE_DAYS),
+            'notes' => 'Cuenta de cobro para reactivar la suscripción vencida.',
+            'status' => 'pendiente',
         ]);
     }
 
@@ -131,15 +131,17 @@ class BillingService
         $recipient = $invoice->associate?->users->first()?->email
             ?? $invoice->associate?->billing_email;
 
-        if (!$recipient) {
+        if (! $recipient) {
             return false;
         }
 
         try {
             Mail::to($recipient)->send(new NewInvoiceGenerated($invoice));
+
             return true;
         } catch (\Exception $e) {
-            Log::error("Error enviando cuenta de cobro (factura {$invoice->id}): " . $e->getMessage());
+            Log::error("Error enviando cuenta de cobro (factura {$invoice->id}): ".$e->getMessage());
+
             return false;
         }
     }
@@ -159,23 +161,23 @@ class BillingService
         bool $signupOnly = false
     ): Invoice {
         $concept = $signupOnly
-            ? 'Inscripción'
-            : 'Afiliación · ' . self::cycleLabel($cycle);
+            ? 'Cuota inicial'
+            : 'Afiliación · '.self::cycleLabel($cycle);
 
         return Invoice::create([
             'associate_id' => $associate->id,
-            'created_by'   => null,
-            'plan_id'      => $plan->id,
+            'created_by' => null,
+            'plan_id' => $plan->id,
             // Es cuenta de cobro para que al pagarse renueve el ciclo.
-            'type'         => 'cuenta_cobro',
-            'period'       => $concept . ' - ' . $plan->name,
-            'cycle'        => $signupOnly ? 'signup' : $cycle,
-            'amount'       => $amount,
-            'due_date'     => Carbon::now()->addDays(self::REACTIVATION_DUE_DAYS),
-            'notes'        => $signupOnly
-                ? 'Inscripción al plan ' . $plan->name . '. Otorga un mes de vigencia.'
-                : 'Afiliación al plan ' . $plan->name . '.',
-            'status'       => 'pendiente',
+            'type' => 'cuenta_cobro',
+            'period' => $concept.' - '.$plan->name,
+            'cycle' => $signupOnly ? 'signup' : $cycle,
+            'amount' => $amount,
+            'due_date' => Carbon::now()->addDays(self::REACTIVATION_DUE_DAYS),
+            'notes' => $signupOnly
+                ? 'Cuota inicial del plan '.$plan->name.'. Exonera el primer mes: otorga un mes de vigencia y la mensualidad se cobra a partir del mes siguiente.'
+                : 'Afiliación al plan '.$plan->name.'.',
+            'status' => 'pendiente',
         ]);
     }
 
@@ -183,9 +185,9 @@ class BillingService
     {
         return match ($cycle) {
             'semiannual' => 'Semestral',
-            'annual'     => 'Anual',
-            'signup'     => 'Inscripción',
-            default      => 'Mensual',
+            'annual' => 'Anual',
+            'signup' => 'Cuota inicial',
+            default => 'Mensual',
         };
     }
 
@@ -193,8 +195,8 @@ class BillingService
     {
         return (float) match ($cycle) {
             'semiannual' => $plan->price_semiannual,
-            'annual'     => $plan->price_annual,
-            default      => $plan->price_monthly,
+            'annual' => $plan->price_annual,
+            default => $plan->price_monthly,
         };
     }
 
@@ -202,8 +204,8 @@ class BillingService
     {
         return match ($cycle) {
             'semiannual' => 'Semestralidad',
-            'annual'     => 'Anualidad',
-            default      => 'Mensualidad',
+            'annual' => 'Anualidad',
+            default => 'Mensualidad',
         };
     }
 }

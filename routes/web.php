@@ -41,7 +41,9 @@ Route::get('/', function () {
         'associates' => Associate::where('associates.status', 'approved')
             ->leftJoin('plans', 'associates.plan_id', '=', 'plans.id')
             ->select('associates.id', 'associates.company_name', 'associates.logo_path', 'associates.cover_path', 'plans.color_hex as plan_color')
-            ->orderByRaw('plans.has_priority_directory DESC, associates.created_at DESC')
+            // Orden neutro: se retiró la prioridad por plan (plan 0016). La prioridad
+            // volverá como módulo `ranking` (hábito de pago · reseñas · actividad · vistas).
+            ->orderByDesc('associates.created_at')
             ->take(6)
             ->get()
             ->map(function ($associate) {

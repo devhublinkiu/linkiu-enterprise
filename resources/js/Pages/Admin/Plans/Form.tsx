@@ -1,23 +1,28 @@
-import React from 'react';
-import AppLayout from '@/Layouts/AppLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/Card';
-import { Button } from '@/Components/ui/Button';
-import { Input } from '@/Components/ui/Input';
-import { Label } from '@/Components/ui/Label';
-import { Textarea } from '@/Components/ui/Textarea';
-import { Switch } from '@/Components/ui/Switch';
-import { Separator } from '@/Components/ui/Separator';
 import {
     ArrowLeft,
+    CreditCard,
     Layers,
-    Settings,
     LayoutDashboard,
-    Info,
-    CheckCircle2
+    Loader2,
 } from 'lucide-react';
-import InputError from '@/Components/InputError';
-import { cn } from '@/lib/utils';
+
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/Components/base/Card';
+import { Field, FieldDescription, FieldLabel } from '@/Components/base/Field';
+import { Input } from '@/Components/base/Input';
+import { Switch } from '@/Components/base/Switch';
+import { Textarea } from '@/Components/base/Textarea';
+import AppLayout from '@/Layouts/AppLayout';
+
+import FormField from '@/Pages/Associate/Company/BasicInfo/Parts/FormField';
 
 interface Plan {
     id?: number;
@@ -27,20 +32,11 @@ interface Plan {
     price_semiannual: number;
     price_annual: number;
     currency: string;
-    limit_services: number;
-    limit_gallery: number;
-    has_priority_directory: boolean;
-    can_download_tenders: boolean;
-    has_job_board: boolean;
-    has_network: boolean;
-    has_reviews: boolean;
-    has_priority_support: boolean;
     color_hex: string;
     grace_days: number;
     is_active: boolean;
     is_popular: boolean;
     signup_fee: number;
-    signup_only_first_period: boolean;
 }
 
 interface FeatureCatalogItem {
@@ -53,7 +49,14 @@ interface FeatureCatalogItem {
     is_enabled: boolean;
 }
 
-type FeatureValues = Record<string, { enabled: boolean; limit_value: number | null }>;
+type FeatureValues = Record<
+    string,
+    { enabled: boolean; limit_value: number | null }
+>;
+
+// pago_en_linea es un método de pago (va a Integraciones), vitrina está oculta:
+// ninguno se edita como módulo de la membresía. Ver plan 0016.
+const MODULE_HIDDEN = ['pago_en_linea', 'vitrina'];
 
 const GROUP_LABELS: Record<string, string> = {
     visibilidad: 'Visibilidad',
@@ -75,10 +78,14 @@ export default function Form({
 }) {
     const isEditing = !!plan;
 
+    const visibleFeatures = features.filter(
+        (f) => !MODULE_HIDDEN.includes(f.key),
+    );
+
     // Estado inicial de los módulos: en edición desde el pivote; en creación,
-    // apagados (el admin decide). Ver ADR-0002.
+    // apagados. Ver ADR-0002.
     const initialFeatures: FeatureValues = {};
-    features.forEach(f => {
+    visibleFeatures.forEach((f) => {
         const current = planFeatures[f.key];
         initialFeatures[f.key] = current
             ? { enabled: current.enabled, limit_value: current.limit_value }
@@ -92,27 +99,17 @@ export default function Form({
         price_semiannual: plan?.price_semiannual || 0,
         price_annual: plan?.price_annual || 0,
         currency: plan?.currency || 'COP',
-        // Campos legacy: se mantienen para que la validación del servidor pase.
-        // El servidor los sincroniza desde el pivote (features) al guardar, así
-        // que su valor aquí es solo el punto de partida. Ver ADR-0002.
-        limit_services: plan?.limit_services || 0,
-        limit_gallery: plan?.limit_gallery || 1,
-        has_priority_directory: plan?.has_priority_directory ?? false,
-        can_download_tenders: plan?.can_download_tenders ?? false,
-        has_job_board: plan?.has_job_board ?? false,
-        has_network: plan?.has_network ?? false,
-        has_reviews: plan?.has_reviews ?? false,
-        has_priority_support: plan?.has_priority_support ?? false,
-        color_hex: plan?.color_hex || '#64748b',
         grace_days: plan?.grace_days || 0,
         is_active: plan?.is_active ?? true,
         is_popular: plan?.is_popular ?? false,
         signup_fee: plan?.signup_fee || 0,
-        signup_only_first_period: plan?.signup_only_first_period ?? false,
         features: initialFeatures,
     });
 
-    const setFeature = (key: string, patchValues: Partial<{ enabled: boolean; limit_value: number | null }>) => {
+    const setFeature = (
+        key: string,
+        patchValues: Partial<{ enabled: boolean; limit_value: number | null }>,
+    ) => {
         setData('features', {
             ...data.features,
             [key]: { ...data.features[key], ...patchValues },
@@ -121,7 +118,7 @@ export default function Form({
 
     // Módulos agrupados para el render.
     const grouped: Record<string, FeatureCatalogItem[]> = {};
-    features.forEach(f => {
+    visibleFeatures.forEach((f) => {
         const g = f.group || 'otros';
         (grouped[g] = grouped[g] || []).push(f);
     });
@@ -137,327 +134,345 @@ export default function Form({
 
     return (
         <AppLayout>
-            <Head title={isEditing ? `Plan: ${plan.name}` : "Nuevo Nivel - CAMEP"} />
+            <Head
+                title={
+                    isEditing ? `Membresía: ${plan.name}` : 'Nueva membresía'
+                }
+            />
 
-            <div className="max-w-4xl mx-auto py-8 space-y-8 pb-20 mt-4">
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <Link href={route('admin.plans.index')} className="h-10 w-10 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-slate-900 transition-all shadow-sm">
-                            <ArrowLeft size={18} />
+            <form
+                onSubmit={handleSubmit}
+                className="mx-auto max-w-4xl space-y-6 pb-20"
+            >
+                {/* Header */}
+                <div className="flex items-center gap-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        asChild
+                        aria-label="Volver a membresías"
+                    >
+                        <Link href={route('admin.plans.index')}>
+                            <ArrowLeft className="size-4" />
                         </Link>
-                        <div>
-                            <h1 className="text-xl font-black text-slate-950 uppercase tracking-tight">
-                                {isEditing ? 'Gestión de Nivel' : 'Creación de Membresía'}
-                            </h1>
-                            <p className="text-[11px] font-bold text-slate-500 uppercase mt-1">
-                                Parámetros comerciales y operativos
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <div className={cn("h-3 w-3 rounded-full shadow-sm animate-pulse", data.is_active ? "bg-emerald-500" : "bg-slate-300")} />
-                        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">{data.is_active ? 'Activo' : 'Borrador'}</span>
+                    </Button>
+                    <div>
+                        <h1 className="font-display text-h3">
+                            {isEditing ? 'Editar membresía' : 'Nueva membresía'}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Precios, cuota inicial y módulos que incluye.
+                        </p>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-8">
-                    {/* Identity & Visuals */}
-                    <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
-                        <div className="h-2 w-full" style={{ backgroundColor: data.color_hex }} />
-                        <CardHeader className="bg-slate-50/50 pb-8 border-b border-slate-100">
-                            <div className="flex items-center gap-3">
-                                <LayoutDashboard size={20} className="text-slate-950" />
-                                <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-950">Identidad del Nivel</CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-8 space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-6">
-                                    <div className="space-y-3">
-                                        <Label className="text-[11px] font-black uppercase text-slate-500" htmlFor="name">Etiqueta Comercial</Label>
-                                        <Input 
-                                            id="name"
-                                            value={data.name}
-                                            onChange={e => setData('name', e.target.value)}
-                                            placeholder="Ej: Membresía Platino"
-                                            className="h-12 border-slate-200 rounded-lg focus:ring-slate-950 font-bold bg-slate-50/30"
-                                        />
-                                        <InputError message={errors.name} />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <Label className="text-[11px] font-black uppercase text-slate-500" htmlFor="color_hex">Color Distintivo (HEX)</Label>
-                                        <div className="flex gap-4">
-                                            <div 
-                                                className="h-12 w-12 rounded-lg shadow-inner border border-slate-200 shrink-0" 
-                                                style={{ backgroundColor: data.color_hex }}
-                                            />
-                                            <Input 
-                                                id="color_hex"
-                                                value={data.color_hex}
-                                                onChange={e => setData('color_hex', e.target.value)}
-                                                placeholder="#HEXCODE"
-                                                className="h-12 border-slate-200 rounded-lg focus:ring-slate-950 uppercase font-mono font-black"
-                                            />
-                                        </div>
-                                        <InputError message={errors.color_hex} />
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500" htmlFor="description">Propuesta de Valor</Label>
-                                    <Textarea 
-                                        id="description"
-                                        value={data.description}
-                                        onChange={e => setData('description', e.target.value)}
-                                        placeholder="Breve resumen de beneficios para el socio..."
-                                        className="h-[148px] border-slate-200 rounded-lg focus:ring-slate-950 font-medium resize-none bg-slate-50/30"
-                                    />
-                                    <InputError message={errors.description} />
-                                </div>
-                            </div>
+                {/* Identidad */}
+                <Card>
+                    <CardHeader className="border-b">
+                        <CardTitle className="flex items-center gap-2">
+                            <LayoutDashboard className="size-4 text-muted-foreground" />
+                            Identidad
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-5">
+                        <FormField
+                            id="name"
+                            label="Nombre"
+                            required
+                            error={errors.name}
+                        >
+                            <Input
+                                id="name"
+                                value={data.name}
+                                onChange={(e) =>
+                                    setData('name', e.target.value)
+                                }
+                                placeholder="Ej. Membresía Platino"
+                            />
+                        </FormField>
 
-                            <Separator className="bg-slate-100" />
+                        <FormField
+                            id="description"
+                            label="Descripción"
+                            error={errors.description}
+                        >
+                            <Textarea
+                                id="description"
+                                value={data.description}
+                                onChange={(e) =>
+                                    setData('description', e.target.value)
+                                }
+                                placeholder="Breve resumen de la membresía…"
+                                rows={3}
+                            />
+                        </FormField>
 
-                            <div className="flex flex-wrap gap-12">
-                                <div className="flex items-center gap-4">
-                                    <Switch 
-                                        checked={data.is_active}
-                                        onCheckedChange={v => setData('is_active', v)}
-                                    />
-                                    <div>
-                                        <Label className="text-[11px] font-black uppercase text-slate-950 block">Activar Nivel</Label>
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase leading-none">Habilitar en registro</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <Switch 
-                                        checked={data.is_popular}
-                                        onCheckedChange={v => setData('is_popular', v)}
-                                        className="data-[state=checked]:bg-emerald-600"
-                                    />
-                                    <div>
-                                        <Label className="text-[11px] font-black uppercase text-slate-950 block">Destacar Nivel</Label>
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase leading-none">Badge "Recomendado"</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                        <div className="flex flex-wrap gap-8 pt-1">
+                            <Field orientation="horizontal" className="w-auto">
+                                <Switch
+                                    id="is_active"
+                                    checked={data.is_active}
+                                    onCheckedChange={(v) =>
+                                        setData('is_active', v)
+                                    }
+                                />
+                                <FieldLabel
+                                    htmlFor="is_active"
+                                    className="font-normal"
+                                >
+                                    Activa (disponible en el registro)
+                                </FieldLabel>
+                            </Field>
+                            <Field orientation="horizontal" className="w-auto">
+                                <Switch
+                                    id="is_popular"
+                                    checked={data.is_popular}
+                                    onCheckedChange={(v) =>
+                                        setData('is_popular', v)
+                                    }
+                                />
+                                <FieldLabel
+                                    htmlFor="is_popular"
+                                    className="font-normal"
+                                >
+                                    Destacar como recomendada
+                                </FieldLabel>
+                            </Field>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
-                        <CardHeader className="bg-slate-50/50 pb-8 border-b border-slate-100">
-                            <div className="flex items-center gap-3">
-                                <Settings size={20} className="text-slate-950" />
-                                <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-950">Acuerdos Financieros</CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-8">
-                            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                                <div className="space-y-3">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500">Precio Mensual</Label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black">$</span>
-                                        <Input 
-                                            type="number"
-                                            value={data.price_monthly}
-                                            onChange={e => setData('price_monthly', parseFloat(e.target.value) || 0)}
-                                            className="h-12 border-slate-200 rounded-lg pl-9 focus:ring-slate-950 font-black text-slate-950 bg-slate-50/50"
-                                        />
-                                    </div>
-                                    <InputError message={errors.price_monthly} />
-                                </div>
-                                <div className="space-y-3">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500">Precio Semestre</Label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black">$</span>
-                                        <Input 
-                                            type="number"
-                                            value={data.price_semiannual}
-                                            onChange={e => setData('price_semiannual', parseFloat(e.target.value) || 0)}
-                                            className="h-12 border-slate-200 rounded-lg pl-9 focus:ring-slate-950 font-black text-slate-950 bg-slate-50/50"
-                                        />
-                                    </div>
-                                    <InputError message={errors.price_semiannual} />
-                                </div>
-                                <div className="space-y-3">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500">Precio Anual</Label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black">$</span>
-                                        <Input 
-                                            type="number"
-                                            value={data.price_annual}
-                                            onChange={e => setData('price_annual', parseFloat(e.target.value) || 0)}
-                                            className="h-12 border-slate-200 rounded-lg pl-9 focus:ring-slate-950 font-black text-slate-950 bg-slate-50/50"
-                                        />
-                                    </div>
-                                    <InputError message={errors.price_annual} />
-                                </div>
-                                <div className="space-y-3">
-                                    <Label className="text-[11px] font-black uppercase text-indigo-600 flex items-center gap-2">
-                                        Cuota Inicial
-                                        <Info size={12} className="text-slate-400" />
-                                    </Label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black">$</span>
-                                        <Input 
-                                            type="number"
-                                            value={data.signup_fee}
-                                            onChange={e => setData('signup_fee', parseFloat(e.target.value) || 0)}
-                                            className="h-12 border-indigo-200 rounded-lg pl-9 focus:ring-indigo-500 font-black text-indigo-900 bg-indigo-50/20"
-                                        />
-                                    </div>
-                                    <InputError message={errors.signup_fee} />
-                                </div>
-                                <div className="space-y-3">
-                                    <Label className="text-[11px] font-black uppercase text-slate-500 flex items-center gap-2">
-                                        Prórroga (Días)
-                                        <Info size={12} className="text-slate-400" />
-                                    </Label>
-                                    <Input
-                                        type="number"
-                                        value={data.grace_days}
-                                        onChange={e => setData('grace_days', parseInt(e.target.value) || 0)}
-                                        className="h-12 border-slate-200 rounded-lg focus:ring-slate-950 font-black text-emerald-600 bg-emerald-50/20"
-                                    />
-                                    <InputError message={errors.grace_days} />
-                                </div>
-                            </div>
+                {/* Precios y cobro */}
+                <Card>
+                    <CardHeader className="border-b">
+                        <CardTitle className="flex items-center gap-2">
+                            <CreditCard className="size-4 text-muted-foreground" />
+                            Precios y cobro
+                        </CardTitle>
+                        <CardDescription>
+                            La cuota inicial exonera el primer mes: la
+                            mensualidad se cobra desde el mes 2.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        <MoneyField
+                            id="signup_fee"
+                            label="Cuota inicial"
+                            value={data.signup_fee}
+                            onChange={(v) => setData('signup_fee', v)}
+                            error={errors.signup_fee}
+                            hint="Lo que paga al inscribirse."
+                        />
+                        <MoneyField
+                            id="price_monthly"
+                            label="Mensual"
+                            value={data.price_monthly}
+                            onChange={(v) => setData('price_monthly', v)}
+                            error={errors.price_monthly}
+                        />
+                        <MoneyField
+                            id="price_semiannual"
+                            label="Semestral"
+                            value={data.price_semiannual}
+                            onChange={(v) => setData('price_semiannual', v)}
+                            error={errors.price_semiannual}
+                        />
+                        <MoneyField
+                            id="price_annual"
+                            label="Anual"
+                            value={data.price_annual}
+                            onChange={(v) => setData('price_annual', v)}
+                            error={errors.price_annual}
+                        />
+                        <FormField
+                            id="grace_days"
+                            label="Prórroga (días de gracia)"
+                            error={errors.grace_days}
+                            hint="Días tras el corte antes de ocultar el perfil."
+                        >
+                            <Input
+                                id="grace_days"
+                                type="number"
+                                min={0}
+                                value={data.grace_days}
+                                onChange={(e) =>
+                                    setData(
+                                        'grace_days',
+                                        parseInt(e.target.value) || 0,
+                                    )
+                                }
+                            />
+                        </FormField>
+                    </CardContent>
+                </Card>
 
-                            {data.signup_fee > 0 && (
-                                <div className="mt-8 flex items-start justify-between gap-6 p-5 bg-indigo-50/40 rounded-xl border border-indigo-100">
-                                    <div className="space-y-1">
-                                        <Label className="text-[11px] font-black uppercase text-indigo-700 block">
-                                            Solo cobrar inscripción el primer mes
-                                        </Label>
-                                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed max-w-xl">
-                                            Si está activo, el primer pago del asociado cubre <strong>solo la cuota inicial</strong>.
-                                            A los 30 días se genera automáticamente una cuenta de cobro para la primera mensualidad.
-                                            Si está apagado, el primer pago incluye la inscripción <strong>más</strong> el ciclo elegido.
-                                        </p>
-                                    </div>
-                                    <Switch
-                                        checked={data.signup_only_first_period}
-                                        onCheckedChange={v => setData('signup_only_first_period', v)}
-                                        className="data-[state=checked]:bg-indigo-600 shrink-0"
-                                    />
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                {/* Módulos */}
+                <Card>
+                    <CardHeader className="border-b">
+                        <CardTitle className="flex items-center gap-2">
+                            <Layers className="size-4 text-muted-foreground" />
+                            Módulos incluidos
+                        </CardTitle>
+                        <CardDescription>
+                            Enciende lo que trae esta membresía. En los de
+                            límite, vacío = ilimitado.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {visibleFeatures.length === 0 && (
+                            <p className="text-sm text-muted-foreground">
+                                Aún no hay catálogo de módulos. Corre{' '}
+                                <code className="rounded bg-muted px-1">
+                                    php artisan db:seed --class=FeatureSeeder
+                                </code>
+                                .
+                            </p>
+                        )}
 
-                    {/* Módulos del plan — interruptores por catálogo (ADR-0002) */}
-                    <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
-                        <CardHeader className="bg-slate-50/50 pb-8 border-b border-slate-100">
-                            <div className="flex items-center gap-3">
-                                <Layers size={20} className="text-slate-950" />
-                                <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-950">Módulos incluidos en el plan</CardTitle>
-                            </div>
-                            <CardDescription className="text-[11px] font-bold text-slate-400 uppercase pt-1">
-                                Enciende lo que trae este plan. Los límites vacíos significan ilimitado.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-8 space-y-8">
-                            {features.length === 0 && (
-                                <p className="text-sm font-bold text-slate-400">
-                                    Aún no hay catálogo de módulos. Corre <code className="font-mono">php artisan db:seed --class=FeatureSeeder</code>.
+                        {Object.entries(grouped).map(([group, items]) => (
+                            <div key={group} className="space-y-3">
+                                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                    {GROUP_LABELS[group] ?? group}
                                 </p>
-                            )}
-
-                            {Object.entries(grouped).map(([group, items]) => (
-                                <div key={group} className="space-y-4">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                        {GROUP_LABELS[group] ?? group}
-                                    </p>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {items.map(f => {
-                                            const val = data.features[f.key] ?? { enabled: false, limit_value: null };
-                                            return (
-                                                <div key={f.key} className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <div className="space-y-0.5">
-                                                            <Label className="text-[11px] font-black uppercase text-slate-950">{f.name}</Label>
-                                                            {!f.is_enabled && (
-                                                                <p className="text-[10px] text-amber-600 font-black uppercase">Apagado en la plataforma</p>
-                                                            )}
-                                                            {f.description && (
-                                                                <p className="text-[10px] text-slate-400 font-bold">{f.description}</p>
+                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                    {items.map((f) => {
+                                        const val = data.features[f.key] ?? {
+                                            enabled: false,
+                                            limit_value: null,
+                                        };
+                                        const comingSoon = !f.is_enabled;
+                                        return (
+                                            <div
+                                                key={f.key}
+                                                className="space-y-3 rounded-lg border border-border p-4"
+                                            >
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0 space-y-0.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium text-foreground">
+                                                                {f.name}
+                                                            </span>
+                                                            {comingSoon && (
+                                                                <Badge variant="secondary">
+                                                                    Próximamente
+                                                                </Badge>
                                                             )}
                                                         </div>
-                                                        <Switch
-                                                            checked={val.enabled}
-                                                            onCheckedChange={v => setFeature(f.key, { enabled: v })}
-                                                        />
+                                                        {f.description && (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {f.description}
+                                                            </p>
+                                                        )}
                                                     </div>
+                                                    <Switch
+                                                        checked={val.enabled}
+                                                        onCheckedChange={(v) =>
+                                                            setFeature(f.key, {
+                                                                enabled: v,
+                                                            })
+                                                        }
+                                                        aria-label={`Incluir ${f.name}`}
+                                                    />
+                                                </div>
 
-                                                    {f.type === 'limit' && val.enabled && (
-                                                        <div className="flex items-center gap-3 pt-1">
+                                                {f.type === 'limit' &&
+                                                    val.enabled && (
+                                                        <div className="flex items-center gap-2">
                                                             <Input
                                                                 type="number"
                                                                 min={0}
                                                                 placeholder="Ilimitado"
-                                                                value={val.limit_value ?? ''}
-                                                                onChange={e => setFeature(f.key, {
-                                                                    limit_value: e.target.value === '' ? null : (parseInt(e.target.value) || 0),
-                                                                })}
-                                                                className="h-10 border-slate-200 rounded-lg font-black bg-white"
+                                                                value={
+                                                                    val.limit_value ??
+                                                                    ''
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setFeature(
+                                                                        f.key,
+                                                                        {
+                                                                            limit_value:
+                                                                                e
+                                                                                    .target
+                                                                                    .value ===
+                                                                                ''
+                                                                                    ? null
+                                                                                    : parseInt(
+                                                                                          e
+                                                                                              .target
+                                                                                              .value,
+                                                                                      ) ||
+                                                                                      0,
+                                                                        },
+                                                                    )
+                                                                }
+                                                                className="h-9"
+                                                                aria-label={`Límite de ${f.name}`}
                                                             />
-                                                            <div className="bg-slate-100 px-3 py-1.5 rounded-lg shrink-0">
-                                                                <span className="text-[10px] text-slate-500 font-black uppercase">Vacío = ∞</span>
-                                                            </div>
+                                                            <span className="shrink-0 text-xs text-muted-foreground">
+                                                                vacío = ∞
+                                                            </span>
                                                         </div>
                                                     )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            ))}
-                        </CardContent>
-                    </Card>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
 
-                    {/* Actions */}
-                    <div className="flex items-center justify-end gap-6 pt-10 border-t border-slate-100">
-                        <Link href={route('admin.plans.index')}>
-                            <Button type="button" variant="ghost" className="h-12 px-10 font-black text-slate-400 hover:text-red-600 uppercase tracking-widest text-[10px] transition-all">
-                                Descartar Cambios
-                            </Button>
-                        </Link>
-                        <Button 
-                            disabled={processing}
-                            className="h-13 px-12 bg-slate-950 text-white hover:bg-emerald-600 rounded-lg font-black uppercase tracking-widest text-xs shadow-2xl shadow-slate-300 flex items-center gap-3 transition-all"
-                        >
-                            {processing ? (
-                                <Loader2 className="animate-spin" size={18} />
-                            ) : (
-                                <>
-                                    <CheckCircle2 size={18} />
-                                    {isEditing ? 'Confirmar Actualización' : 'Publicar Nuevo Nivel'}
-                                </>
-                            )}
-                        </Button>
-                    </div>
-                </form>
-            </div>
+                {/* Acciones */}
+                <div className="flex items-center justify-end gap-3">
+                    <Button type="button" variant="outline" asChild>
+                        <Link href={route('admin.plans.index')}>Cancelar</Link>
+                    </Button>
+                    <Button type="submit" disabled={processing}>
+                        {processing && (
+                            <Loader2 className="size-4 animate-spin" />
+                        )}
+                        {isEditing ? 'Guardar cambios' : 'Crear membresía'}
+                    </Button>
+                </div>
+            </form>
         </AppLayout>
     );
 }
 
-function Loader2(props: any) {
+function MoneyField({
+    id,
+    label,
+    value,
+    onChange,
+    error,
+    hint,
+}: {
+    id: string;
+    label: string;
+    value: number;
+    onChange: (v: number) => void;
+    error?: string;
+    hint?: string;
+}) {
     return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-        </svg>
+        <Field data-invalid={error ? 'true' : undefined}>
+            <FieldLabel htmlFor={id}>{label}</FieldLabel>
+            <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    $
+                </span>
+                <Input
+                    id={id}
+                    type="number"
+                    min={0}
+                    value={value}
+                    onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+                    className="pl-7"
+                />
+            </div>
+            {hint && !error && <FieldDescription>{hint}</FieldDescription>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
+        </Field>
     );
 }

@@ -33,7 +33,6 @@ export interface AssociateRow {
     id: number;
     company_name: string;
     nit: string | null;
-    city: string | null;
     created_at: string;
     is_public: boolean;
     is_verified: boolean;

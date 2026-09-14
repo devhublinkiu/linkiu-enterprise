@@ -12,6 +12,7 @@ export interface DocumentRequirement {
     template_path: string | null;
     template_url: string | null;
     display_order: number;
+    in_use: boolean;
 }
 
 export interface Props {

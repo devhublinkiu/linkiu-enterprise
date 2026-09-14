@@ -335,19 +335,23 @@ export default function Index({
                         <DialogTitle>Eliminar servicio</DialogTitle>
                         <DialogDescription>
                             {deleteTarget && deleteTarget.associates_count > 0
-                                ? `«${deleteTarget.name}» lo usan ${deleteTarget.associates_count} empresa(s): se desactivará en vez de eliminarse.`
+                                ? `No puedes eliminar «${deleteTarget.name}»: lo usan ${deleteTarget.associates_count} empresa(s). Desactívalo primero con el interruptor "Activo".`
                                 : `¿Eliminar «${deleteTarget?.name}»? Esta acción no se puede deshacer.`}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <DialogClose asChild>
-                            <Button variant="outline">Cancelar</Button>
+                            <Button variant="outline">Cerrar</Button>
                         </DialogClose>
-                        <Button variant="destructive" onClick={confirmDelete}>
-                            {deleteTarget && deleteTarget.associates_count > 0
-                                ? 'Desactivar'
-                                : 'Eliminar'}
-                        </Button>
+                        {deleteTarget &&
+                            deleteTarget.associates_count === 0 && (
+                                <Button
+                                    variant="destructive"
+                                    onClick={confirmDelete}
+                                >
+                                    Eliminar
+                                </Button>
+                            )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

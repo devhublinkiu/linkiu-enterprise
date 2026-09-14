@@ -148,6 +148,28 @@ it('el rechazo deja la sección editable y reenviable', function () {
     expect($associate->fresh()->getSectionStatus('basicinfo'))->toBe('pending');
 });
 
+// ─── NIT numérico (plan 0015) ────────────────────────────────────────────────────
+
+it('rechaza un NIT no numérico (nombre en el campo)', function () {
+    $user = associateOwner();
+    $this->actingAs($user)->post(
+        route('associate.company.update.basic'),
+        validBasicInfo(['nit' => 'SERVICIOS INTEGRALES RVR SAS']),
+    )->assertSessionHasErrors('nit');
+});
+
+it('acepta un NIT con formato colombiano', function () {
+    $user = associateOwner();
+    $this->actingAs($user)->post(
+        route('associate.company.update.basic'),
+        validBasicInfo(['nit' => '900.123.456-7']),
+    );
+
+    expect($user->fresh()->associate->getSectionStatus('basicinfo'))->toBe(
+        'pending',
+    );
+});
+
 // ─── Independencia entre secciones ──────────────────────────────────────────────
 
 it('enviar información básica no toca el estado de caracterización', function () {

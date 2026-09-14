@@ -74,12 +74,10 @@ class ServiceController extends Controller
 
     public function destroy(Service $service)
     {
-        // Borrado seguro (ADR-0005-c del catálogo / plan 0010): si el servicio lo usan empresas,
-        // se desactiva en vez de borrarse (el pivot cascada lo quitaría de todas ellas).
+        // No se puede eliminar un servicio que usan empresas asociadas: hay que desactivarlo
+        // primero (interruptor "Activo"). El borrado en duro rompería el pivot. Ver plan 0015.
         if ($service->associates()->exists()) {
-            $service->update(['is_active' => false]);
-
-            return back()->with('info', 'El servicio lo usan empresas asociadas: se desactivó en vez de eliminarse.');
+            return back()->with('error', 'No puedes eliminar este servicio: lo usan empresas asociadas. Desactívalo en su lugar.');
         }
 
         $service->delete();

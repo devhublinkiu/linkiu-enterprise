@@ -88,16 +88,19 @@ it('mantiene el slug estable al renombrar (no rompe enlaces)', function () {
 
 // ─── Borrado seguro ──────────────────────────────────────────────────────────────
 
-it('desactiva (no borra) un servicio con empresas asociadas', function () {
+it('no elimina un servicio con empresas asociadas (lo bloquea)', function () {
     $cat = ServiceCategory::create(['name' => 'Logística']);
     $service = Service::create(['name' => 'Transporte', 'category_id' => $cat->id]);
     $associate = Associate::create(['company_name' => 'Transportes SAS']);
     $service->associates()->attach($associate->id);
 
-    $this->actingAs(svcAdmin())->delete(route('admin.services.destroy', $service));
+    $this->actingAs(svcAdmin())
+        ->delete(route('admin.services.destroy', $service))
+        ->assertSessionHas('error');
 
+    // Sigue existiendo y activo: el admin debe desactivarlo, no se elimina.
     expect(Service::find($service->id))->not->toBeNull();
-    expect($service->fresh()->is_active)->toBeFalse();
+    expect($service->fresh()->is_active)->toBeTrue();
 });
 
 it('elimina un servicio sin empresas asociadas', function () {

@@ -230,7 +230,6 @@ export default function Index({ associates, filters }: Props) {
                             <TableRow>
                                 <TableHead>Empresa</TableHead>
                                 <TableHead>NIT</TableHead>
-                                <TableHead>Ubicación</TableHead>
                                 <TableHead>Secciones</TableHead>
                                 <TableHead className="text-center">
                                     Verificada
@@ -245,7 +244,7 @@ export default function Index({ associates, filters }: Props) {
                             {rows.length === 0 && (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={7}
+                                        colSpan={6}
                                         className="py-12 text-center text-muted-foreground"
                                     >
                                         No hay empresas para este filtro.
@@ -264,9 +263,6 @@ export default function Index({ associates, filters }: Props) {
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
                                             {row.nit ?? '—'}
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground">
-                                            {row.city ?? '—'}
                                         </TableCell>
                                         <TableCell>
                                             <SectionDots

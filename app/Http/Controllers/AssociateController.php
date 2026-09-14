@@ -2,18 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\AssociateApproved;
-use App\Mail\AssociateAuditRejected;
+use App\Http\Controllers\Concerns\InteractsWithAssociateFiles;
 use App\Mail\AssociateDocsSubmitted;
-use App\Mail\SectionAuditApproved;
 use App\Models\Associate;
-use App\Models\DocumentRequirement;
 use App\Models\PaymentRequest;
 use App\Models\Plan;
 use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Services\BillingService;
-use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -24,126 +20,7 @@ use Inertia\Inertia;
 
 class AssociateController extends Controller
 {
-    // ─── Admin: list ─────────────────────────────────────────────────────────
-
-    public function index(Request $request)
-    {
-        $estado = $request->query('estado'); // filtro opcional (coarse): pendiente|admitida|activa|inactiva
-        $q = $request->query('q');
-
-        $associates = Associate::with('plan')
-            ->select([
-                'id', 'company_name', 'nit', 'city', 'status', 'created_at',
-                'is_public', 'is_verified', 'section_reviews', 'plan_id',
-                'plan_expires_at', 'deactivated_at',
-            ])
-            ->when($q, fn ($query) => $query->where(fn ($w) => $w
-                ->where('company_name', 'like', "%{$q}%")
-                ->orWhere('nit', 'like', "%{$q}%")))
-            ->when($estado, fn ($query) => $this->filterByEstado($query, $estado))
-            ->latest()
-            ->paginate(25)
-            ->withQueryString()
-            ->through(fn (Associate $a) => [
-                'id' => $a->id,
-                'company_name' => $a->company_name,
-                'nit' => $a->nit,
-                'city' => $a->city,
-                'created_at' => $a->created_at,
-                'is_public' => $a->is_public,
-                'is_verified' => $a->is_verified,
-                'section_reviews' => $a->section_reviews,
-                'estado' => $a->adminState(),
-                'subscription_status' => SubscriptionService::statusOf($a),
-                'plan_expires_at' => $a->plan_expires_at,
-            ]);
-
-        return Inertia::render('Admin/Associates/Index', [
-            'associates' => $associates,
-            'filters' => ['estado' => $estado, 'q' => $q],
-        ]);
-    }
-
-    /**
-     * Filtro coarse por estado derivado. El límite de "gracia" se aproxima por fecha
-     * (plan_expires_at); el badge de la fila muestra el estado fino y preciso.
-     */
-    private function filterByEstado($query, string $estado)
-    {
-        return match ($estado) {
-            'pendiente' => $query->whereNull('deactivated_at')
-                ->whereIn('status', ['draft', 'pending', 'rejected']),
-            'admitida' => $query->whereNull('deactivated_at')->where('status', 'verified'),
-            'activa' => $query->whereNull('deactivated_at')->where('status', 'approved')
-                ->whereNotNull('plan_expires_at')->where('plan_expires_at', '>=', now()),
-            'inactiva' => $query->where(fn ($w) => $w
-                ->whereNotNull('deactivated_at')
-                ->orWhere(fn ($x) => $x->where('status', 'approved')
-                    ->where(fn ($y) => $y->whereNull('plan_expires_at')
-                        ->orWhere('plan_expires_at', '<', now())))),
-            default => $query,
-        };
-    }
-
-    // ─── Shared: append file URLs ─────────────────────────────────────────────
-
-    private function appendFileUrls(Associate $associate): void
-    {
-        $urls = [];
-
-        if ($associate->logo_path) {
-            $urls['logo'] = Storage::url($associate->logo_path);
-        }
-        if ($associate->cover_path) {
-            $urls['cover'] = Storage::url($associate->cover_path);
-        }
-        if ($associate->files) {
-            foreach ($associate->files as $key => $path) {
-                $urls[$key] = route('associate.documents.show', ['associate' => $associate->id, 'docKey' => $key]);
-            }
-        }
-
-        $associate->document_urls = $urls;
-
-        if ($associate->cover_path) {
-            $associate->cover_url = Storage::url($associate->cover_path);
-        }
-
-        $gallery = [];
-        if ($associate->gallery_paths) {
-            foreach ($associate->gallery_paths as $path) {
-                $gallery[] = ['path' => $path, 'url' => Storage::url($path)];
-            }
-        }
-        $associate->gallery_urls = $gallery;
-    }
-
-    // ─── Document catalog helpers ─────────────────────────────────────────────
-
-    private function documentCatalog(): array
-    {
-        $docs = DocumentRequirement::active()->ordered()->get();
-
-        return [
-            'mandatory' => $docs->where('is_required', true)->values()
-                ->map(fn ($d) => $d->toCatalogEntry())->all(),
-            'optional' => $docs->where('is_required', false)->values()
-                ->map(fn ($d) => $d->toCatalogEntry())->all(),
-        ];
-    }
-
-    /**
-     * Returns a flat map of key => spec for all ACTIVE docs.
-     * Inactive docs return null and are rejected by validation.
-     */
-    private function documentSpecsByKey(): array
-    {
-        return DocumentRequirement::active()
-            ->get()
-            ->keyBy('key')
-            ->map(fn ($d) => $d->toCatalogEntry())
-            ->all();
-    }
+    use InteractsWithAssociateFiles;
 
     // =========================================================================
     // BASIC INFO
@@ -190,7 +67,7 @@ class AssociateController extends Controller
         $data = $request->validate([
             'company_name' => 'nullable|string|max:255',
             'initials' => 'nullable|string|max:20',
-            'nit' => 'nullable|string|max:30|unique:associates,nit,'.($associate->id ?? 'NULL'),
+            'nit' => 'nullable|string|max:30|regex:/^[0-9.\-]+$/|unique:associates,nit,'.($associate->id ?? 'NULL'),
             'legal_status' => 'nullable|string',
             'legal_status_other' => 'nullable|string',
             'constitution_date' => 'nullable|date',
@@ -206,6 +83,8 @@ class AssociateController extends Controller
             'rep_position' => 'nullable|string',
             'rep_doc_type' => 'nullable|string|max:20',
             'rep_doc' => 'nullable|string|max:50',
+        ], [
+            'nit.regex' => 'El NIT solo puede contener dígitos, puntos y guion (ej. 900123456-7).',
         ]);
 
         if (($data['legal_status'] ?? '') === 'Otro' && ! empty($data['legal_status_other'])) {
@@ -250,7 +129,7 @@ class AssociateController extends Controller
         $data = $request->validate([
             'company_name' => 'required|string|max:255',
             'initials' => 'nullable|string|max:20',
-            'nit' => 'required|string|max:30|unique:associates,nit,'.($associate->id ?? 'NULL'),
+            'nit' => 'required|string|max:30|regex:/^[0-9.\-]+$/|unique:associates,nit,'.($associate->id ?? 'NULL'),
             'legal_status' => 'required|string',
             'legal_status_other' => 'nullable|string',
             'constitution_date' => 'nullable|date',
@@ -266,6 +145,8 @@ class AssociateController extends Controller
             'rep_position' => 'required|string',
             'rep_doc_type' => 'required|string|max:20',
             'rep_doc' => 'required|string|max:50',
+        ], [
+            'nit.regex' => 'El NIT solo puede contener dígitos, puntos y guion (ej. 900123456-7).',
         ]);
 
         if (($data['legal_status'] ?? '') === 'Otro' && ! empty($data['legal_status_other'])) {
@@ -1010,61 +891,6 @@ class AssociateController extends Controller
     }
 
     // =========================================================================
-    // ADMIN: audit section
-    // =========================================================================
-
-    public function auditSection(Request $request, Associate $associate)
-    {
-        $request->validate([
-            'section' => 'required|in:basicinfo,characterization,contacts,documentation,services',
-            'action' => 'required|in:approve,reject',
-            'reason' => 'required_if:action,reject|nullable|string|max:1000',
-        ]);
-
-        $section = $request->section;
-        $action = $request->action;
-        $recipientEmail = $associate->users->first()?->email ?? $associate->billing_email;
-
-        if ($action === 'approve') {
-            $associate->setSectionStatus($section, Associate::SEC_APPROVED, [
-                'reviewed_by' => auth()->user()->name,
-                'reviewed_at' => now()->toIso8601String(),
-                'rejected_reason' => null,
-            ]);
-
-            try {
-                if ($recipientEmail) {
-                    Mail::to($recipientEmail)->send(
-                        new SectionAuditApproved($associate, $section)
-                    );
-                }
-            } catch (\Exception $e) {
-                Log::error('Error enviando notificación de aprobación de sección: '.$e->getMessage());
-            }
-        } else {
-            $associate->setSectionStatus($section, Associate::SEC_REJECTED, [
-                'rejected_reason' => $request->reason,
-                'reviewed_by' => auth()->user()->name,
-                'reviewed_at' => now()->toIso8601String(),
-            ]);
-
-            try {
-                if ($recipientEmail) {
-                    Mail::to($recipientEmail)->send(
-                        new AssociateAuditRejected($associate, $section, $request->reason)
-                    );
-                }
-            } catch (\Exception $e) {
-                Log::error('Error enviando notificación de rechazo de sección: '.$e->getMessage());
-            }
-        }
-
-        $associate->save();
-
-        return back()->with('success', $action === 'approve' ? 'Sección aprobada.' : 'Sección rechazada.');
-    }
-
-    // =========================================================================
     // SERVICES (sin flujo de auditoría por ahora)
     // =========================================================================
 
@@ -1310,121 +1136,6 @@ class AssociateController extends Controller
         $associate->update(['logo_path' => null]);
 
         return back()->with('success', 'Logo eliminado.');
-    }
-
-    // =========================================================================
-    // ADMIN: show associate
-    // =========================================================================
-
-    public function show(Associate $associate)
-    {
-        $associate->load(['contacts', 'references', 'users', 'services.category']);
-        $this->appendFileUrls($associate);
-
-        return Inertia::render('Admin/Associates/Show', [
-            'associate' => $associate,
-            'documentCatalog' => $this->documentCatalog(),
-            'estado' => $associate->adminState(),
-        ]);
-    }
-
-    public function adminGalleryUpload(Request $request, Associate $associate)
-    {
-        $request->validate([
-            'images' => 'required|array',
-            'images.*' => 'file|image|max:5120',
-        ]);
-
-        $disk = config('filesystems.default');
-        $paths = $associate->gallery_paths ?? [];
-        foreach ($request->file('images') as $file) {
-            $paths[] = $file->store('associates/'.$associate->id.'/gallery', $disk);
-        }
-        $associate->update(['gallery_paths' => $paths]);
-
-        return back()->with('success', 'Imágenes cargadas correctamente.');
-    }
-
-    public function adminGalleryDelete(Request $request, Associate $associate)
-    {
-        $request->validate(['path' => 'required|string']);
-
-        $paths = array_values(array_filter($associate->gallery_paths ?? [], fn ($p) => $p !== $request->path));
-        Storage::disk(config('filesystems.default'))->delete($request->path);
-
-        $associate->gallery_paths = $paths;
-        if ($associate->cover_path === $request->path) {
-            $associate->cover_path = null;
-        }
-        $associate->save();
-
-        return back()->with('success', 'Imagen eliminada.');
-    }
-
-    public function adminGalleryCover(Request $request, Associate $associate)
-    {
-        $request->validate(['path' => 'required|string']);
-
-        if (! in_array($request->path, $associate->gallery_paths ?? [])) {
-            return back()->with('error', 'La imagen no pertenece a la galería.');
-        }
-
-        $associate->update(['cover_path' => $request->path]);
-
-        return back()->with('success', 'Portada actualizada.');
-    }
-
-    public function approve(Associate $associate)
-    {
-        // Gate de admisión (ADR-0007): solo se admite con el perfil 100% (las 5 secciones aprobadas).
-        if (! $associate->allSectionsApproved()) {
-            return back()->with('error', 'No puedes admitir todavía: faltan secciones por aprobar. Deben estar aprobadas las 5.');
-        }
-
-        $associate->update(['status' => 'verified', 'is_verified' => true]);
-
-        try {
-            $recipientEmail = $associate->users->first()?->email ?? $associate->billing_email;
-            if ($recipientEmail) {
-                Mail::to($recipientEmail)->send(new AssociateApproved($associate));
-            }
-        } catch (\Exception $e) {
-            Log::error('Error enviando correo de aprobación: '.$e->getMessage());
-        }
-
-        return redirect()->route('admin.associates.index')
-            ->with('success', 'Empresa admitida. El socio puede elegir un plan y realizar el pago.');
-    }
-
-    public function togglePublic(Associate $associate)
-    {
-        $associate->update(['is_public' => ! $associate->is_public]);
-
-        return back()->with('success', 'Visibilidad actualizada.');
-    }
-
-    public function toggleVerified(Associate $associate)
-    {
-        $associate->update(['is_verified' => ! $associate->is_verified]);
-
-        return back()->with('success', 'Estado de verificación actualizado.');
-    }
-
-    // Desactivación manual del admin (ADR-0007): sella la marca y saca del directorio.
-    public function deactivate(Associate $associate)
-    {
-        $associate->update(['deactivated_at' => now(), 'is_public' => false]);
-
-        return back()->with('success', 'Empresa desactivada. Ya no aparece en el directorio.');
-    }
-
-    // Reactivación: limpia la marca y recomputa la visibilidad según la suscripción.
-    public function reactivate(Associate $associate)
-    {
-        $associate->update(['deactivated_at' => null]);
-        app(SubscriptionService::class)->republishIfDue($associate);
-
-        return back()->with('success', 'Empresa reactivada.');
     }
 
     // =========================================================================

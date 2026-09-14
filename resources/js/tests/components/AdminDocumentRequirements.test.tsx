@@ -46,6 +46,7 @@ const props = {
             template_path: null,
             template_url: null,
             display_order: 0,
+            in_use: false,
         },
         {
             id: 2,
@@ -59,6 +60,7 @@ const props = {
             template_path: null,
             template_url: null,
             display_order: 1,
+            in_use: false,
         },
     ],
     allowedIcons: ['FileText', 'Building2'],

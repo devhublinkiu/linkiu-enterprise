@@ -22,7 +22,6 @@ const associates: Paginator<AssociateRow> = {
             id: 1,
             company_name: 'Minera Los Andes SAS',
             nit: '900123456-7',
-            city: 'Medellín',
             created_at: '2026-09-01T00:00:00Z',
             is_public: false,
             is_verified: true,

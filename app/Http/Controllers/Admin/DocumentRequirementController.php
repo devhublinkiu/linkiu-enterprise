@@ -29,22 +29,31 @@ class DocumentRequirementController extends Controller
 
     public function index()
     {
+        // Claves de documento con al menos un archivo cargado por algún asociado (una sola query).
+        // Un documento "en uso" no puede eliminarse (solo desactivarse). Ver plan 0015.
+        $usedKeys = Associate::whereNotNull('files')
+            ->pluck('files')
+            ->flatMap(fn ($files) => array_keys((array) $files))
+            ->unique()
+            ->all();
+
         return inertia('Admin/DocumentRequirements/Index', [
-            'documents'     => DocumentRequirement::ordered()->get()->map(fn($d) => [
-                'id'            => $d->id,
-                'key'           => $d->key,
-                'label'         => $d->label,
-                'icon'          => $d->icon,
-                'accepts'       => $d->accepts ?? [],
-                'is_required'   => $d->is_required,
-                'is_active'     => $d->is_active,
-                'legend'        => $d->legend,
+            'documents' => DocumentRequirement::ordered()->get()->map(fn ($d) => [
+                'id' => $d->id,
+                'key' => $d->key,
+                'label' => $d->label,
+                'icon' => $d->icon,
+                'accepts' => $d->accepts ?? [],
+                'is_required' => $d->is_required,
+                'is_active' => $d->is_active,
+                'legend' => $d->legend,
                 'template_path' => $d->template_path,
-                'template_url'  => $d->template_url,
+                'template_url' => $d->template_url,
                 'display_order' => $d->display_order,
+                'in_use' => in_array($d->key, $usedKeys, true),
             ]),
-            'allowedIcons'  => self::ALLOWED_ICONS,
-            'allowedMimes'  => self::ALLOWED_MIMES,
+            'allowedIcons' => self::ALLOWED_ICONS,
+            'allowedMimes' => self::ALLOWED_MIMES,
         ]);
     }
 
@@ -90,7 +99,7 @@ class DocumentRequirementController extends Controller
 
     public function toggleActive(DocumentRequirement $documentRequirement)
     {
-        $documentRequirement->update(['is_active' => !$documentRequirement->is_active]);
+        $documentRequirement->update(['is_active' => ! $documentRequirement->is_active]);
 
         return back()->with('success', $documentRequirement->is_active
             ? 'Documento activado.'
@@ -102,7 +111,7 @@ class DocumentRequirementController extends Controller
         // Block deletion if any associate has uploaded a file for this key —
         // the admin must explicitly deactivate instead.
         $inUse = Associate::whereNotNull('files')
-            ->whereRaw("JSON_EXTRACT(files, '$.\"" . $documentRequirement->key . "\"') IS NOT NULL")
+            ->whereRaw("JSON_EXTRACT(files, '$.\"".$documentRequirement->key."\"') IS NOT NULL")
             ->exists();
 
         if ($inUse) {
@@ -118,7 +127,7 @@ class DocumentRequirementController extends Controller
     public function reorder(Request $request)
     {
         $request->validate([
-            'order'   => 'required|array',
+            'order' => 'required|array',
             'order.*' => 'integer|exists:document_requirements,id',
         ]);
 
@@ -140,19 +149,19 @@ class DocumentRequirementController extends Controller
             : ['required', 'string', 'max:64', 'regex:/^[a-z0-9_]+$/', Rule::unique('document_requirements', 'key')];
 
         $validated = $request->validate([
-            'key'          => $keyRule,
-            'label'        => 'required|string|max:255',
-            'icon'         => ['required', 'string', Rule::in(self::ALLOWED_ICONS)],
-            'accepts'      => 'required|array|min:1',
-            'accepts.*'    => ['string', Rule::in(self::ALLOWED_MIMES)],
-            'is_required'  => 'required|boolean',
-            'is_active'    => 'required|boolean',
-            'legend'       => 'nullable|string|max:255',
+            'key' => $keyRule,
+            'label' => 'required|string|max:255',
+            'icon' => ['required', 'string', Rule::in(self::ALLOWED_ICONS)],
+            'accepts' => 'required|array|min:1',
+            'accepts.*' => ['string', Rule::in(self::ALLOWED_MIMES)],
+            'is_required' => 'required|boolean',
+            'is_active' => 'required|boolean',
+            'legend' => 'nullable|string|max:255',
             'template_file' => 'nullable|file|mimes:pdf,docx,xlsx,jpg,jpeg,png|max:10240',
             'remove_template' => 'nullable|boolean',
         ]);
 
-        if (!$existing && empty($validated['key'])) {
+        if (! $existing && empty($validated['key'])) {
             $validated['key'] = Str::slug($validated['label'], '_');
         }
 
@@ -179,7 +188,7 @@ class DocumentRequirementController extends Controller
         try {
             Storage::disk(config('filesystems.default'))->delete($path);
         } catch (\Throwable $e) {
-            Log::warning("No se pudo eliminar plantilla {$path}: " . $e->getMessage());
+            Log::warning("No se pudo eliminar plantilla {$path}: ".$e->getMessage());
         }
     }
 }

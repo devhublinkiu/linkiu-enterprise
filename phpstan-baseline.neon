@@ -115,6 +115,66 @@ parameters:
 			path: app/Http/Controllers/Admin/AnnouncementController.php
 
 		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$cover_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AssociateReviewController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$document_urls\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AssociateReviewController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$gallery_urls\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AssociateReviewController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$users\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Admin/AssociateReviewController.php
+
+		-
+			message: '#^Relation ''contacts'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/AssociateReviewController.php
+
+		-
+			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/AssociateReviewController.php
+
+		-
+			message: '#^Relation ''references'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/AssociateReviewController.php
+
+		-
+			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/AssociateReviewController.php
+
+		-
+			message: '#^Relation ''users'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/AssociateReviewController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Admin/AssociateReviewController.php
+
+		-
 			message: '#^Access to an undefined property App\\Models\\BlogPost\:\:\$cover_url\.$#'
 			identifier: property.notFound
 			count: 1
@@ -421,12 +481,6 @@ parameters:
 			path: app/Http/Controllers/AssociateController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$users\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/AssociateController.php
-
-		-
 			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
 			identifier: larastan.noEnvCallsOutsideOfConfig
 			count: 1
@@ -441,43 +495,31 @@ parameters:
 		-
 			message: '#^Relation ''contacts'' is not found in App\\Models\\Associate model\.$#'
 			identifier: larastan.relationExistence
-			count: 5
+			count: 4
 			path: app/Http/Controllers/AssociateController.php
 
 		-
 			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
 			identifier: larastan.relationExistence
-			count: 3
+			count: 2
 			path: app/Http/Controllers/AssociateController.php
 
 		-
 			message: '#^Relation ''references'' is not found in App\\Models\\Associate model\.$#'
 			identifier: larastan.relationExistence
-			count: 5
+			count: 4
 			path: app/Http/Controllers/AssociateController.php
 
 		-
 			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
 			identifier: larastan.relationExistence
-			count: 6
-			path: app/Http/Controllers/AssociateController.php
-
-		-
-			message: '#^Relation ''users'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
+			count: 5
 			path: app/Http/Controllers/AssociateController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>billing_cycle" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/AssociateController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
 			path: app/Http/Controllers/AssociateController.php
 
 		-
@@ -845,7 +887,6 @@ parameters:
 			identifier: booleanNot.alwaysFalse
 			count: 1
 			path: app/Services/PaymentService.php
-
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>currency" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'

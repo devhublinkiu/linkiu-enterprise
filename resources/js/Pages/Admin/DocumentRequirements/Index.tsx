@@ -371,19 +371,23 @@ export default function Index({
                     <DialogHeader>
                         <DialogTitle>Eliminar documento</DialogTitle>
                         <DialogDescription>
-                            ¿Eliminar «{deleteTarget?.label}» del catálogo? Esta
-                            acción no se puede deshacer. Si algún asociado ya
-                            subió un archivo para este documento, se desactivará
-                            en su lugar.
+                            {deleteTarget?.in_use
+                                ? `No puedes eliminar «${deleteTarget?.label}»: algún asociado ya subió un archivo para este documento. Desactívalo en su lugar con el interruptor "Activo".`
+                                : `¿Eliminar «${deleteTarget?.label}» del catálogo? Esta acción no se puede deshacer.`}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <DialogClose asChild>
-                            <Button variant="outline">Cancelar</Button>
+                            <Button variant="outline">Cerrar</Button>
                         </DialogClose>
-                        <Button variant="destructive" onClick={confirmDelete}>
-                            Eliminar
-                        </Button>
+                        {!deleteTarget?.in_use && (
+                            <Button
+                                variant="destructive"
+                                onClick={confirmDelete}
+                            >
+                                Eliminar
+                            </Button>
+                        )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

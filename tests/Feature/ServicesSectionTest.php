@@ -180,36 +180,6 @@ it('rechaza superar el límite de servicios del plan', function () {
     expect($associate->fresh()->getSectionStatus('services'))->toBe('draft');
 });
 
-// ─── services ya no usa el flujo de solicitud de cambio ──────────────────────────
-
-it('rechaza una solicitud de cambio sobre services (usa Editar)', function () {
-    $associate = bootstrapServicesAssociate($this);
-    $user = $associate->users->first();
-
-    $this->actingAs($user)->post(
-        route('associate.company.request.section.change'),
-        ['section' => 'services', 'reason' => 'Quiero cambiar algo'],
-    )->assertSessionHasErrors('section');
-});
-
-// ─── El admin no edita ───────────────────────────────────────────────────────────
-
-it('el admin ya no puede editar los servicios ni la propuesta', function () {
-    $associate = bootstrapServicesAssociate($this);
-    $user = $associate->users->first();
-    $ids = svcIds();
-    $this->actingAs($user)->post(route('associate.company.update.services'), svcPayload($ids));
-
-    $this->actingAs(svcSectionAdmin())->put(route('admin.associates.update', $associate), [
-        'description' => 'HACKEADO por el admin',
-        'service_ids' => [],
-    ]);
-
-    $fresh = $associate->fresh();
-    expect($fresh->description)->not->toBe('HACKEADO por el admin');
-    expect($fresh->services)->toHaveCount(2);
-});
-
 // ─── Hora local ──────────────────────────────────────────────────────────────────
 
 it('la marca de "borrador guardado" de servicios se muestra en hora de Colombia', function () {

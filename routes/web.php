@@ -245,7 +245,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/basic-info', [AssociateController::class, 'updateBasicInfo'])->name('update.basic');
         Route::post('/basic-info/draft', [AssociateController::class, 'saveBasicInfoDraft'])->name('save.draft');
         Route::post('/basic-info/reopen', [AssociateController::class, 'reopenBasicInfo'])->name('reopen.basic');
-        Route::post('/section/request-change', [AssociateController::class, 'requestSectionChange'])->name('request.section.change');
 
         Route::get('/characterization', [AssociateController::class, 'editCharacterization'])->name('characterization');
         Route::post('/characterization', [AssociateController::class, 'updateCharacterization'])->name('update.characterization');
@@ -266,6 +265,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/documentation', [AssociateController::class, 'updateDocumentation'])->name('update.documentation');
         Route::post('/documentation/draft', [AssociateController::class, 'saveDocumentationDraft'])->name('save.documentation.draft');
         Route::delete('/documentation/{docKey}', [AssociateController::class, 'deleteDocument'])->name('documentation.delete');
+        Route::post('/documentation/reopen', [AssociateController::class, 'reopenDocumentation'])->name('reopen.documentation');
 
         Route::get('/gallery', [AssociateController::class, 'editGallery'])->name('gallery');
         Route::post('/gallery', [AssociateController::class, 'updateGallery'])->name('update.gallery');
@@ -304,8 +304,6 @@ Route::middleware('auth')->group(function () {
         Route::get('associates', [AssociateController::class, 'index'])->name('associates.index');
         Route::get('associates/{associate}', [AssociateController::class, 'show'])->name('associates.show');
         Route::post('associates/{associate}/audit-section', [AssociateController::class, 'auditSection'])->name('associates.audit-section');
-        Route::post('associates/{associate}/audit-change-request', [AssociateController::class, 'auditChangeRequest'])->name('associates.audit-change-request');
-        Route::put('associates/{associate}', [AssociateController::class, 'update'])->name('associates.update');
         Route::post('associates/{associate}/gallery', [AssociateController::class, 'adminGalleryUpload'])->name('associates.gallery.upload');
         Route::post('associates/{associate}/gallery/delete', [AssociateController::class, 'adminGalleryDelete'])->name('associates.gallery.delete');
         Route::post('associates/{associate}/gallery/cover', [AssociateController::class, 'adminGalleryCover'])->name('associates.gallery.cover');

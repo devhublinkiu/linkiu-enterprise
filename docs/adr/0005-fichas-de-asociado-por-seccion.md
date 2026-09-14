@@ -1,6 +1,8 @@
 # ADR-0005 · La ficha del asociado se gobierna por secciones independientes
 
-- **Estado:** Aceptada (decisión) — implementación pendiente, se aplica **sección por sección**
+- **Estado:** Aceptada — **implementada y cerrada** (2026-09-14). Todas las secciones migradas
+  (`0005-a` … `0005-e`); el flujo `change_pending` (`requestSectionChange`/`auditChangeRequest`) y el
+  `PUT admin.associates.update` no-op quedaron **retirados** al migrar Documentación (plan 0013).
 - **Fecha:** 2026-09-13
 - **Afecta a:** `Associate`, `section_reviews`, `AssociateController`, el área de perfil del
   asociado y la auditoría del admin. Es el **ADR general**; cada sección tendrá su **sub-ADR**

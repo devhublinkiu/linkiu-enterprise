@@ -227,18 +227,6 @@ it('descarta filas vacías de contactos y referencias al guardar', function () {
     expect($fresh->references)->toHaveCount(1);
 });
 
-// ─── contacts ya no usa el flujo de solicitud de cambio ─────────────────────────
-
-it('rechaza una solicitud de cambio sobre contacts (usa Editar)', function () {
-    $associate = bootstrapContactsAssociate($this);
-    $user = $associate->users->first();
-
-    $this->actingAs($user)->post(
-        route('associate.company.request.section.change'),
-        ['section' => 'contacts', 'reason' => 'Quiero cambiar algo'],
-    )->assertSessionHasErrors('section');
-});
-
 // ─── La marca de "borrador guardado" se muestra en hora local ────────────────────
 
 it('la marca de "borrador guardado" de contactos se muestra en hora de Colombia', function () {
@@ -253,23 +241,6 @@ it('la marca de "borrador guardado" de contactos se muestra en hora de Colombia'
         ->assertSessionHas('draft_saved', '13/09/2026 21:12:29');
 
     Carbon::setTestNow();
-});
-
-// ─── El admin no edita la ficha (ADR-0005) ──────────────────────────────────────
-
-it('el admin ya no puede editar los campos de contactos', function () {
-    $associate = bootstrapContactsAssociate($this);
-    $user = $associate->users->first();
-    $this->actingAs($user)->post(route('associate.company.update.contacts'), validContacts());
-
-    $this->actingAs(contactsAdmin())->put(route('admin.associates.update', $associate), [
-        'billing_email' => 'hackeado@otro.com',
-        'main_ciiu' => '9999',
-    ]);
-
-    $fresh = $associate->fresh();
-    expect($fresh->billing_email)->toBe('facturacion@empresa.com');
-    expect($fresh->main_ciiu)->toBe('0610');
 });
 
 // ─── Independencia entre secciones ──────────────────────────────────────────────

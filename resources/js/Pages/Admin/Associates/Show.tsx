@@ -166,19 +166,6 @@ export default function Show({
         );
     };
 
-    // ── Change request handler ────────────────────────────────────────────────
-    const handleAuditChangeRequest = (
-        section: string,
-        action: 'approve' | 'reject',
-        reason: string = '',
-    ) => {
-        router.post(
-            route('admin.associates.audit-change-request', associate.id),
-            { section, action, reason },
-            { preserveScroll: true },
-        );
-    };
-
     const handleApproveAll = () =>
         post(route('admin.associates.approve', associate.id));
 
@@ -188,7 +175,7 @@ export default function Show({
             const s = associate.section_reviews?.[sec]?.status || 'draft';
             if (s === 'approved') acc.approved++;
             else if (s === 'rejected') acc.rejected++;
-            else if (s === 'pending' || s === 'change_pending') acc.pending++;
+            else if (s === 'pending') acc.pending++;
             else acc.draft++;
             return acc;
         },
@@ -204,7 +191,7 @@ export default function Show({
 
     const sectionHasPending = (key: string) => {
         const s = associate.section_reviews?.[key]?.status;
-        return s === 'pending' || s === 'change_pending';
+        return s === 'pending';
     };
 
     // ── Sidebar nav ───────────────────────────────────────────────────────────
@@ -457,7 +444,6 @@ export default function Show({
                                     'documentation',
                                 )}
                                 onAuditSection={handleAuditSection}
-                                onAuditChangeRequest={handleAuditChangeRequest}
                                 documentCatalog={documentCatalog}
                             />
                             <TabGallery associate={associate} />

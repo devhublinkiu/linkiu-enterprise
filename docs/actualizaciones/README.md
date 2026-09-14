@@ -28,5 +28,7 @@ se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas
 | [0009](0009-ficha-contactos.md) | Ficha del asociado · Contactos y Referencias | Borrador |
 | [0010](0010-admin-servicios.md) | Admin · Módulo de Servicios | Borrador |
 | [0011](0011-ficha-servicios.md) | Ficha del asociado · Servicios | Borrador |
+| [0012](0012-admin-document-requirements.md) | Admin · Documentos Requeridos (modernización UI) | Hecho |
+| [0013](0013-ficha-documentacion.md) | Ficha del asociado · Documentación (+ cierre ADR-0005) | Hecho |
 
 Estados posibles: `Borrador` · `Aprobado (#go)` · `En curso` · `Hecho` · `Descartado`.

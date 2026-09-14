@@ -249,3 +249,33 @@ Propuesta de valor:  (ver texto arriba)
 Servicios:           Perforación de pozos · Construcción de vías industriales ·
                      Consultoría ambiental · Manejo de residuos peligrosos
 ```
+
+---
+
+## Documentación
+
+Última sección de la ficha (plan 0013 / ADR-0005-e): documentos del **catálogo admin** (plan 0012) +
+interés de afiliación + declaración jurada. Reglas de envío: todos los obligatorios cargados, juramento
+aceptado, representante y cédula, y al menos un interés.
+
+### Documentos cargados (según catálogo)
+
+| Documento | Tipo | Archivo de ejemplo |
+|---|---|---|
+| RUT | Obligatorio | rut_psllano.pdf |
+| Cámara de comercio (reciente) | Obligatorio | camara_psllano.pdf |
+| Certificado bancario | Obligatorio | certif_bancario_psllano.pdf |
+| Certificaciones HSE (opcional) | Opcional | hse_psllano.pdf |
+
+### Interés de afiliación
+
+- Gestión Gremial
+- Comunidad de Negocios
+
+### Declaración jurada
+
+```
+Representante legal:  Carlos Andrés Beltrán Ríos
+Cédula:               79.845.112
+Origen de fondos:     Aceptada / firmada
+```

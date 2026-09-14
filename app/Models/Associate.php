@@ -20,8 +20,6 @@ class Associate extends Model
 
     const SEC_REJECTED = 'rejected';
 
-    const SEC_CHANGE_PENDING = 'change_pending';
-
     protected $fillable = [
         'company_name', 'initials', 'description', 'legal_status', 'constitution_date',
         'country_origin', 'nit', 'address', 'department', 'department_id', 'city', 'city_id', 'phone',
@@ -113,11 +111,6 @@ class Associate extends Model
     public function canSubmitSection(string $section): bool
     {
         return $this->canEditSection($section);
-    }
-
-    public function canRequestSectionChange(string $section): bool
-    {
-        return $this->getSectionStatus($section) === self::SEC_APPROVED;
     }
 
     // Reapertura de una sección aprobada por el propio asociado (botón "Editar").

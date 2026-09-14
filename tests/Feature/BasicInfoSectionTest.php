@@ -148,18 +148,6 @@ it('el rechazo deja la sección editable y reenviable', function () {
     expect($associate->fresh()->getSectionStatus('basicinfo'))->toBe('pending');
 });
 
-// ─── basicinfo ya no usa el flujo de solicitud de cambio ────────────────────────
-
-it('rechaza una solicitud de cambio sobre basicinfo (usa Editar)', function () {
-    $user = associateOwner();
-    $this->actingAs($user)->post(route('associate.company.update.basic'), validBasicInfo());
-
-    $this->actingAs($user)->post(
-        route('associate.company.request.section.change'),
-        ['section' => 'basicinfo', 'reason' => 'Quiero cambiar el nombre'],
-    )->assertSessionHasErrors('section');
-});
-
 // ─── Independencia entre secciones ──────────────────────────────────────────────
 
 it('enviar información básica no toca el estado de caracterización', function () {
@@ -169,20 +157,4 @@ it('enviar información básica no toca el estado de caracterización', function
     $associate = $user->fresh()->associate;
     expect($associate->getSectionStatus('basicinfo'))->toBe('pending');
     expect($associate->getSectionStatus('characterization'))->toBe('draft');
-});
-
-// ─── El admin no edita la ficha (ADR-0005) ──────────────────────────────────────
-
-it('el admin ya no puede editar los campos de información básica', function () {
-    $user = associateOwner();
-    $this->actingAs($user)->post(route('associate.company.update.basic'), validBasicInfo());
-    $associate = $user->fresh()->associate;
-
-    $this->actingAs(admin())->put(route('admin.associates.update', $associate), [
-        'company_name' => 'NOMBRE CAMBIADO POR ADMIN',
-        'nit' => '999999999-9',
-    ]);
-
-    expect($associate->fresh()->company_name)->toBe('Minera Los Andes SAS');
-    expect($associate->fresh()->nit)->toBe('900123456-7');
 });

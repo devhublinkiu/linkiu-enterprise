@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Mail\AssociateApproved;
 use App\Mail\AssociateAuditRejected;
 use App\Mail\AssociateDocsSubmitted;
-use App\Mail\AssociateFieldChangeRequested;
 use App\Mail\SectionAuditApproved;
 use App\Models\Associate;
 use App\Models\DocumentRequirement;
@@ -174,7 +173,7 @@ class AssociateController extends Controller
 
         // Sección: mantener status actual o iniciar en draft
         $sectionStatus = $associate->getSectionStatus('basicinfo');
-        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
+        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED])) {
             $associate->setSectionStatus('basicinfo', Associate::SEC_DRAFT);
         }
 
@@ -666,7 +665,7 @@ class AssociateController extends Controller
             $this->appendFileUrls($associate);
         }
 
-        return Inertia::render('Associate/Company/Documentation', [
+        return Inertia::render('Associate/Company/Documentation/Index', [
             'initialAssociate' => $associate,
             'documentCatalog' => $this->documentCatalog(),
         ]);
@@ -799,7 +798,7 @@ class AssociateController extends Controller
         }
 
         $sectionStatus = $associate->getSectionStatus('documentation');
-        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_CHANGE_PENDING])) {
+        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED])) {
             $associate->setSectionStatus('documentation', Associate::SEC_DRAFT);
         }
 
@@ -947,49 +946,23 @@ class AssociateController extends Controller
         return $storage->response($path);
     }
 
-    // =========================================================================
-    // CHANGE REQUEST (empresa solicita cambio en sección aprobada)
-    // =========================================================================
-
-    public function requestSectionChange(Request $request)
+    // Reapertura de la sección Documentación por el propio asociado (botón "Editar"),
+    // como el resto de secciones ya migradas. Ver ADR-0005 / ADR-0005-e.
+    public function reopenDocumentation()
     {
         $user = auth()->user();
         $associate = Associate::findOrFail($user->associate_id);
 
-        // basicinfo, characterization, contacts y services ya no usan el flujo de solicitud de
-        // cambio: se reabren con "Editar" (reopen…). Ver ADR-0005 / planes 0007-0011. Solo
-        // Documentación lo conserva hasta migrarse.
-        $request->validate([
-            'section' => 'required|in:documentation',
-            'reason' => 'required|string|max:500',
-        ]);
-
-        $section = $request->section;
-
-        if (! $associate->canRequestSectionChange($section)) {
-            return back()->with('error', 'Esta sección no está aprobada o ya tiene una solicitud pendiente.');
+        if (! $associate->canReopenSection('documentation')) {
+            return back()->with('error', 'Solo puedes editar una sección que ya fue aprobada.');
         }
 
-        $associate->setSectionStatus($section, Associate::SEC_CHANGE_PENDING, [
-            'change_request_reason' => $request->reason,
-            'change_requested_at' => now()->toIso8601String(),
-            'change_requested_by' => $user->name,
-            'change_rejected_reason' => null,
+        $associate->setSectionStatus('documentation', Associate::SEC_DRAFT, [
+            'reopened_at' => now()->toIso8601String(),
         ]);
         $associate->save();
 
-        try {
-            $adminEmail = config('mail.admin_recipient', env('ADMIN_EMAIL'));
-            if ($adminEmail) {
-                Mail::to($adminEmail)->send(
-                    new AssociateFieldChangeRequested($associate, $section, $request->reason)
-                );
-            }
-        } catch (\Exception $e) {
-            Log::error('Error notificando admin de solicitud de cambio: '.$e->getMessage());
-        }
-
-        return back()->with('success', 'Solicitud de cambio enviada. Te notificaremos cuando sea revisada.');
+        return back()->with('success', 'Sección reabierta para edición. Envíala a revisión cuando termines.');
     }
 
     // =========================================================================
@@ -1045,62 +1018,6 @@ class AssociateController extends Controller
         $associate->save();
 
         return back()->with('success', $action === 'approve' ? 'Sección aprobada.' : 'Sección rechazada.');
-    }
-
-    public function auditChangeRequest(Request $request, Associate $associate)
-    {
-        $request->validate([
-            'section' => 'required|in:documentation',
-            'action' => 'required|in:approve,reject',
-            'reason' => 'required_if:action,reject|nullable|string|max:1000',
-        ]);
-
-        $section = $request->section;
-        $action = $request->action;
-        $recipientEmail = $associate->users->first()?->email ?? $associate->billing_email;
-
-        if ($associate->getSectionStatus($section) !== Associate::SEC_CHANGE_PENDING) {
-            return back()->with('error', 'No hay una solicitud de cambio pendiente para esta sección.');
-        }
-
-        if ($action === 'approve') {
-            $associate->setSectionStatus($section, Associate::SEC_DRAFT, [
-                'change_approved_by' => auth()->user()->name,
-                'change_approved_at' => now()->toIso8601String(),
-            ]);
-
-            try {
-                if ($recipientEmail) {
-                    Mail::to($recipientEmail)->send(
-                        new SectionAuditApproved($associate, $section, true)
-                    );
-                }
-            } catch (\Exception $e) {
-                Log::error('Error enviando notificación de aprobación de cambio: '.$e->getMessage());
-            }
-        } else {
-            $associate->setSectionStatus($section, Associate::SEC_APPROVED, [
-                'change_rejected_reason' => $request->reason,
-                'change_rejected_by' => auth()->user()->name,
-                'change_rejected_at' => now()->toIso8601String(),
-            ]);
-
-            try {
-                if ($recipientEmail) {
-                    Mail::to($recipientEmail)->send(
-                        new AssociateFieldChangeRequested($associate, $section, 'Solicitud rechazada: '.$request->reason)
-                    );
-                }
-            } catch (\Exception $e) {
-                Log::error('Error enviando notificación de rechazo de cambio: '.$e->getMessage());
-            }
-        }
-
-        $associate->save();
-
-        return back()->with('success', $action === 'approve'
-            ? 'Solicitud aprobada. La empresa puede editar la sección.'
-            : 'Solicitud rechazada. La sección permanece aprobada.');
     }
 
     // =========================================================================
@@ -1364,15 +1281,6 @@ class AssociateController extends Controller
             'associate' => $associate,
             'documentCatalog' => $this->documentCatalog(),
         ]);
-    }
-
-    public function update(Request $request, Associate $associate)
-    {
-        // El admin NO edita la ficha por este endpoint (ADR-0005): todas las secciones migradas
-        // (básica, caracterización, contactos, servicios) usan su flujo de revisión
-        // draft→pending→approved; la corrección es rechazo con motivo. El endpoint queda sin
-        // campos y se retira por completo (ruta incluida) en el corte 11-C del plan 0011.
-        return back();
     }
 
     public function adminGalleryUpload(Request $request, Associate $associate)

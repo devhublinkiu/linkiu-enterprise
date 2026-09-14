@@ -217,18 +217,6 @@ it('limpia los condicionales cuando su disparador es negativo', function () {
     expect($fresh->pep_name)->toBeNull();
 });
 
-// ─── characterization ya no usa el flujo de solicitud de cambio ─────────────────
-
-it('rechaza una solicitud de cambio sobre characterization (usa Editar)', function () {
-    $associate = bootstrapAssociate($this);
-    $user = $associate->users->first();
-
-    $this->actingAs($user)->post(
-        route('associate.company.request.section.change'),
-        ['section' => 'characterization', 'reason' => 'Quiero cambiar algo'],
-    )->assertSessionHasErrors('section');
-});
-
 // ─── La marca de "borrador guardado" se muestra en hora local ────────────────────
 
 it('la marca de "borrador guardado" se muestra en hora de Colombia', function () {
@@ -246,26 +234,6 @@ it('la marca de "borrador guardado" se muestra en hora de Colombia', function ()
         ->assertSessionHas('draft_saved', '13/09/2026 21:12:29');
 
     Carbon::setTestNow();
-});
-
-// ─── El admin no edita la ficha (ADR-0005) ──────────────────────────────────────
-
-it('el admin ya no puede editar los campos de caracterización', function () {
-    $associate = bootstrapAssociate($this);
-    $user = $associate->users->first();
-    $this->actingAs($user)->post(
-        route('associate.company.update.characterization'),
-        validCharacterization(),
-    );
-
-    $this->actingAs(charAdmin())->put(route('admin.associates.update', $associate), [
-        'company_classification' => 'Grande',
-        'public_income_pct' => 10,
-    ]);
-
-    $fresh = $associate->fresh();
-    expect($fresh->company_classification)->toBe('Pequeña');
-    expect($fresh->public_income_pct)->toBe(60);
 });
 
 // ─── Independencia entre secciones ──────────────────────────────────────────────

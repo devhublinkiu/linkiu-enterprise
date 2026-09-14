@@ -10,6 +10,10 @@ import { cn } from '@/lib/utils';
 //   · `data-checked`/`data-unchecked` = alias del config (Radix usa `data-state`).
 //   · `data-disabled:` (v4) → `data-[disabled]:` (no hay alias `disabled` en el config).
 //   · Se quitan todas las variantes `dark:` (regla 10). `ring-3`/`aria-invalid:` vía config.
+//   · Alto del riel default `h-[18.4px]` (spec v4) → `h-[18px]`: con borde 1px la caja de
+//     contenido queda en 16px = tamaño del pulgar (`size-4`), como ya ocurre en `sm`
+//     (riel 14px = contenido 12px = pulgar `size-3`). El 0.4px sobrante dejaba un margen
+//     sub-píxel que descentraba el pulgar hacia abajo en tablas; con 18px calza exacto y centra.
 function Switch({
     className,
     size = 'default',
@@ -22,7 +26,7 @@ function Switch({
             data-slot="switch"
             data-size={size}
             className={cn(
-                'group/switch peer relative inline-flex shrink-0 items-center rounded-full border border-transparent outline-none transition-all after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 group-has-[:focus-visible]/field-label:border-transparent group-has-[:focus-visible]/field-label:ring-0 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-checked:bg-primary data-unchecked:bg-input data-[size=default]:h-[18.4px] data-[size=sm]:h-[14px] data-[size=default]:w-[32px] data-[size=sm]:w-[24px] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
+                'group/switch peer relative inline-flex shrink-0 items-center rounded-full border border-transparent outline-none transition-all after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 group-has-[:focus-visible]/field-label:border-transparent group-has-[:focus-visible]/field-label:ring-0 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-checked:bg-primary data-unchecked:bg-input data-[size=default]:h-[18px] data-[size=sm]:h-[14px] data-[size=default]:w-[32px] data-[size=sm]:w-[24px] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
                 className,
             )}
             {...props}

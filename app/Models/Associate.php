@@ -2,11 +2,21 @@
 
 namespace App\Models;
 
+use App\Services\SubscriptionService;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * El ENUM real de `status` se amplió por migraciones con `DB::statement` que el análisis
+ * estático no lee (queda con la unión estrecha de la primera migración). Se declara aquí
+ * como string para reflejar los valores vigentes (draft/verified/approved/…).
+ *
+ * @property string $status
+ */
 class Associate extends Model
 {
-    const REVIEWABLE_SECTIONS = ['basicinfo', 'characterization', 'contacts', 'documentation'];
+    // Secciones que se revisan y que definen "perfil 100%". Incluye services (ADR-0007 / plan 0014):
+    // es la única fuente para el gate de admisión y la barra de progreso.
+    const REVIEWABLE_SECTIONS = ['basicinfo', 'characterization', 'contacts', 'documentation', 'services'];
 
     // Día del mes en que vence la suscripción (corte de facturación que se llevaba manualmente)
     const BILLING_DAY = 19;
@@ -35,7 +45,7 @@ class Associate extends Model
         'capacitation_plan', 'capacitation_level', 'capacitation_no_reason',
         'membership_interest', 'membership_interest_other', 'logo_path', 'cover_path', 'gallery_paths', 'files',
         'section_reviews', 'status', 'is_public', 'is_verified', 'plan_id', 'plan_expires_at',
-        'billing_cycle',
+        'billing_cycle', 'deactivated_at',
     ];
 
     protected $casts = [
@@ -52,6 +62,7 @@ class Associate extends Model
         'is_public' => 'boolean',
         'is_verified' => 'boolean',
         'plan_expires_at' => 'datetime',
+        'deactivated_at' => 'datetime',
     ];
 
     // ─── Relationships ────────────────────────────────────────────────────────
@@ -119,6 +130,49 @@ class Associate extends Model
     public function canReopenSection(string $section): bool
     {
         return $this->getSectionStatus($section) === self::SEC_APPROVED;
+    }
+
+    // Perfil "100%": todas las secciones revisables están aprobadas. Gate de admisión (ADR-0007).
+    public function allSectionsApproved(): bool
+    {
+        foreach (self::REVIEWABLE_SECTIONS as $section) {
+            if ($this->getSectionStatus($section) !== self::SEC_APPROVED) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // ─── Admin lifecycle state (derivado, no se guarda) ────────────────────────
+    // Une ciclo de vida (status) + suscripción + desactivación manual en un solo estado
+    // que "habla" en la lista/detalle admin. Ver ADR-0007 / plan 0014.
+    //   pendiente | admitida_sin_pago | activa | en_gracia | vencida | desactivada
+
+    public function adminState(): string
+    {
+        if ($this->deactivated_at !== null) {
+            return 'desactivada';
+        }
+
+        // Cast a string: el ENUM real incluye verified/approved, pero el tipo inferido por
+        // el análisis estático es más estrecho; el cast evita falsos "always false".
+        $status = (string) $this->status;
+
+        if ($status === 'verified') {
+            return 'admitida_sin_pago';
+        }
+
+        if ($status === 'approved') {
+            return match (SubscriptionService::statusOf($this)) {
+                'active' => 'activa',
+                'grace' => 'en_gracia',
+                default => 'vencida', // expired | none
+            };
+        }
+
+        // draft | pending | rejected | (active legacy sin uso)
+        return 'pendiente';
     }
 
     // ─── Subscription ─────────────────────────────────────────────────────────

@@ -31,7 +31,7 @@ import {
 import { Textarea } from '@/Components/base/Textarea';
 import { TabsContent } from '@/Components/ui/Tabs';
 
-import { SectionReviewData } from './SectionAuditPanel';
+import { SectionReviewData } from './section-review';
 
 interface DocSpec {
     key: string;

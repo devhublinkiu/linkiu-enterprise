@@ -1,31 +1,33 @@
-import { Button } from '@/Components/ui/Button';
-import { Tabs } from '@/Components/ui/Tabs';
-import AppLayout from '@/Layouts/AppLayout';
-import { cn } from '@/lib/utils';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
     Briefcase,
     Building2,
     CalendarDays,
-    Camera,
     Check,
-    Globe,
     Layers,
     ScrollText,
     Users,
 } from 'lucide-react';
 import { useState } from 'react';
 
-// Parts
-import { SectionReviewData } from './Parts/SectionAuditPanel';
+import { Avatar, AvatarFallback, AvatarImage } from '@/Components/base/Avatar';
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import { Card, CardContent } from '@/Components/base/Card';
+import { Progress } from '@/Components/base/Progress';
+import { Tabs } from '@/Components/ui/Tabs';
+import AppLayout from '@/Layouts/AppLayout';
+import { cn } from '@/lib/utils';
+
 import { TabBasicInfo } from './Parts/TabBasicInfo';
 import { TabCharacterization } from './Parts/TabCharacterization';
 import { TabContacts } from './Parts/TabContacts';
 import { TabDocumentation } from './Parts/TabDocumentation';
-import { TabGallery } from './Parts/TabGallery';
 import { TabOverview } from './Parts/TabOverview';
 import { TabServices } from './Parts/TabServices';
+import { SectionReviewData } from './Parts/section-review';
+import { AdminState, ESTADO_BADGE, SECTION_KEYS } from './types';
 
 interface AssociateContact {
     name?: string;
@@ -44,7 +46,6 @@ interface AssociateReference {
     phone?: string;
 }
 
-// Solo se lee `id` de los servicios del asociado (para precargar el formulario).
 interface AssociateServiceRef {
     id: number;
 }
@@ -85,7 +86,7 @@ interface Associate {
     employees_other_desc: string;
     pep_declaration: boolean;
     funds_origin_declaration: boolean;
-    status: 'draft' | 'pending' | 'verified' | 'approved' | 'rejected';
+    status: string;
     created_at: string;
     rep_position: string;
     constitution_date: string;
@@ -106,24 +107,7 @@ interface Associate {
     rep_doc_type: string;
     logo_path?: string;
     document_urls?: Record<string, string>;
-    gallery_urls?: Array<{ path: string; url: string }>;
 }
-
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-    draft: { label: 'Borrador', className: 'bg-slate-100 text-slate-600' },
-    pending: { label: 'En Revisión', className: 'bg-amber-100 text-amber-700' },
-    verified: { label: 'Admitido', className: 'bg-blue-100 text-blue-700' },
-    approved: { label: 'Activo', className: 'bg-emerald-100 text-emerald-700' },
-    rejected: { label: 'Rechazado', className: 'bg-red-100 text-red-700' },
-};
-
-const REVIEWABLE_SECTIONS = [
-    'basicinfo',
-    'characterization',
-    'contacts',
-    'documentation',
-    'services',
-] as const;
 
 interface DocSpec {
     key: string;
@@ -139,22 +123,55 @@ interface DocumentCatalog {
     optional: DocSpec[];
 }
 
-export default function Show({
-    associate,
-    documentCatalog,
-}: {
+interface Props {
     associate: Associate;
     documentCatalog: DocumentCatalog;
-}) {
+    estado: AdminState;
+}
+
+const NAV_ITEMS = [
+    { value: 'overview', label: 'Resumen', icon: Layers, sectionKey: null },
+    {
+        value: 'basic',
+        label: 'Inf. básica',
+        icon: Building2,
+        sectionKey: 'basicinfo',
+    },
+    {
+        value: 'characterization',
+        label: 'Caracterización',
+        icon: Briefcase,
+        sectionKey: 'characterization',
+    },
+    {
+        value: 'contacts',
+        label: 'Contactos',
+        icon: Users,
+        sectionKey: 'contacts',
+    },
+    {
+        value: 'services',
+        label: 'Servicios',
+        icon: Layers,
+        sectionKey: 'services',
+    },
+    {
+        value: 'docs',
+        label: 'Documentos',
+        icon: ScrollText,
+        sectionKey: 'documentation',
+    },
+] as const;
+
+export default function Show({ associate, documentCatalog, estado }: Props) {
     const [activeTab, setActiveTab] = useState('overview');
     const { post, processing } = useForm({});
 
-    // ── Section audit handler ─────────────────────────────────────────────────
     const handleAuditSection = (
         section: string,
         status: 'approved' | 'rejected',
         reason: string = '',
-    ) => {
+    ) =>
         router.post(
             route('admin.associates.audit-section', associate.id),
             {
@@ -164,257 +181,186 @@ export default function Show({
             },
             { preserveScroll: true },
         );
-    };
 
     const handleApproveAll = () =>
         post(route('admin.associates.approve', associate.id));
 
-    // ── Section-level progress ────────────────────────────────────────────────
-    const sectionStats = REVIEWABLE_SECTIONS.reduce(
+    const total = SECTION_KEYS.length;
+    const sectionStats = SECTION_KEYS.reduce(
         (acc, sec) => {
-            const s = associate.section_reviews?.[sec]?.status || 'draft';
+            const s = associate.section_reviews?.[sec]?.status ?? 'draft';
             if (s === 'approved') acc.approved++;
             else if (s === 'rejected') acc.rejected++;
             else if (s === 'pending') acc.pending++;
             else acc.draft++;
             return acc;
         },
-        { approved: 0, rejected: 0, pending: 0, draft: 0 },
+        { approved: 0, pending: 0, rejected: 0, draft: 0 },
     );
-
-    const progressPct = Math.round(
-        (sectionStats.approved / REVIEWABLE_SECTIONS.length) * 100,
-    );
+    const progressPct = Math.round((sectionStats.approved / total) * 100);
+    const allApproved = sectionStats.approved === total;
+    const alreadyAdmitted =
+        associate.status === 'verified' || associate.status === 'approved';
+    const canAdmit = allApproved && !alreadyAdmitted && !processing;
 
     const getSectionReview = (key: string): SectionReviewData =>
         associate.section_reviews?.[key] ?? { status: 'draft' };
 
-    const sectionHasPending = (key: string) => {
-        const s = associate.section_reviews?.[key]?.status;
-        return s === 'pending';
-    };
+    const sectionHasPending = (key: string) =>
+        associate.section_reviews?.[key]?.status === 'pending';
 
-    // ── Sidebar nav ───────────────────────────────────────────────────────────
-    const navItems = [
-        { value: 'overview', label: 'Resumen', icon: Layers, sectionKey: null },
-        {
-            value: 'basic',
-            label: 'Inf. Básica',
-            icon: Building2,
-            sectionKey: 'basicinfo',
-        },
-        {
-            value: 'characterization',
-            label: 'Caracterización',
-            icon: Briefcase,
-            sectionKey: 'characterization',
-        },
-        {
-            value: 'contacts',
-            label: 'Contactos',
-            icon: Users,
-            sectionKey: 'contacts',
-        },
-        {
-            value: 'services',
-            label: 'Servicios',
-            icon: Globe,
-            sectionKey: 'services',
-        },
-        {
-            value: 'docs',
-            label: 'Documentos',
-            icon: ScrollText,
-            sectionKey: 'documentation',
-        },
-        { value: 'gallery', label: 'Galería', icon: Camera, sectionKey: null },
-    ];
-
-    const statusCfg = STATUS_CONFIG[associate.status] ?? STATUS_CONFIG.pending;
-    const canAdmit =
-        !processing &&
-        associate.status !== 'approved' &&
-        associate.status !== 'verified';
+    const badge = ESTADO_BADGE[estado];
 
     return (
         <AppLayout>
             <Head title={`Auditoría: ${associate.company_name}`} />
 
-            <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-[1400px]">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <div className="flex items-start gap-6">
-                        {/* ── SIDEBAR ──────────────────────────────────────── */}
-                        <aside className="sticky top-6 w-60 shrink-0 space-y-3 self-start">
-                            {/* Company card */}
-                            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                                <div className="border-b border-slate-100 px-4 pb-3 pt-4">
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+                        {/* ── SIDEBAR ── */}
+                        <aside className="space-y-4 lg:sticky lg:top-6 lg:w-64 lg:shrink-0 lg:self-start">
+                            <Card>
+                                <CardContent className="space-y-4 p-4">
                                     <Link
                                         href={route('admin.associates.index')}
-                                        className="flex w-fit items-center gap-1.5 text-[10px] font-black uppercase text-slate-400 transition-colors hover:text-slate-900"
+                                        className="flex w-fit items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
                                     >
-                                        <ArrowLeft size={12} /> Volver al
-                                        listado
+                                        <ArrowLeft className="size-3.5" />{' '}
+                                        Volver al listado
                                     </Link>
-                                </div>
 
-                                <div className="space-y-3 p-4">
                                     <div className="flex items-center gap-3">
-                                        {associate.document_urls?.logo ? (
-                                            <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                                                <img
+                                        <Avatar className="size-11 rounded-lg">
+                                            {associate.document_urls?.logo && (
+                                                <AvatarImage
                                                     src={
                                                         associate.document_urls
                                                             .logo
                                                     }
-                                                    alt="Logo"
-                                                    className="h-full w-full object-contain p-1"
+                                                    alt={associate.company_name}
                                                 />
-                                            </div>
-                                        ) : (
-                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-                                                <Building2
-                                                    size={20}
-                                                    className="text-slate-300"
-                                                />
-                                            </div>
-                                        )}
+                                            )}
+                                            <AvatarFallback className="rounded-lg">
+                                                <Building2 className="size-5 text-muted-foreground" />
+                                            </AvatarFallback>
+                                        </Avatar>
                                         <div className="min-w-0">
-                                            <p className="line-clamp-2 text-sm font-black leading-tight text-slate-900">
+                                            <p className="line-clamp-2 text-sm font-medium leading-tight">
                                                 {associate.company_name}
                                             </p>
-                                            <p className="mt-0.5 text-[10px] font-bold text-slate-400">
+                                            <p className="mt-0.5 text-xs text-muted-foreground">
                                                 NIT {associate.nit}
                                             </p>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center justify-between gap-2">
-                                        <span
-                                            className={cn(
-                                                'rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-widest',
-                                                statusCfg.className,
-                                            )}
-                                        >
-                                            {statusCfg.label}
-                                        </span>
-                                        <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400">
-                                            <CalendarDays size={10} />
+                                        <Badge variant={badge.variant}>
+                                            {badge.label}
+                                        </Badge>
+                                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                            <CalendarDays className="size-3" />
                                             {new Date(
                                                 associate.created_at,
                                             ).toLocaleDateString('es-CO')}
                                         </span>
                                     </div>
-                                </div>
-                            </div>
+                                </CardContent>
+                            </Card>
 
-                            {/* Progress card */}
-                            <div className="space-y-3 rounded-2xl bg-slate-900 p-4">
-                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                                    Secciones
-                                </p>
-                                <div className="grid grid-cols-3 gap-1 text-center">
-                                    <div className="rounded-xl bg-white/5 py-2">
-                                        <p className="text-base font-black text-emerald-400">
-                                            {sectionStats.approved}
-                                        </p>
-                                        <p className="mt-0.5 text-[8px] font-bold uppercase text-slate-500">
-                                            Ok
-                                        </p>
-                                    </div>
-                                    <div className="rounded-xl bg-white/5 py-2">
-                                        <p className="text-base font-black text-amber-400">
-                                            {sectionStats.pending}
-                                        </p>
-                                        <p className="mt-0.5 text-[8px] font-bold uppercase text-slate-500">
-                                            Pend.
-                                        </p>
-                                    </div>
-                                    <div className="rounded-xl bg-white/5 py-2">
-                                        <p className="text-base font-black text-red-400">
-                                            {sectionStats.rejected}
-                                        </p>
-                                        <p className="mt-0.5 text-[8px] font-bold uppercase text-slate-500">
-                                            Obs.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="mb-1 flex justify-between">
-                                        <span className="text-[9px] font-bold uppercase text-slate-500">
-                                            Aprobadas
+                            <Card>
+                                <CardContent className="space-y-3 p-4">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground">
+                                            Secciones aprobadas
                                         </span>
-                                        <span className="text-[9px] font-black text-emerald-400">
-                                            {progressPct}%
+                                        <span className="font-medium">
+                                            {sectionStats.approved}/{total}
                                         </span>
                                     </div>
-                                    <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                                        <div
-                                            className="h-full rounded-full bg-emerald-500 transition-all duration-700"
-                                            style={{ width: `${progressPct}%` }}
-                                        />
+                                    <Progress value={progressPct} />
+                                    <div className="flex gap-3 text-xs text-muted-foreground">
+                                        <span>
+                                            {sectionStats.pending} pend.
+                                        </span>
+                                        <span>
+                                            {sectionStats.rejected} obs.
+                                        </span>
+                                        <span>{sectionStats.draft} borr.</span>
                                     </div>
-                                </div>
-                            </div>
+                                </CardContent>
+                            </Card>
 
-                            {/* Navigation */}
-                            <nav className="space-y-0.5 rounded-2xl border border-slate-200 bg-white p-2">
-                                {navItems.map((item) => {
-                                    const hasPending = item.sectionKey
+                            <nav className="space-y-1">
+                                {NAV_ITEMS.map((item) => {
+                                    const isActive = activeTab === item.value;
+                                    const pend = item.sectionKey
                                         ? sectionHasPending(item.sectionKey)
                                         : false;
-                                    const isActive = activeTab === item.value;
                                     return (
                                         <button
                                             key={item.value}
+                                            type="button"
                                             onClick={() =>
                                                 setActiveTab(item.value)
                                             }
                                             className={cn(
-                                                'flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 transition-all',
+                                                'flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors',
                                                 isActive
-                                                    ? 'bg-slate-900 text-white shadow-sm'
-                                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                             )}
                                         >
-                                            <span className="flex items-center gap-2.5 text-[11px] font-black uppercase tracking-wide">
-                                                <item.icon size={13} />
+                                            <span className="flex items-center gap-2">
+                                                <item.icon className="size-4" />
                                                 {item.label}
                                             </span>
-                                            {hasPending && (
+                                            {pend && (
                                                 <span
                                                     className={cn(
-                                                        'min-w-[18px] rounded-full px-1.5 py-0.5 text-center text-[9px] font-black',
+                                                        'size-1.5 rounded-full',
                                                         isActive
-                                                            ? 'bg-white/20 text-white'
-                                                            : 'bg-amber-100 text-amber-700',
+                                                            ? 'bg-primary-foreground'
+                                                            : 'bg-muted-foreground',
                                                     )}
-                                                >
-                                                    !
-                                                </span>
+                                                    aria-label="Pendiente de revisión"
+                                                />
                                             )}
                                         </button>
                                     );
                                 })}
                             </nav>
 
-                            {/* Admit button */}
-                            <Button
-                                className="h-11 w-full rounded-xl bg-emerald-600 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-100 transition-all hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-                                onClick={handleApproveAll}
-                                disabled={!canAdmit}
-                            >
-                                <Check size={14} className="mr-2" />
-                                Admitir Socio en CAMEP
-                            </Button>
+                            <div className="space-y-2">
+                                <Button
+                                    className="w-full"
+                                    onClick={handleApproveAll}
+                                    disabled={!canAdmit}
+                                >
+                                    <Check className="size-4" /> Admitir socio
+                                </Button>
+                                {!alreadyAdmitted && !allApproved && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Faltan {total - sectionStats.approved}{' '}
+                                        secciones por aprobar para poder
+                                        admitir.
+                                    </p>
+                                )}
+                            </div>
                         </aside>
 
-                        {/* ── CONTENT ──────────────────────────────────────── */}
+                        {/* ── CONTENT ── */}
                         <div className="min-w-0 flex-1">
                             <TabOverview
-                                associate={associate}
+                                estado={estado}
                                 sectionStats={sectionStats}
+                                total={total}
+                                progressPct={progressPct}
+                                canAdmit={canAdmit}
+                                allApproved={allApproved}
+                                alreadyAdmitted={alreadyAdmitted}
                                 handleApproveAll={handleApproveAll}
-                                processing={processing}
                             />
                             <TabBasicInfo
                                 associate={associate}
@@ -446,7 +392,6 @@ export default function Show({
                                 onAuditSection={handleAuditSection}
                                 documentCatalog={documentCatalog}
                             />
-                            <TabGallery associate={associate} />
                         </div>
                     </div>
                 </Tabs>

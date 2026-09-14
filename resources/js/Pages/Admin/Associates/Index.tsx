@@ -1,52 +1,95 @@
-import React from 'react';
-import AppLayout from '@/Layouts/AppLayout';
-import { Head, Link } from '@inertiajs/react';
-import { Card, CardContent } from '@/Components/ui/Card';
-import { Button } from '@/Components/ui/Button';
-import { Badge } from '@/Components/ui/Badge';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
+    AlertCircle,
     Building2,
+    CheckCircle2,
+    ChevronDown,
     Search,
-    Filter,
-    ArrowUpRight,
 } from 'lucide-react';
-import { Input } from '@/Components/ui/Input';
-import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/Tabs';
-import StatusToggle from '@/Components/StatusToggle';
+import { useEffect, useState } from 'react';
+
+import { Alert, AlertTitle } from '@/Components/base/Alert';
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/base/Dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/Components/base/DropdownMenu';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from '@/Components/base/InputGroup';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/base/Select';
+import { Switch } from '@/Components/base/Switch';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/Components/base/Table';
+import AppLayout from '@/Layouts/AppLayout';
 import { cn } from '@/lib/utils';
 
-const SECTION_KEYS = ['basicinfo', 'characterization', 'contacts', 'documentation', 'services'] as const;
+import TablePagination from './Parts/TablePagination';
+import {
+    AssociateRow,
+    daysUntil,
+    ESTADO_BADGE,
+    Filters,
+    Paginator,
+    SECTION_KEYS,
+} from './types';
 
-interface Associate {
-    id: number;
-    company_name: string;
-    nit: string;
-    city: string;
-    status: 'pending' | 'verified' | 'approved' | 'rejected' | 'inactive';
-    created_at: string;
-    section_reviews: Record<string, { status: string }>;
-    is_public: boolean;
-    is_verified: boolean;
+interface Props {
+    associates: Paginator<AssociateRow>;
+    filters: Filters;
 }
 
-function SectionDots({ reviews }: { reviews: Record<string, { status: string }> }) {
-    const statusColor: Record<string, string> = {
-        approved:      'bg-emerald-500',
-        pending:       'bg-amber-400',
-        change_pending:'bg-amber-400',
-        rejected:      'bg-red-500',
-        draft:         'bg-slate-200',
-    };
+const SECTION_DOT: Record<string, string> = {
+    approved: 'bg-primary',
+    pending: 'bg-muted-foreground',
+    rejected: 'bg-destructive',
+    draft: 'bg-muted',
+};
 
+function SectionDots({
+    reviews,
+}: {
+    reviews: Record<string, { status: string }> | null;
+}) {
     return (
-        <div className="flex gap-1 items-center">
-            {SECTION_KEYS.map(key => {
-                const status = reviews?.[key]?.status || 'draft';
+        <div className="flex items-center gap-1">
+            {SECTION_KEYS.map((key) => {
+                const status = reviews?.[key]?.status ?? 'draft';
                 return (
                     <span
                         key={key}
                         title={`${key}: ${status}`}
-                        className={cn("inline-block w-2 h-2 rounded-full", statusColor[status] ?? 'bg-slate-200')}
+                        className={cn(
+                            'inline-block size-2 rounded-full',
+                            SECTION_DOT[status] ?? 'bg-muted',
+                        )}
                     />
                 );
             })}
@@ -54,145 +97,299 @@ function SectionDots({ reviews }: { reviews: Record<string, { status: string }> 
     );
 }
 
-export default function Index({ associates, currentStatus }: { associates: Associate[], currentStatus: string }) {
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'approved':
-                return <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 uppercase text-[10px] font-black tracking-widest px-2 py-0.5 shadow-none">Activo</Badge>;
-            case 'verified':
-                return <Badge className="bg-blue-50 text-blue-700 border-blue-100 uppercase text-[10px] font-black tracking-widest px-2 py-0.5 shadow-none">Admitido</Badge>;
-            case 'rejected':
-                return <Badge className="bg-red-50 text-red-700 border-red-100 uppercase text-[10px] font-black tracking-widest px-2 py-0.5 shadow-none">Rechazado</Badge>;
-            case 'inactive':
-                return <Badge className="bg-slate-50 text-slate-700 border-slate-100 uppercase text-[10px] font-black tracking-widest px-2 py-0.5 shadow-none">Inactivo</Badge>;
-            default:
-                return <Badge className="bg-amber-50 text-amber-700 border-amber-100 uppercase text-[10px] font-black tracking-widest px-2 py-0.5 shadow-none">Pendiente</Badge>;
-        }
+function subscriptionHint(row: AssociateRow): string | null {
+    const d = daysUntil(row.plan_expires_at);
+    if (row.estado === 'activa' && d !== null && d >= 0)
+        return `vence en ${d} d`;
+    if (row.estado === 'vencida' && d !== null) return `hace ${Math.abs(d)} d`;
+    return null;
+}
+
+export default function Index({ associates, filters }: Props) {
+    const flash = (usePage().props.flash ?? {}) as {
+        success?: string;
+        error?: string;
     };
+
+    const [search, setSearch] = useState(filters.q ?? '');
+    const [target, setTarget] = useState<AssociateRow | null>(null);
+    const [notice, setNotice] = useState<{
+        variant: 'success' | 'destructive';
+        msg: string;
+    } | null>(null);
+
+    useEffect(() => {
+        if (flash.success)
+            setNotice({ variant: 'success', msg: flash.success });
+        else if (flash.error)
+            setNotice({ variant: 'destructive', msg: flash.error });
+        if (flash.success || flash.error) {
+            const t = setTimeout(() => setNotice(null), 5000);
+            return () => clearTimeout(t);
+        }
+    }, [flash.success, flash.error]);
+
+    const applyFilter = (params: Partial<Filters>) =>
+        router.get(
+            route('admin.associates.index'),
+            { estado: filters.estado, q: filters.q, ...params },
+            { preserveState: true, replace: true, preserveScroll: true },
+        );
+
+    const toggleVerified = (row: AssociateRow) =>
+        router.post(
+            route('admin.associates.toggle-verified', row.id),
+            {},
+            { preserveScroll: true },
+        );
+
+    const confirmToggleActive = () => {
+        if (!target) return;
+        const isDeactivating = target.estado !== 'desactivada';
+        router.post(
+            route(
+                isDeactivating
+                    ? 'admin.associates.deactivate'
+                    : 'admin.associates.reactivate',
+                target.id,
+            ),
+            {},
+            { preserveScroll: true, onFinish: () => setTarget(null) },
+        );
+    };
+
+    const rows = associates.data;
 
     return (
         <AppLayout>
-            <Head title="Gestión de Empresas - CAMEP" />
-
-            <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Empresas Asociadas</h1>
-                        <p className="text-slate-500 text-sm mt-1">Gestiona y audita las solicitudes de afiliación de CAMEP.</p>
-                    </div>
+            <Head title="Empresas asociadas" />
+            <div className="mx-auto max-w-6xl space-y-6">
+                <div>
+                    <h1 className="flex items-center gap-2 font-display text-h3">
+                        <Building2 className="size-6 text-muted-foreground" />
+                        Empresas asociadas
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        Gestiona y audita las afiliaciones ({associates.total}{' '}
+                        en total).
+                    </p>
                 </div>
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <Tabs defaultValue={currentStatus} className="w-full md:w-auto" onValueChange={(val) => {
-                         window.location.href = route('admin.associates.index', { status: val });
-                    }}>
-                        <TabsList className="bg-slate-100/50 p-1 border border-slate-200">
-                            <TabsTrigger value="approved" className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                                Activas
-                            </TabsTrigger>
-                            <TabsTrigger value="verified" className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                                Admitidas
-                            </TabsTrigger>
-                            <TabsTrigger value="pending" className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                {notice && (
+                    <Alert variant={notice.variant}>
+                        {notice.variant === 'success' ? (
+                            <CheckCircle2 />
+                        ) : (
+                            <AlertCircle />
+                        )}
+                        <AlertTitle>{notice.msg}</AlertTitle>
+                    </Alert>
+                )}
+
+                <div className="flex flex-wrap items-center gap-3">
+                    <InputGroup className="h-9 max-w-xs flex-1">
+                        <InputGroupAddon>
+                            <Search />
+                        </InputGroupAddon>
+                        <InputGroupInput
+                            value={search}
+                            onChange={(e) => {
+                                setSearch(e.target.value);
+                                applyFilter({ q: e.target.value });
+                            }}
+                            placeholder="Buscar por nombre o NIT…"
+                        />
+                    </InputGroup>
+
+                    <Select
+                        value={filters.estado || 'all'}
+                        onValueChange={(v) =>
+                            applyFilter({ estado: v === 'all' ? '' : v })
+                        }
+                    >
+                        <SelectTrigger className="ml-auto w-48">
+                            <SelectValue placeholder="Todos los estados" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                Todos los estados
+                            </SelectItem>
+                            <SelectItem value="pendiente">
                                 Pendientes
-                            </TabsTrigger>
-                            <TabsTrigger value="inactive" className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                                Inactivas
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-
-                    <div className="flex items-center gap-2">
-                        <div className="relative w-full md:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                            <Input placeholder="Filtrar en esta lista..." className="pl-10 border-slate-200 rounded-lg bg-white h-10 text-sm" />
-                        </div>
-                        <Button variant="outline" className="border-slate-200 text-slate-600 rounded-lg h-10 px-4">
-                            <Filter size={16} className="mr-2" />
-                            Filtros
-                        </Button>
-                    </div>
+                            </SelectItem>
+                            <SelectItem value="admitida">Admitidas</SelectItem>
+                            <SelectItem value="activa">Activas</SelectItem>
+                            <SelectItem value="inactiva">Inactivas</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
-                <Card className="border-slate-200 shadow-sm overflow-hidden rounded-xl">
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-slate-50/50 border-b border-slate-100">
-                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Empresa</th>
-                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">NIT</th>
-                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Ubicación</th>
-                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Secciones</th>
-                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Verificado</th>
-                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Público</th>
-                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-center">Estado</th>
-                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-400"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {associates.map((associate) => (
-                                        <tr key={associate.id} className="hover:bg-slate-50/50 transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-8 w-8 bg-slate-100 rounded flex items-center justify-center text-slate-500">
-                                                        <Building2 size={16} />
-                                                    </div>
-                                                    <span className="font-semibold text-slate-900 text-sm">{associate.company_name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-slate-600 font-medium">{associate.nit}</td>
-                                            <td className="px-6 py-4 text-sm text-slate-600">{associate.city}</td>
-                                            <td className="px-6 py-4">
-                                                <SectionDots reviews={associate.section_reviews || {}} />
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <StatusToggle
-                                                    id={associate.id}
-                                                    value={associate.is_verified}
-                                                    route="admin.associates.toggle-verified"
-                                                    label={associate.is_verified ? "SÍ" : "NO"}
-                                                />
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <StatusToggle
-                                                    id={associate.id}
-                                                    value={associate.is_public}
-                                                    route="admin.associates.toggle-public"
-                                                    label={associate.is_public ? "ACTIVO" : "INACTIVO"}
-                                                />
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                {getStatusBadge(associate.status)}
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <Link href={route('admin.associates.show', associate.id)}>
-                                                    <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 font-bold group">
-                                                        Auditar
-                                                        <ArrowUpRight size={14} className="ml-1 opacity-0 group-hover:opacity-100 transition-all translate-x-1 group-hover:translate-x-0" />
+                <div className="rounded-xl ring-1 ring-foreground/10">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Empresa</TableHead>
+                                <TableHead>NIT</TableHead>
+                                <TableHead>Ubicación</TableHead>
+                                <TableHead>Secciones</TableHead>
+                                <TableHead className="text-center">
+                                    Verificada
+                                </TableHead>
+                                <TableHead>Estado</TableHead>
+                                <TableHead className="text-right">
+                                    Acciones
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {rows.length === 0 && (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={7}
+                                        className="py-12 text-center text-muted-foreground"
+                                    >
+                                        No hay empresas para este filtro.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            {rows.map((row) => {
+                                const badge = ESTADO_BADGE[row.estado];
+                                const hint = subscriptionHint(row);
+                                const isDeactivated =
+                                    row.estado === 'desactivada';
+                                return (
+                                    <TableRow key={row.id}>
+                                        <TableCell className="font-medium">
+                                            {row.company_name}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {row.nit ?? '—'}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {row.city ?? '—'}
+                                        </TableCell>
+                                        <TableCell>
+                                            <SectionDots
+                                                reviews={row.section_reviews}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <Switch
+                                                checked={row.is_verified}
+                                                onCheckedChange={() =>
+                                                    toggleVerified(row)
+                                                }
+                                                aria-label={`Verificada: ${row.company_name}`}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col gap-0.5">
+                                                <Badge variant={badge.variant}>
+                                                    {badge.label}
+                                                </Badge>
+                                                {hint && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {hint}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        aria-label={`Acciones para ${row.company_name}`}
+                                                    >
+                                                        Acciones
+                                                        <ChevronDown className="size-4" />
                                                     </Button>
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {associates.length === 0 && (
-                                        <tr>
-                                            <td colSpan={8} className="px-6 py-12 text-center">
-                                                <div className="flex flex-col items-center">
-                                                    <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4">
-                                                        <Building2 size={24} />
-                                                    </div>
-                                                    <p className="text-slate-500 font-medium">No hay solicitudes registradas aún.</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link
+                                                            href={route(
+                                                                'admin.associates.show',
+                                                                row.id,
+                                                            )}
+                                                        >
+                                                            Auditar perfil
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    {isDeactivated ? (
+                                                        <DropdownMenuItem
+                                                            onSelect={() =>
+                                                                setTarget(row)
+                                                            }
+                                                        >
+                                                            Reactivar empresa
+                                                        </DropdownMenuItem>
+                                                    ) : (
+                                                        <DropdownMenuItem
+                                                            variant="destructive"
+                                                            onSelect={() =>
+                                                                setTarget(row)
+                                                            }
+                                                        >
+                                                            Desactivar empresa
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+
+                {associates.last_page > 1 && (
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                            {associates.from}–{associates.to} de{' '}
+                            {associates.total}
+                        </p>
+                        <TablePagination page={associates} />
+                    </div>
+                )}
             </div>
+
+            <Dialog open={!!target} onOpenChange={(o) => !o && setTarget(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            {target?.estado === 'desactivada'
+                                ? 'Reactivar empresa'
+                                : 'Desactivar empresa'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {target?.estado === 'desactivada'
+                                ? `Se reactivará «${target?.company_name}». Volverá al directorio solo si su suscripción está al día.`
+                                : `«${target?.company_name}» dejará de aparecer en el directorio hasta reactivarla.`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button variant="outline">Cancelar</Button>
+                        </DialogClose>
+                        <Button
+                            variant={
+                                target?.estado === 'desactivada'
+                                    ? 'default'
+                                    : 'destructive'
+                            }
+                            onClick={confirmToggleActive}
+                        >
+                            {target?.estado === 'desactivada'
+                                ? 'Reactivar'
+                                : 'Desactivar'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

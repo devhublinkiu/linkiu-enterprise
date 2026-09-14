@@ -310,6 +310,8 @@ Route::middleware('auth')->group(function () {
         Route::post('associates/{associate}/approve', [AssociateController::class, 'approve'])->name('associates.approve');
         Route::post('associates/{associate}/toggle-public', [AssociateController::class, 'togglePublic'])->name('associates.toggle-public');
         Route::post('associates/{associate}/toggle-verified', [AssociateController::class, 'toggleVerified'])->name('associates.toggle-verified');
+        Route::post('associates/{associate}/deactivate', [AssociateController::class, 'deactivate'])->name('associates.deactivate');
+        Route::post('associates/{associate}/reactivate', [AssociateController::class, 'reactivate'])->name('associates.reactivate');
 
         // Sliders
         Route::get('sliders', [SliderController::class, 'index'])->name('sliders.index');

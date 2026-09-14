@@ -13,6 +13,7 @@ use App\Models\Plan;
 use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Services\BillingService;
+use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -27,18 +28,61 @@ class AssociateController extends Controller
 
     public function index(Request $request)
     {
-        $status = $request->query('status', 'approved');
+        $estado = $request->query('estado'); // filtro opcional (coarse): pendiente|admitida|activa|inactiva
+        $q = $request->query('q');
 
-        $associates = Associate::with('users')
-            ->where('status', $status)
-            ->select(['id', 'company_name', 'nit', 'city', 'status', 'created_at', 'is_public', 'is_verified', 'section_reviews'])
+        $associates = Associate::with('plan')
+            ->select([
+                'id', 'company_name', 'nit', 'city', 'status', 'created_at',
+                'is_public', 'is_verified', 'section_reviews', 'plan_id',
+                'plan_expires_at', 'deactivated_at',
+            ])
+            ->when($q, fn ($query) => $query->where(fn ($w) => $w
+                ->where('company_name', 'like', "%{$q}%")
+                ->orWhere('nit', 'like', "%{$q}%")))
+            ->when($estado, fn ($query) => $this->filterByEstado($query, $estado))
             ->latest()
-            ->get();
+            ->paginate(25)
+            ->withQueryString()
+            ->through(fn (Associate $a) => [
+                'id' => $a->id,
+                'company_name' => $a->company_name,
+                'nit' => $a->nit,
+                'city' => $a->city,
+                'created_at' => $a->created_at,
+                'is_public' => $a->is_public,
+                'is_verified' => $a->is_verified,
+                'section_reviews' => $a->section_reviews,
+                'estado' => $a->adminState(),
+                'subscription_status' => SubscriptionService::statusOf($a),
+                'plan_expires_at' => $a->plan_expires_at,
+            ]);
 
         return Inertia::render('Admin/Associates/Index', [
             'associates' => $associates,
-            'currentStatus' => $status,
+            'filters' => ['estado' => $estado, 'q' => $q],
         ]);
+    }
+
+    /**
+     * Filtro coarse por estado derivado. El límite de "gracia" se aproxima por fecha
+     * (plan_expires_at); el badge de la fila muestra el estado fino y preciso.
+     */
+    private function filterByEstado($query, string $estado)
+    {
+        return match ($estado) {
+            'pendiente' => $query->whereNull('deactivated_at')
+                ->whereIn('status', ['draft', 'pending', 'rejected']),
+            'admitida' => $query->whereNull('deactivated_at')->where('status', 'verified'),
+            'activa' => $query->whereNull('deactivated_at')->where('status', 'approved')
+                ->whereNotNull('plan_expires_at')->where('plan_expires_at', '>=', now()),
+            'inactiva' => $query->where(fn ($w) => $w
+                ->whereNotNull('deactivated_at')
+                ->orWhere(fn ($x) => $x->where('status', 'approved')
+                    ->where(fn ($y) => $y->whereNull('plan_expires_at')
+                        ->orWhere('plan_expires_at', '<', now())))),
+            default => $query,
+        };
     }
 
     // ─── Shared: append file URLs ─────────────────────────────────────────────
@@ -1280,6 +1324,7 @@ class AssociateController extends Controller
         return Inertia::render('Admin/Associates/Show', [
             'associate' => $associate,
             'documentCatalog' => $this->documentCatalog(),
+            'estado' => $associate->adminState(),
         ]);
     }
 
@@ -1331,6 +1376,11 @@ class AssociateController extends Controller
 
     public function approve(Associate $associate)
     {
+        // Gate de admisión (ADR-0007): solo se admite con el perfil 100% (las 5 secciones aprobadas).
+        if (! $associate->allSectionsApproved()) {
+            return back()->with('error', 'No puedes admitir todavía: faltan secciones por aprobar. Deben estar aprobadas las 5.');
+        }
+
         $associate->update(['status' => 'verified', 'is_verified' => true]);
 
         try {
@@ -1358,6 +1408,23 @@ class AssociateController extends Controller
         $associate->update(['is_verified' => ! $associate->is_verified]);
 
         return back()->with('success', 'Estado de verificación actualizado.');
+    }
+
+    // Desactivación manual del admin (ADR-0007): sella la marca y saca del directorio.
+    public function deactivate(Associate $associate)
+    {
+        $associate->update(['deactivated_at' => now(), 'is_public' => false]);
+
+        return back()->with('success', 'Empresa desactivada. Ya no aparece en el directorio.');
+    }
+
+    // Reactivación: limpia la marca y recomputa la visibilidad según la suscripción.
+    public function reactivate(Associate $associate)
+    {
+        $associate->update(['deactivated_at' => null]);
+        app(SubscriptionService::class)->republishIfDue($associate);
+
+        return back()->with('success', 'Empresa reactivada.');
     }
 
     // =========================================================================

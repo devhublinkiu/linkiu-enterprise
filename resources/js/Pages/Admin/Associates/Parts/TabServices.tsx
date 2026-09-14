@@ -22,7 +22,7 @@ import {
 import { Textarea } from '@/Components/base/Textarea';
 import { TabsContent } from '@/Components/ui/Tabs';
 
-import { SectionReviewData } from './SectionAuditPanel';
+import { SectionReviewData } from './section-review';
 
 // Solo los campos de Servicios que se muestran (lectura). El admin no edita (ADR-0005 / 0005-d).
 interface AssociateService {

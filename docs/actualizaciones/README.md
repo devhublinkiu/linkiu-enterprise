@@ -30,5 +30,6 @@ se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas
 | [0011](0011-ficha-servicios.md) | Ficha del asociado · Servicios | Borrador |
 | [0012](0012-admin-document-requirements.md) | Admin · Documentos Requeridos (modernización UI) | Hecho |
 | [0013](0013-ficha-documentacion.md) | Ficha del asociado · Documentación (+ cierre ADR-0005) | Hecho |
+| [0014](0014-admin-asociados-estado-y-vistas.md) | Admin · Asociados: estado unificado + Index & Show | Hecho |
 
 Estados posibles: `Borrador` · `Aprobado (#go)` · `En curso` · `Hecho` · `Descartado`.

@@ -1,10 +1,18 @@
-import React from 'react';
-import { Card } from '@/Components/ui/Card';
-import { Button } from '@/Components/ui/Button';
-import { Badge } from '@/Components/ui/Badge';
-import { Building2, CheckCircle2 } from 'lucide-react';
+import { Check, Info } from 'lucide-react';
+
+import { Alert, AlertDescription, AlertTitle } from '@/Components/base/Alert';
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/Components/base/Card';
+import { Progress } from '@/Components/base/Progress';
 import { TabsContent } from '@/Components/ui/Tabs';
-import { cn } from '@/lib/utils';
+
+import { AdminState, ESTADO_BADGE } from '../types';
 
 interface SectionStats {
     approved: number;
@@ -13,81 +21,117 @@ interface SectionStats {
     draft: number;
 }
 
-interface TabOverviewProps {
-    associate: any;
+interface Props {
+    estado: AdminState;
     sectionStats: SectionStats;
+    total: number;
+    progressPct: number;
+    canAdmit: boolean;
+    allApproved: boolean;
+    alreadyAdmitted: boolean;
     handleApproveAll: () => void;
-    processing: boolean;
 }
 
-export function TabOverview({ associate, sectionStats, handleApproveAll, processing }: TabOverviewProps) {
-    const total = 4; // basicinfo, characterization, contacts, documentation
-    const progressWidth = Math.min(100, (sectionStats.approved / total) * 100);
+export function TabOverview({
+    estado,
+    sectionStats,
+    total,
+    progressPct,
+    canAdmit,
+    allApproved,
+    alreadyAdmitted,
+    handleApproveAll,
+}: Props) {
+    const badge = ESTADO_BADGE[estado];
 
     return (
-        <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="bg-slate-900 border-none rounded-2xl p-6 text-white md:col-span-1 shadow-xl">
-                    <h4 className="font-bold text-sm mb-4 uppercase tracking-widest text-slate-400">Progreso de Secciones</h4>
-                    <div className="space-y-4">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-slate-400 font-medium">Secciones Aprobadas</span>
-                            <span className="font-black text-emerald-400">{sectionStats.approved}/{total}</span>
+        <TabsContent value="overview" className="space-y-4">
+            <Card>
+                <CardHeader className="flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-base">
+                        Estado de la solicitud
+                    </CardTitle>
+                    <Badge variant={badge.variant}>{badge.label}</Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                                Secciones aprobadas
+                            </span>
+                            <span className="font-medium">
+                                {sectionStats.approved}/{total}
+                            </span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-slate-400 font-medium">Pendientes</span>
-                            <span className="font-black text-amber-400">{sectionStats.pending}</span>
+                        <Progress value={progressPct} />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                        <div className="rounded-lg bg-muted/40 py-3">
+                            <p className="text-lg font-semibold">
+                                {sectionStats.pending}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Pendientes
+                            </p>
                         </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-slate-400 font-medium">Con Observaciones</span>
-                            <span className="font-black text-red-400">{sectionStats.rejected}</span>
+                        <div className="rounded-lg bg-muted/40 py-3">
+                            <p className="text-lg font-semibold">
+                                {sectionStats.rejected}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Con observaciones
+                            </p>
                         </div>
-                        <div className="pt-2">
-                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-emerald-500 rounded-full transition-all duration-700"
-                                    style={{ width: `${progressWidth}%` }}
-                                />
-                            </div>
-                            <p className="text-[10px] mt-2 text-slate-500 font-bold uppercase">Secciones completadas</p>
+                        <div className="rounded-lg bg-muted/40 py-3">
+                            <p className="text-lg font-semibold">
+                                {sectionStats.draft}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                En borrador
+                            </p>
                         </div>
                     </div>
-                </Card>
+                </CardContent>
+            </Card>
 
-                <Card className="md:col-span-2 border-slate-200 shadow-sm rounded-2xl flex flex-col justify-center items-center p-8 text-center bg-white">
-                    <Building2 size={40} className="text-slate-200 mb-4" />
-                    <h3 className="text-lg font-bold text-slate-900">
-                        Estado de la Solicitud:
-                        <Badge className={cn(
-                            "ml-2 font-black uppercase tracking-widest text-[10px] px-3 py-1",
-                            associate.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                            associate.status === 'verified' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                            associate.status === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' :
-                            'bg-amber-100 text-amber-700 border-amber-200'
-                        )}>
-                            {associate.status === 'pending'  ? 'Pendiente' :
-                             associate.status === 'verified' ? 'Admitido / Pendiente Pago' :
-                             associate.status === 'approved' ? 'Activo / Aprobado' :
-                             'Rechazado'}
-                        </Badge>
-                    </h3>
-                    <p className="text-slate-500 text-sm mt-2 max-w-md">
-                        {associate.status === 'pending'  && "Revisa cada sección y aprueba o rechaza. Al admitir, el socio podrá elegir un plan y pagar la inscripción."}
-                        {associate.status === 'verified' && "El socio ya fue admitido. Estamos esperando a que realice el pago de su membresía e inscripción."}
-                        {associate.status === 'approved' && "El socio está activo y su perfil es público en el directorio."}
-                    </p>
-                    {associate.status === 'pending' && (
-                        <Button
-                            className="mt-6 bg-slate-900 text-white rounded-xl px-8 py-6 h-auto font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95"
-                            onClick={handleApproveAll}
-                            disabled={processing}
-                        >
-                            <CheckCircle2 size={18} className="mr-2" />
-                            Validar y Admitir como Socio
+            {alreadyAdmitted ? (
+                <Alert variant="success">
+                    <Check />
+                    <AlertTitle>Empresa admitida</AlertTitle>
+                    <AlertDescription>
+                        Ya fue admitida. El estado depende ahora del pago de la
+                        suscripción.
+                    </AlertDescription>
+                </Alert>
+            ) : allApproved ? (
+                <Card>
+                    <CardContent className="flex flex-col items-start gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm font-medium">
+                                Perfil completo
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                Las {total} secciones están aprobadas. Puedes
+                                admitir a la empresa como socia.
+                            </p>
+                        </div>
+                        <Button onClick={handleApproveAll} disabled={!canAdmit}>
+                            <Check className="size-4" /> Admitir socio
                         </Button>
-                    )}
+                    </CardContent>
                 </Card>
-            </div>
+            ) : (
+                <Alert>
+                    <Info />
+                    <AlertTitle>Perfil incompleto</AlertTitle>
+                    <AlertDescription>
+                        Faltan {total - sectionStats.approved} secciones por
+                        aprobar. La empresa podrá admitirse cuando todas estén
+                        aprobadas.
+                    </AlertDescription>
+                </Alert>
+            )}
         </TabsContent>
     );
 }

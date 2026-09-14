@@ -9,10 +9,10 @@ use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\DocumentRequirementController;
 use App\Http\Controllers\Admin\ForumCategoryController;
 use App\Http\Controllers\Admin\ForumReportController;
+use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LicitacionController;
 use App\Http\Controllers\Admin\PaymentController;
-use App\Http\Controllers\Admin\PaymentRequestController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\ServiceCategoryController;
 use App\Http\Controllers\Admin\ServiceController;
@@ -103,11 +103,9 @@ Route::resource('plans', PlanController::class);
 // Datos Bancarios
 Route::resource('bank-accounts', BankAccountController::class)->except(['show']);
 
-// Solicitudes de Pago de Membresía
-Route::get('payment-requests', [PaymentRequestController::class, 'index'])->name('payment-requests.index');
-Route::get('payment-requests/{paymentRequest}', [PaymentRequestController::class, 'show'])->name('payment-requests.show');
-Route::patch('payment-requests/{paymentRequest}/approve', [PaymentRequestController::class, 'approve'])->name('payment-requests.approve');
-Route::patch('payment-requests/{paymentRequest}/reject', [PaymentRequestController::class, 'reject'])->name('payment-requests.reject');
+// Integraciones (Bold). Nivel admin, como el resto del área de Finanzas.
+Route::get('integraciones', [IntegrationController::class, 'index'])->name('integrations.index');
+Route::patch('integraciones/bold', [IntegrationController::class, 'updateBold'])->name('integrations.bold.update');
 
 // Facturación
 // Bandeja de pagos: comprobantes por revisar y todo lo cobrado.

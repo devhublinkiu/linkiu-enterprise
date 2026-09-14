@@ -35,5 +35,6 @@ se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas
 | [0016](0016-membresias-modelo-y-admin.md) | Membresías: modelo unificado (cuota inicial) + admin de Planes + alta | Hecho |
 | [0017](0017-asociado-gestion-plan-facturas-pago.md) | Asociado · Gestión del Plan + Mis Facturas + Pago (a base/) | Hecho |
 | [0018](0018-admin-finanzas.md) | Admin · Finanzas (Pagos, Facturación, Datos bancarios) + menú | Hecho |
+| [0019](0019-integraciones-bold-y-limpieza-legacy.md) | Integraciones (Bold) + retiro del legado de solicitudes | Hecho |
 
 Estados posibles: `Borrador` · `Aprobado (#go)` · `En curso` · `Hecho` · `Descartado`.

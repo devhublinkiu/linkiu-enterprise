@@ -2,6 +2,7 @@
 
 namespace App\Services\Bold;
 
+use App\Models\BoldSetting;
 use App\Models\Payment;
 use Illuminate\Support\Arr;
 
@@ -16,14 +17,80 @@ use Illuminate\Support\Arr;
  */
 class BoldGateway
 {
+    /** Configuración editable desde admin (fila única), cargada una vez por petición. */
+    private ?BoldSetting $settings = null;
+
+    private bool $settingsLoaded = false;
+
+    private function settings(): ?BoldSetting
+    {
+        if (! $this->settingsLoaded) {
+            $this->settings = BoldSetting::current();
+            $this->settingsLoaded = true;
+        }
+
+        return $this->settings;
+    }
+
     /**
-     * Sin credenciales, el riel de pago en línea queda apagado y la plataforma
-     * sigue cobrando por transferencia y efectivo.
+     * Llaves del ENTORNO ACTIVO resueltas: primero la configuración de admin
+     * (columna `{entorno}_{campo}` en BD), luego config/.env como respaldo
+     * (compatibilidad con instalaciones configuradas por entorno).
+     */
+    private function apiKey(): ?string
+    {
+        return $this->envKey('api_key');
+    }
+
+    private function secretKey(): ?string
+    {
+        return $this->envKey('secret_key');
+    }
+
+    private function envKey(string $field): ?string
+    {
+        $s = $this->settings();
+
+        if ($s) {
+            $v = $s->{$this->environment().'_'.$field};  // test_api_key / production_secret_key
+
+            return ($v !== null && $v !== '') ? $v : null;
+        }
+
+        // Sin fila en BD: config/.env (una sola pareja de llaves).
+        return config('services.bold.'.$field) ?: null;
+    }
+
+    /**
+     * ¿El admin dejó el pago en línea encendido? Sin fila de settings estamos en
+     * "modo entorno": se considera activo y manda la presencia de llaves.
+     */
+    public function isActive(): bool
+    {
+        $s = $this->settings();
+
+        return $s ? (bool) $s->is_active : true;
+    }
+
+    /**
+     * Entorno de Bold en uso: 'test' (sandbox) o 'production'. Sin fila en BD se
+     * asume el de config/.env (o 'test' por defecto).
+     */
+    public function environment(): string
+    {
+        return $this->settings()?->environment
+            ?: (string) config('services.bold.environment', 'test');
+    }
+
+    /**
+     * Sin credenciales (o apagado por el admin), el riel de pago en línea queda
+     * apagado y la plataforma sigue cobrando por transferencia y efectivo.
      */
     public function isEnabled(): bool
     {
-        return !empty(config('services.bold.api_key'))
-            && !empty(config('services.bold.secret_key'));
+        return $this->isActive()
+            && ! empty($this->apiKey())
+            && ! empty($this->secretKey());
     }
 
     public function scriptUrl(): string
@@ -42,23 +109,23 @@ class BoldGateway
     {
         $reference = $payment->reference;
         // Bold espera el monto en unidades enteras de la moneda.
-        $amount    = (string) (int) round((float) $payment->amount);
-        $currency  = $payment->currency ?: config('services.bold.currency', 'COP');
+        $amount = (string) (int) round((float) $payment->amount);
+        $currency = $payment->currency ?: config('services.bold.currency', 'COP');
 
         return [
-            'apiKey'             => (string) config('services.bold.api_key'),
-            'orderId'            => $reference,
-            'amount'             => $amount,
-            'currency'           => $currency,
+            'apiKey' => (string) $this->apiKey(),
+            'orderId' => $reference,
+            'amount' => $amount,
+            'currency' => $currency,
             'integritySignature' => $this->integritySignature($reference, $amount, $currency),
-            'redirectionUrl'     => $redirectUrl,
-            'description'        => 'CAMEP · ' . ($payment->invoice?->period ?? 'Cuenta de cobro'),
+            'redirectionUrl' => $redirectUrl,
+            'description' => 'CAMEP · '.($payment->invoice?->period ?? 'Cuenta de cobro'),
         ];
     }
 
     public function integritySignature(string $reference, string $amount, string $currency): string
     {
-        return hash('sha256', $reference . $amount . $currency . config('services.bold.secret_key'));
+        return hash('sha256', $reference.$amount.$currency.(string) $this->secretKey());
     }
 
     // ─── Webhook ──────────────────────────────────────────────────────────────
@@ -115,6 +182,22 @@ class BoldGateway
      */
     private function webhookSecret(): ?string
     {
+        // Configuración de admin (BD): webhook_secret y, si está vacío, la secret
+        // key del entorno activo.
+        $s = $this->settings();
+        if ($s) {
+            if ($s->webhook_secret !== null && $s->webhook_secret !== '') {
+                return (string) $s->webhook_secret;
+            }
+            $sec = $this->secretKey();
+            if ($sec !== null && $sec !== '') {
+                return (string) $sec;
+            }
+
+            return null;
+        }
+
+        // Respaldo a config/.env, conservando la distinción null vs "" del sandbox.
         $webhookSecret = config('services.bold.webhook_secret');
 
         if ($webhookSecret !== null) {
@@ -137,13 +220,13 @@ class BoldGateway
 
         $approved = array_map('strtoupper', (array) config('services.bold.approved_events', []));
         $rejected = array_map('strtoupper', (array) config('services.bold.rejected_events', []));
-        $void     = array_map('strtoupper', (array) config('services.bold.void_events', []));
+        $void = array_map('strtoupper', (array) config('services.bold.void_events', []));
 
         $outcome = match (true) {
             in_array($type, $approved, true) => 'approved',
             in_array($type, $rejected, true) => 'rejected',
-            in_array($type, $void, true)     => 'void',
-            default                          => 'unknown',
+            in_array($type, $void, true) => 'void',
+            default => 'unknown',
         };
 
         // Estructura real del webhook (docs/bold-integracion.md §2.3): el evento
@@ -160,12 +243,12 @@ class BoldGateway
             ?? Arr::get($body, 'amount.total');
 
         return [
-            'reference'  => $reference ? (string) $reference : null,
-            'outcome'    => $outcome,
-            'event'      => $type,
+            'reference' => $reference ? (string) $reference : null,
+            'outcome' => $outcome,
+            'event' => $type,
             'payment_id' => $paymentId ? (string) $paymentId : null,
-            'amount'     => is_numeric($amount) ? (float) $amount : null,
-            'payload'    => $body,
+            'amount' => is_numeric($amount) ? (float) $amount : null,
+            'payload' => $body,
         ];
     }
 }

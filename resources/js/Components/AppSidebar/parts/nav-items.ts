@@ -158,8 +158,7 @@ export function buildAdminItems(
             name: 'Integraciones',
             icon: Plug,
             children: [
-                { name: 'Wompi', href: '#' },
-                { name: 'Epayco', href: '#' },
+                { name: 'Bold', href: route('admin.integrations.index') },
             ],
         },
     ];

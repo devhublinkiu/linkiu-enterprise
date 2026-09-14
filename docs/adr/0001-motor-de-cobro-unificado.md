@@ -237,4 +237,8 @@ y así se ajustan sin desplegar.
   cuerpo crudo); su corrección es la tarea T1 de ese plan.
 - Ejecutar `billing:backfill-payment-requests` en producción tras revisar su `--dry-run`.
 - Retirar `payment_requests` y el respaldo `payments_legacy_sin_uso` cuando el histórico esté
-  trasladado y verificado.
+  trasladado y verificado. **Avance (plan 0019):** ya se retiró la **superficie admin** legacy
+  (páginas, rutas, controlador y eventos de solicitudes); se conservan tabla + modelo + backfill.
+  Falta el **borrado físico** de la tabla, que es el paso manual post-backfill.
+- **Bold configurable desde admin** (plan 0019): las llaves viven cifradas en `bold_settings` y se
+  editan en **Integraciones** (solo superadmin); `BoldGateway` cae a `.env` si no hay fila.

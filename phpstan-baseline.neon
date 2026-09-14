@@ -79,30 +79,6 @@ parameters:
 			path: app/Console/Commands/SendBillingReminders.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$color_hex\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Events/PaymentRequestReviewed.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Events/PaymentRequestReviewed.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$color_hex\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Events/PaymentRequestSubmitted.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Events/PaymentRequestSubmitted.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Announcement\:\:\$author\.$#'
 			identifier: property.notFound
 			count: 1
@@ -317,54 +293,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Admin/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$users\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/PaymentRequestController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$associate_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/PaymentRequestController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$color_hex\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/PaymentRequestController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
-			identifier: property.notFound
-			count: 4
-			path: app/Http/Controllers/Admin/PaymentRequestController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/PaymentRequestController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 8
-			path: app/Http/Controllers/Admin/PaymentRequestController.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\PaymentRequest\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Http/Controllers/Admin/PaymentRequestController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Admin/PaymentRequestController.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$key\.$#'

@@ -32,6 +32,7 @@ const company = (over: Partial<Company> = {}): Company => ({
     is_verified: true,
     logo: null,
     cover: null,
+    portada: { type: 'image', image: '/portada.jpg' },
     facades: [],
     about_story: 'Somos una empresa con 20 años de experiencia.',
     about_image: null,

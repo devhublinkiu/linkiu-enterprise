@@ -47,6 +47,7 @@ export interface Company {
     is_verified: boolean;
     logo: string | null;
     cover: string | null;
+    portada: { type: 'gradient' | 'image'; image: string | null };
     facades: string[];
     about_story: string | null;
     about_image: string | null;

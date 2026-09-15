@@ -167,6 +167,13 @@ servicio aprobado sin enriquecer → tarjeta con solo el nombre.
   **backfill**: las empresas ya visibles (approved + is_public) quedan publicadas para no romper
   producción. Pest (+6: contacto, toggle, borrador 404, preview dueño, directorio oculta) + Vitest
   (Contacto). El interruptor "publicado" default sigue `false` (nuevas nacen en borrador).
+- **21-G · Portada configurable (imagen o gradiente de marca). ✅** Nueva pantalla `Associate/Microsite/Portada`
+  (primer hijo de "Mi Página"): el asociado elige **gradiente de marca** (por defecto) o **imagen** propia
+  apaisada (medida ideal 1600×600). Campos nuevos `cover_type` (gradient|image) + `microsite_cover_path`. El
+  hero público (`Show/Parts/Hero`) usa la portada: imagen, o un **gradiente estático en CSS** (`HERO_GRADIENT`)
+  que imita el shader de marca (rojo `#D9141B` sobre carbón `#151515`) — **sin WebGL ni three.js** (se evaluó
+  ShaderGradient pero se descartó por peso: ~280 KB gzip). Trait `ManagesMicrositePortada`. Pest (+3) + Vitest.
+
 - **21-F · "Ver mi página" en el topbar + cierre. ✅** Botón en el topbar del panel del asociado
   (`AppLayout`, solo asociados) que abre su micrositio en pestaña nueva (slug o id; **vista previa**
   si está en borrador, con etiqueta «borrador»). La dirección viaja en las props compartidas

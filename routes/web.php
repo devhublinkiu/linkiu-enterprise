@@ -271,6 +271,11 @@ Route::middleware('auth')->group(function () {
             ->name('microsite.slug.check')->middleware('throttle:30,1');
         Route::post('/microsite/slug', [MicrositeController::class, 'updateSlug'])
             ->name('microsite.slug.update');
+        // Portada (imagen o gradiente animado) — fondo del hero público.
+        Route::get('/mi-pagina/portada', [MicrositeController::class, 'portada'])
+            ->name('microsite.portada');
+        Route::post('/mi-pagina/portada', [MicrositeController::class, 'updatePortada'])
+            ->name('microsite.portada.update');
         Route::get('/mi-pagina/quienes-somos', [MicrositeController::class, 'about'])
             ->name('microsite.about');
         Route::post('/mi-pagina/historia', [MicrositeController::class, 'updateStory'])

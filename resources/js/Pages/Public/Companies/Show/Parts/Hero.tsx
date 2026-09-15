@@ -2,31 +2,36 @@ import { Check } from 'lucide-react';
 
 import type { Company } from '../types';
 
+// Portada "gradiente": versión estática (sin WebGL) que imita el shader de marca
+// —un resplandor rojo CAMEP a la izquierda sobre carbón—. Cero peso, cero three.js.
+export const HERO_GRADIENT =
+    'radial-gradient(75% 130% at 12% 6%, #d9141b 0%, rgba(217,20,27,0.55) 20%, rgba(217,20,27,0.12) 42%, transparent 60%), radial-gradient(55% 85% at 90% 96%, rgba(217,20,27,0.12), transparent 55%), linear-gradient(150deg, #210d0e 0%, #151515 52%, #0f0e0e 100%)';
+
 export default function Hero({ company }: { company: Company }) {
     const year = company.legal.constitution_date?.split('/')?.[2] ?? null;
     const place = [company.legal.city, company.legal.department]
         .filter(Boolean)
         .join(', ');
 
+    const useImage =
+        company.portada.type === 'image' && !!company.portada.image;
+
     return (
         <header id="top" className="relative overflow-hidden bg-[#14110d]">
-            {/* Fondo: portada o degradado industrial */}
-            {company.cover ? (
+            {/* Portada: imagen propia o gradiente de marca (estático) */}
+            {useImage ? (
                 <div className="absolute inset-0">
                     <img
-                        src={company.cover}
+                        src={company.portada.image ?? undefined}
                         alt=""
-                        className="size-full object-cover opacity-40"
+                        className="size-full object-cover opacity-45"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#14110d] via-[#14110d]/70 to-[#14110d]/40" />
                 </div>
             ) : (
                 <div
                     className="absolute inset-0"
-                    style={{
-                        background:
-                            'radial-gradient(120% 90% at 80% 6%, rgba(217,83,30,0.30), transparent 46%), linear-gradient(180deg,#241f18 0%,#14110d 62%)',
-                    }}
+                    style={{ background: HERO_GRADIENT }}
                 />
             )}
 

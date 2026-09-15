@@ -165,6 +165,11 @@ class PublicCompanyController extends Controller
             'is_verified' => $associate->is_verified,
             'logo' => $url($associate->logo_path),
             'cover' => $url($associate->cover_path),
+            // Portada del hero: gradiente animado (por defecto) o imagen propia.
+            'portada' => [
+                'type' => $associate->cover_type ?: 'gradient',
+                'image' => $url($associate->microsite_cover_path),
+            ],
             'facades' => collect($associate->facade_paths ?? [])->take(3)->map($url)->values(),
             'about_story' => $associate->about_story,
             'about_image' => $url($associate->about_image_path),

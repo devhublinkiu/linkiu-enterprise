@@ -413,3 +413,38 @@ it('comparte la dirección del micrositio para el topbar del asociado', function
             ->where('auth.associate.microsite_published', true)
         );
 });
+
+// ─── Mi Página › Portada (21-G) ───────────────────────────────────────────────
+
+it('carga la pantalla de Portada con el gradiente por defecto', function () {
+    $associate = micrositeAssociate();
+
+    $this->actingAs(micrositeUser($associate))
+        ->get(route('associate.company.microsite.portada'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Associate/Microsite/Portada')
+            ->where('coverType', 'gradient')
+        );
+});
+
+it('guarda el tipo de portada', function () {
+    $associate = micrositeAssociate();
+
+    $this->actingAs(micrositeUser($associate))
+        ->post(route('associate.company.microsite.portada.update'), [
+            'cover_type' => 'image',
+        ])->assertSessionHasNoErrors();
+
+    expect($associate->fresh()->cover_type)->toBe('image');
+});
+
+it('el micrositio público expone la portada', function () {
+    micrositeAssociate(['slug' => 'con-portada', 'cover_type' => 'gradient']);
+
+    $this->get('/con-portada')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('company.portada.type', 'gradient')
+        );
+});

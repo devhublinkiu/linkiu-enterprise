@@ -103,6 +103,14 @@ export default function Contacto({
         form.post(route('associate.company.microsite.contact.update'), {
             forceFormData: true,
             preserveScroll: true,
+            onSuccess: () => {
+                // Las fachadas guardadas vuelven en las props; limpiamos las
+                // pendientes para no mostrarlas (ni reenviarlas) por duplicado.
+                newFiles.forEach((n) => URL.revokeObjectURL(n.url));
+                setNewFiles([]);
+                form.setData('facades', []);
+                form.setData('remove_facades', []);
+            },
         });
     };
 

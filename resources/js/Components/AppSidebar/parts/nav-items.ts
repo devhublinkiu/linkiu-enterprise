@@ -219,6 +219,11 @@ export function buildAssociateItems(locks: AssociateLocks): NavItem[] {
             locked: isGeneralLocked,
             children: [
                 {
+                    name: 'Portada',
+                    href: route('associate.company.microsite.portada'),
+                    locked: isGeneralLocked,
+                },
+                {
                     name: 'Quiénes somos',
                     href: route('associate.company.microsite.about'),
                     locked: isGeneralLocked,

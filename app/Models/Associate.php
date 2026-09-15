@@ -49,7 +49,7 @@ class Associate extends Model
         'billing_cycle', 'deactivated_at',
         // Micrositio (plan 0021)
         'slug', 'microsite_published', 'whatsapp', 'contact_email', 'about_story',
-        'about_image_path', 'facade_paths',
+        'about_image_path', 'facade_paths', 'cover_type', 'microsite_cover_path',
     ];
 
     protected $casts = [

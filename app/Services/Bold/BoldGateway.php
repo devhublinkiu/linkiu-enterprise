@@ -173,6 +173,51 @@ class BoldGateway
     }
 
     /**
+     * Metadatos SEGUROS para diagnosticar por qué falló una firma, sin exponer
+     * el secreto ni el cuerpo. Sirve para distinguir un escáner (sin header) de
+     * un esquema equivocado (formato distinto) o una llave equivocada.
+     *
+     * @return array{secret_configured:bool,signature_present:bool,received_len:int,received_format:string,received_sample:?string,expected_len:int,expected_sample:?string,matches:bool}
+     */
+    public function signatureDiagnostics(string $rawBody, ?string $signature): array
+    {
+        $secret = $this->webhookSecret();
+        $received = $signature !== null ? strtolower(trim($signature)) : null;
+        $expected = $secret !== null
+            ? hash_hmac('sha256', base64_encode($rawBody), $secret)
+            : null;
+
+        return [
+            'secret_configured' => $secret !== null,
+            'signature_present' => $received !== null && $received !== '',
+            'received_len' => $received !== null ? strlen($received) : 0,
+            'received_format' => $this->signatureFormat($received),
+            // Una muestra de un hash no revela el secreto.
+            'received_sample' => $received !== null ? substr($received, 0, 10) : null,
+            'expected_len' => $expected !== null ? strlen($expected) : 0,
+            'expected_sample' => $expected !== null ? substr($expected, 0, 10) : null,
+            'matches' => $expected !== null && $received !== null && $received !== ''
+                ? hash_equals($expected, $received)
+                : false,
+        ];
+    }
+
+    private function signatureFormat(?string $value): string
+    {
+        if ($value === null || $value === '') {
+            return 'ausente';
+        }
+        if (preg_match('/^[0-9a-f]+$/', $value)) {
+            return 'hex';
+        }
+        if (preg_match('#^[A-Za-z0-9+/]+={0,2}$#', $value)) {
+            return 'base64';
+        }
+
+        return 'otro';
+    }
+
+    /**
      * Llave con la que Bold firma los webhooks.
      *
      * Se prefiere BOLD_WEBHOOK_SECRET; si no está definida (null) se cae a la

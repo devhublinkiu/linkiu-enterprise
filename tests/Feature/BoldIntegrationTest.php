@@ -84,3 +84,36 @@ it('un admin (no superadmin) también entra a integraciones', function () {
         ->get(route('admin.integrations.index'))
         ->assertOk();
 });
+
+it('el diagnóstico de firma es seguro y distingue escáner, esquema y llave', function () {
+    BoldSetting::create([
+        'test_secret_key' => 's3cr3t',
+        'environment' => 'test',
+        'is_active' => true,
+    ]);
+    $bold = app(BoldGateway::class);
+    $raw = '{"reference":"ABC","status":"approved"}';
+    $valid = hash_hmac('sha256', base64_encode($raw), 's3cr3t');
+
+    // Firma correcta: coincide, formato hex, longitudes 64.
+    $ok = $bold->signatureDiagnostics($raw, $valid);
+    expect($ok['secret_configured'])->toBeTrue();
+    expect($ok['signature_present'])->toBeTrue();
+    expect($ok['received_format'])->toBe('hex');
+    expect($ok['received_len'])->toBe(64);
+    expect($ok['expected_len'])->toBe(64);
+    expect($ok['matches'])->toBeTrue();
+    // La muestra es del hash, nunca del secreto.
+    expect($ok['received_sample'])->not->toContain('s3cr3t');
+
+    // Sin header → parece un escáner (ruido).
+    $none = $bold->signatureDiagnostics($raw, null);
+    expect($none['signature_present'])->toBeFalse();
+    expect($none['received_format'])->toBe('ausente');
+    expect($none['matches'])->toBeFalse();
+
+    // Firma en base64 (esquema equivocado) → no coincide y se detecta el formato.
+    $wrong = $bold->signatureDiagnostics($raw, base64_encode('otra-cosa-xyz'));
+    expect($wrong['received_format'])->toBe('base64');
+    expect($wrong['matches'])->toBeFalse();
+});

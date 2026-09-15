@@ -5,6 +5,7 @@ import {
     CreditCard,
     Crown,
     Files,
+    Globe,
     Image as ImageIcon,
     Layers,
     LayoutDashboard,
@@ -211,10 +212,38 @@ export function buildAssociateItems(locks: AssociateLocks): NavItem[] {
             ],
         },
         {
-            name: 'Galería de Fotos',
-            icon: ImageIcon,
-            href: route('associate.company.gallery'),
+            // Micrositio público del asociado (plan 0021). Se nutre por secciones,
+            // espejo de las pestañas públicas. Se irá completando por cortes.
+            name: 'Mi Página',
+            icon: Globe,
             locked: isGeneralLocked,
+            children: [
+                {
+                    name: 'Quiénes somos',
+                    href: route('associate.company.microsite.about'),
+                    locked: isGeneralLocked,
+                },
+                {
+                    name: 'Servicios',
+                    href: route('associate.company.microsite.services'),
+                    locked: isGeneralLocked,
+                },
+                {
+                    name: 'Proyectos',
+                    href: route('associate.company.microsite.projects'),
+                    locked: isGeneralLocked,
+                },
+                {
+                    name: 'Galería',
+                    href: route('associate.company.gallery'),
+                    locked: isGeneralLocked,
+                },
+                {
+                    name: 'Contacto',
+                    href: route('associate.company.microsite.contact'),
+                    locked: isGeneralLocked,
+                },
+            ],
         },
         {
             name: 'Anuncios y Licitaciones',

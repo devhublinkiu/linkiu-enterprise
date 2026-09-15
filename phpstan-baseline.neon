@@ -549,12 +549,54 @@ parameters:
 		-
 			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$services\.$#'
 			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$projects\.$#'
+			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\|Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\Associate\>\:\:\$services\.$#'
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$certifications\.$#'
 			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$teamMembers\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$clients\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''certifications'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''clients'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''projects'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''teamMembers'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
 			count: 2
 			path: app/Http/Controllers/PublicCompanyController.php
 
@@ -597,19 +639,19 @@ parameters:
 		-
 			message: '#^Relation ''contacts'' is not found in App\\Models\\Associate model\.$#'
 			identifier: larastan.relationExistence
-			count: 1
+			count: 2
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
 			message: '#^Relation ''references'' is not found in App\\Models\\Associate model\.$#'
 			identifier: larastan.relationExistence
-			count: 1
+			count: 2
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
 			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
 			identifier: larastan.relationExistence
-			count: 4
+			count: 5
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
@@ -617,6 +659,72 @@ parameters:
 			identifier: larastan.relationExistence
 			count: 1
 			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$certifications\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$teamMembers\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$clients\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Relation ''certifications'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Relation ''teamMembers'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Relation ''clients'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$services\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Relation ''projects'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$projects\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AssociateProject\:\:\$images\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
 
 		-
 			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
@@ -675,7 +783,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property App\\Models\\User\:\:\$associate\.$#'
 			identifier: property.notFound
-			count: 6
+			count: 10
 			path: app/Http/Middleware/HandleInertiaRequests.php
 
 		-

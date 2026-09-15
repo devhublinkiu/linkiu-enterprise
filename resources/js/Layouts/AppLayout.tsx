@@ -33,7 +33,7 @@ import NotificationToastStack from '@/Components/NotificationToastStack';
 import { useNotifications } from '@/hooks/useNotifications';
 import { PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, LogOut, UserCircle } from 'lucide-react';
+import { Bell, Globe, LogOut, UserCircle } from 'lucide-react';
 import { Fragment, PropsWithChildren, ReactNode } from 'react';
 
 type LayoutAuth = {
@@ -43,7 +43,11 @@ type LayoutAuth = {
         role?: string;
         profile_photo_url?: string | null;
     };
-    associate?: { logo_url?: string | null } | null;
+    associate?: {
+        logo_url?: string | null;
+        microsite_url?: string | null;
+        microsite_published?: boolean;
+    } | null;
 };
 
 export default function AppLayout({
@@ -115,6 +119,29 @@ export default function AppLayout({
                         </div>
 
                         <div className="flex items-center gap-3">
+                            {!isAdmin && associate?.microsite_url && (
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    size="sm"
+                                    className="hidden sm:inline-flex"
+                                >
+                                    <a
+                                        href={associate.microsite_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        <Globe />
+                                        Ver mi página
+                                        {associate.microsite_published ===
+                                            false && (
+                                            <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                                borrador
+                                            </span>
+                                        )}
+                                    </a>
+                                </Button>
+                            )}
                             <Button
                                 variant="ghost"
                                 size="icon"

@@ -2,8 +2,16 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Associate;
+use App\Models\Feature;
+use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\PaymentRequest;
 use App\Models\ServiceCategory;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -35,7 +43,7 @@ class HandleInertiaRequests extends Middleware
         // Build subscription data for associates
         $subscription = null;
         if ($user && $user->associate_id) {
-            $associate = \App\Models\Associate::with('plan')->find($user->associate_id);
+            $associate = Associate::with('plan')->find($user->associate_id);
             if ($associate) {
                 $status = 'none';
                 $daysRemaining = null;
@@ -43,19 +51,19 @@ class HandleInertiaRequests extends Middleware
                 $planStartedAt = null;
 
                 if ($associate->plan_id && $associate->plan_expires_at) {
-                    $planStartedAt = \App\Models\PaymentRequest::where('user_id', $user->id)
+                    $planStartedAt = PaymentRequest::where('user_id', $user->id)
                         ->where('status', 'approved')
                         ->latest()
                         ->value('reviewed_at');
 
                     if ($associate->isSubscriptionActive()) {
                         $daysRemaining = (int) now()->diffInDays($associate->plan_expires_at, false);
-                        $graceDays    = $associate->plan->grace_days ?? 0;
+                        $graceDays = $associate->plan->grace_days ?? 0;
 
                         if ($daysRemaining >= 0) {
                             $status = 'active';
                             if ($planStartedAt) {
-                                $daysTotal = (int) \Carbon\Carbon::parse($planStartedAt)->diffInDays($associate->plan_expires_at);
+                                $daysTotal = (int) Carbon::parse($planStartedAt)->diffInDays($associate->plan_expires_at);
                             }
                         } else {
                             $status = 'grace';
@@ -68,12 +76,12 @@ class HandleInertiaRequests extends Middleware
                 }
 
                 $subscription = [
-                    'status'       => $status,
-                    'plan_name'    => $associate->plan?->name,
-                    'plan_color'   => $associate->plan?->color_hex,
+                    'status' => $status,
+                    'plan_name' => $associate->plan?->name,
+                    'plan_color' => $associate->plan?->color_hex,
                     'days_remaining' => $daysRemaining,
-                    'days_total'     => $daysTotal,
-                    'expires_at'   => $associate->plan_expires_at?->format('d/m/Y'),
+                    'days_total' => $daysTotal,
+                    'expires_at' => $associate->plan_expires_at?->format('d/m/Y'),
                 ];
             }
         }
@@ -82,61 +90,67 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'associate_counts' => $user && ($user->is_superadmin || $user->role === 'admin')
             ? [
-                'approved' => \App\Models\Associate::where('status', 'approved')->count(),
-                'pending'  => \App\Models\Associate::where('status', 'pending')->count(),
-                'inactive' => \App\Models\Associate::where('status', 'inactive')->count(),
+                'approved' => Associate::where('status', 'approved')->count(),
+                'pending' => Associate::where('status', 'pending')->count(),
+                'inactive' => Associate::where('status', 'inactive')->count(),
             ]
             : null,
             // Comprobantes esperando revisión: los del motor nuevo más los que
             // queden en la tabla congelada mientras se termina la transición.
             // Ver docs/adr/0001-motor-de-cobro-unificado.md
             'pending_payment_requests' => $user && ($user->is_superadmin || $user->role === 'admin')
-                ? \App\Models\Payment::where('status', \App\Models\Payment::STATUS_PENDING)
-                    ->where('method', '!=', \App\Models\Payment::METHOD_BOLD)
+                ? Payment::where('status', Payment::STATUS_PENDING)
+                    ->where('method', '!=', Payment::METHOD_BOLD)
                     ->count()
-                  + \App\Models\PaymentRequest::where('status', 'pending')->count()
+                  + PaymentRequest::where('status', 'pending')->count()
                 : null,
             'auth' => [
-                'user'         => $user,
-                'associate'    => $user && $user->associate_id
+                'user' => $user,
+                'associate' => $user && $user->associate_id
                 ? [
-                    'id'           => $user->associate->id,
-                    'status'       => $user->associate->status,
-                    'is_public'    => (bool) $user->associate->is_public,
+                    'id' => $user->associate->id,
+                    'status' => $user->associate->status,
+                    'is_public' => (bool) $user->associate->is_public,
                     'company_name' => $user->associate->company_name,
-                    'logo_url'     => $user->associate->logo_path
-                        ? \Illuminate\Support\Facades\Storage::url($user->associate->logo_path)
+                    'logo_url' => $user->associate->logo_path
+                        ? Storage::url($user->associate->logo_path)
                         : null,
+                    // Micrositio (plan 0021): dirección pública para el botón "Ver mi
+                    // página" del topbar y estado de publicado (borrador = vista previa).
+                    'microsite_url' => $user->associate->slug
+                        ? url('/'.$user->associate->slug)
+                        : route('companies.show', $user->associate->id),
+                    'microsite_published' => (bool) $user->associate->microsite_published,
                 ]
                 : null,
             ],
-            'subscription'       => $subscription,
+            'subscription' => $subscription,
             // Módulos que incluye el plan del asociado. Cortesía para que la UI
             // oculte lo que el plan no trae; la comprobación real vive en el
             // servidor (middleware feature:*). Ver ADR-0002.
-            'plan_features'      => $this->planFeatures($user),
-            'unread_invoices'    => $user && $user->associate_id
-                ? \App\Models\Invoice::where('associate_id', $user->associate_id)->whereNull('read_at')->count()
+            'plan_features' => $this->planFeatures($user),
+            'unread_invoices' => $user && $user->associate_id
+                ? Invoice::where('associate_id', $user->associate_id)->whereNull('read_at')->count()
                 : null,
             'service_categories' => ServiceCategory::withCount('services')->get(['id', 'name', 'slug', 'services_count']),
-            'recent_companies' => \App\Models\Associate::where('status', 'approved')
+            'recent_companies' => Associate::where('status', 'approved')
                 ->where('is_public', true)
                 ->latest()
                 ->take(5)
                 ->get(['id', 'company_name', 'logo_path'])
-                ->map(fn($a) => [
-                    'id'   => $a->id,
+                ->map(fn ($a) => [
+                    'id' => $a->id,
                     'name' => $a->company_name,
-                    'logo' => $a->logo_path ? \Illuminate\Support\Facades\Storage::url($a->logo_path) : null,
+                    'logo' => $a->logo_path ? Storage::url($a->logo_path) : null,
                 ]),
             'tenant' => [
-                'id'           => 'camep',
+                'id' => 'camep',
                 'company_name' => 'CAMEP',
-                'plan_type'    => 'Premium',
+                'plan_type' => 'Premium',
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),
-                'error'   => $request->session()->get('error'),
+                'error' => $request->session()->get('error'),
                 'draft_saved' => $request->session()->get('draft_saved'),
             ],
         ];
@@ -146,21 +160,21 @@ class HandleInertiaRequests extends Middleware
      * Mapa {clave-de-módulo: bool} de lo que incluye el plan del asociado.
      * Solo para asociados; para admin y visitantes devuelve un mapa vacío.
      */
-    private function planFeatures(?\App\Models\User $user): array
+    private function planFeatures(?User $user): array
     {
-        if (!$user || !$user->associate_id || $user->isAdmin()) {
+        if (! $user || ! $user->associate_id || $user->isAdmin()) {
             return [];
         }
 
-        $associate = \App\Models\Associate::with('plan.features')->find($user->associate_id);
-        $plan      = $associate?->plan;
+        $associate = Associate::with('plan.features')->find($user->associate_id);
+        $plan = $associate?->plan;
 
-        if (!$plan) {
+        if (! $plan) {
             return [];
         }
 
         $map = [];
-        foreach (\App\Models\Feature::orderBy('sort')->pluck('key') as $key) {
+        foreach (Feature::orderBy('sort')->pluck('key') as $key) {
             $map[$key] = $plan->allows($key);
         }
 

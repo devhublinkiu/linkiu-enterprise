@@ -16,6 +16,8 @@ class PublicCompanyController extends Controller
     {
         $query = Associate::where('associates.status', 'approved')
             ->where('is_public', true)
+            // Micrositio en borrador → fuera del directorio (plan 0021, corte 21-E).
+            ->where('associates.microsite_published', true)
             ->leftJoin('plans', 'associates.plan_id', '=', 'plans.id')
             ->select('associates.*', 'plans.color_hex as plan_color', 'plans.name as plan_name')
             // Orden neutro: la prioridad por plan se retiró (plan 0016).
@@ -84,48 +86,135 @@ class PublicCompanyController extends Controller
     public function show($id)
     {
         $associate = Associate::where('status', 'approved')
-            ->where('is_public', true)
-            ->with(['services.category', 'contacts', 'references'])
+            ->with(['services.category', 'contacts', 'references', 'projects.images', 'certifications', 'teamMembers', 'clients'])
             ->findOrFail($id);
 
-        $disk = config('filesystems.default');
+        // URL canónica: si ya tiene slug, redirige a la dirección personalizada.
+        if ($associate->slug) {
+            return redirect()->route('companies.microsite', ['slug' => $associate->slug], 301);
+        }
 
-        // Group services by category
-        $categories = $associate->services->pluck('category')->unique('id')->values()->map(function ($cat) use ($associate) {
-            return [
-                'id' => $cat->id,
-                'name' => $cat->name,
-                'services' => $associate->services->where('category_id', $cat->id)->values()->map(fn ($s) => $s->name),
-            ];
-        });
+        return $this->renderVisible($associate);
+    }
+
+    /**
+     * Micrositio por slug personalizado (ruta de último recurso en el raíz).
+     * Plan 0021 / ADR-0009. Un slug reservado nunca llega aquí (guard de ruta),
+     * pero se comprueba igual por defensa.
+     */
+    public function showBySlug(string $slug)
+    {
+        if (Associate::isReservedSlug($slug)) {
+            abort(404);
+        }
+
+        $associate = Associate::where('slug', $slug)
+            ->where('status', 'approved')
+            ->with(['services.category', 'contacts', 'references', 'projects.images', 'certifications', 'teamMembers', 'clients'])
+            ->firstOrFail();
+
+        return $this->renderVisible($associate);
+    }
+
+    /**
+     * Compuerta de visibilidad del micrositio (plan 0021, corte 21-E):
+     * público solo si is_public + microsite_published; si está en borrador, solo
+     * el dueño lo ve como vista previa. Cualquier otro caso → 404.
+     */
+    private function renderVisible(Associate $associate)
+    {
+        $viewerAssociateId = auth()->user()?->associate_id;
+        $isOwner = $viewerAssociateId && (int) $viewerAssociateId === (int) $associate->id;
+
+        $live = $associate->is_public && $associate->microsite_published;
+        $ownerPreview = $isOwner && $associate->is_public && ! $associate->microsite_published;
+
+        abort_unless($live || $ownerPreview, 404);
+
+        return $this->renderProfile($associate, $ownerPreview);
+    }
+
+    private function renderProfile(Associate $associate, bool $preview = false)
+    {
+        $disk = config('filesystems.default');
+        $url = fn (?string $path) => $path ? Storage::disk($disk)->url($path) : null;
+
+        // Servicios aprobados enriquecidos (plan 0021): nombre + categoría + la
+        // descripción/cover del pivot (opcionales). No se inventan servicios.
+        $services = $associate->services->map(fn ($s) => [
+            'id' => $s->id,
+            'name' => $s->name,
+            'category' => $s->category?->name,
+            'description' => $s->pivot->description,
+            'cover' => $url($s->pivot->cover_path),
+        ])->values();
+
+        $projects = $associate->projects->map(fn ($p) => [
+            'id' => $p->id,
+            'title' => $p->title,
+            'description' => $p->description,
+            'client' => $p->client,
+            'images' => $p->images->map(fn ($img) => $url($img->path))->values(),
+        ])->values();
 
         $data = [
             'id' => $associate->id,
             'name' => $associate->company_name,
+            'slug' => $associate->slug,
             'nit' => $associate->nit,
-            'description' => $associate->description,
-            'logo' => $associate->logo_path ? Storage::disk($disk)->url($associate->logo_path) : null,
-            'cover' => $associate->cover_path ? Storage::disk($disk)->url($associate->cover_path) : null,
-            'gallery' => collect($associate->gallery_paths ?? [])->map(fn ($path) => Storage::disk($disk)->url($path)),
             'is_verified' => $associate->is_verified,
-            'website' => $associate->website,
-            'phone' => $associate->phone,
-            'facebook' => $associate->social_facebook,
-            'instagram' => $associate->social_instagram,
-            'linkedin' => $associate->social_linkedin,
-            'billing_email' => $associate->billing_email,
-            'address' => $associate->address,
-            'department' => $associate->department,
-            'city' => $associate->city,
-            'rep_name' => $associate->rep_name,
-            'constitution_date' => $associate->constitution_date ? $associate->constitution_date->format('d/m/Y') : null,
-            'main_ciiu' => $associate->main_ciiu,
-            'company_type' => $associate->company_type,
-            'categories' => $categories,
+            'logo' => $url($associate->logo_path),
+            'cover' => $url($associate->cover_path),
+            'facades' => collect($associate->facade_paths ?? [])->take(3)->map($url)->values(),
+            'about_story' => $associate->about_story,
+            'about_image' => $url($associate->about_image_path),
+            'description' => $associate->description,
+            'legal' => [
+                'rep_name' => $associate->rep_name,
+                'main_ciiu' => $associate->main_ciiu,
+                'constitution_date' => $associate->constitution_date?->format('d/m/Y'),
+                'company_type' => $associate->company_type,
+                'address' => $associate->address,
+                'department' => $associate->department,
+                'city' => $associate->city,
+            ],
+            'contact' => [
+                'phone' => $associate->phone,
+                'whatsapp' => $associate->whatsapp,
+                'email' => $associate->contact_email ?: $associate->billing_email,
+                'website' => $associate->website,
+                'address' => $associate->address,
+                'facebook' => $associate->social_facebook,
+                'instagram' => $associate->social_instagram,
+                'linkedin' => $associate->social_linkedin,
+            ],
+            'services' => $services,
+            'projects' => $projects,
+            'gallery' => collect($associate->gallery_paths ?? [])->map($url)->values(),
+            'certifications' => $associate->certifications->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'year' => $c->year,
+                'image' => $url($c->image_path),
+            ])->values(),
+            'team' => $associate->teamMembers->map(fn ($m) => [
+                'id' => $m->id,
+                'name' => $m->name,
+                'position' => $m->position,
+                'photo' => $url($m->photo_path),
+                'email' => $m->email,
+                'phone' => $m->phone,
+            ])->values(),
+            'clients' => $associate->clients->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'logo' => $url($c->logo_path),
+            ])->values(),
         ];
 
         return Inertia::render('Public/Companies/Show', [
             'company' => $data,
+            'preview' => $preview,
         ]);
     }
 
@@ -157,6 +246,7 @@ class PublicCompanyController extends Controller
             ->with(['category', 'associates' => function ($query) {
                 $query->where('associates.status', 'approved')
                     ->where('is_public', true)
+                    ->where('associates.microsite_published', true)
                     ->leftJoin('plans', 'associates.plan_id', '=', 'plans.id')
                     ->select('associates.*', 'plans.color_hex as plan_color')
                     // Orden neutro: la prioridad por plan se retiró (plan 0016).

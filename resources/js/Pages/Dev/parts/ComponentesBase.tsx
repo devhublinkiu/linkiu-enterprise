@@ -161,6 +161,12 @@ import {
     TableHeader,
     TableRow,
 } from '@/Components/base/Table';
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '@/Components/base/Tabs';
 import { Textarea } from '@/Components/base/Textarea';
 import {
     Tooltip,
@@ -176,6 +182,7 @@ import {
     CreditCard,
     Info,
     LayoutDashboard,
+    Lock,
     LogOut,
     Mail,
     Plus,
@@ -183,6 +190,7 @@ import {
     Settings,
     Trash2,
     TriangleAlert,
+    User,
     UserCircle,
     Users,
 } from 'lucide-react';
@@ -1525,6 +1533,78 @@ export default function ComponentesBase() {
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
+                </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="space-y-4 rounded-lg border p-5">
+                <p className="text-small font-medium">Tabs</p>
+                <div className="grid gap-6">
+                    <div className="space-y-2">
+                        <p className="text-caption text-muted-foreground">
+                            Segmentado (default)
+                        </p>
+                        <Tabs defaultValue="cuenta" className="max-w-sm">
+                            <TabsList className="w-full">
+                                <TabsTrigger value="cuenta">
+                                    <User />
+                                    Cuenta
+                                </TabsTrigger>
+                                <TabsTrigger value="clave">
+                                    <Lock />
+                                    Contraseña
+                                </TabsTrigger>
+                            </TabsList>
+                            <TabsContent
+                                value="cuenta"
+                                className="text-muted-foreground"
+                            >
+                                Ajustes de la cuenta.
+                            </TabsContent>
+                            <TabsContent
+                                value="clave"
+                                className="text-muted-foreground"
+                            >
+                                Cambia tu contraseña.
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+                    <div className="space-y-2">
+                        <p className="text-caption text-muted-foreground">
+                            Subrayado (line)
+                        </p>
+                        <Tabs defaultValue="resumen">
+                            <TabsList variant="line">
+                                <TabsTrigger value="resumen">
+                                    Resumen
+                                </TabsTrigger>
+                                <TabsTrigger value="analitica">
+                                    Analítica
+                                </TabsTrigger>
+                                <TabsTrigger value="reportes">
+                                    Reportes
+                                </TabsTrigger>
+                            </TabsList>
+                            <TabsContent
+                                value="resumen"
+                                className="text-muted-foreground"
+                            >
+                                Vista general.
+                            </TabsContent>
+                            <TabsContent
+                                value="analitica"
+                                className="text-muted-foreground"
+                            >
+                                Métricas y gráficas.
+                            </TabsContent>
+                            <TabsContent
+                                value="reportes"
+                                className="text-muted-foreground"
+                            >
+                                Descarga de reportes.
+                            </TabsContent>
+                        </Tabs>
+                    </div>
                 </div>
             </div>
 

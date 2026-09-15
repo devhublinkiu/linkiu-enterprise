@@ -5,6 +5,7 @@ use App\Http\Controllers\Associate\BienesServiciosController;
 use App\Http\Controllers\Associate\CheckoutController;
 use App\Http\Controllers\Associate\InvoiceController;
 use App\Http\Controllers\Associate\InvoicePaymentController;
+use App\Http\Controllers\Associate\MicrositeController;
 use App\Http\Controllers\AssociateController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -264,6 +265,56 @@ Route::middleware('auth')->group(function () {
         // Mis Facturas
         Route::get('/mis-facturas', [InvoiceController::class, 'index'])->name('invoices.index');
 
+        // Micrositio "Mi Página" — slug (plan 0021). El authoring por pestañas llega
+        // en cortes siguientes; aquí van la disponibilidad en vivo y el guardado.
+        Route::post('/microsite/slug/check', [MicrositeController::class, 'checkSlug'])
+            ->name('microsite.slug.check')->middleware('throttle:30,1');
+        Route::post('/microsite/slug', [MicrositeController::class, 'updateSlug'])
+            ->name('microsite.slug.update');
+        Route::get('/mi-pagina/quienes-somos', [MicrositeController::class, 'about'])
+            ->name('microsite.about');
+        Route::post('/mi-pagina/historia', [MicrositeController::class, 'updateStory'])
+            ->name('microsite.story.update');
+        Route::post('/mi-pagina/certificaciones', [MicrositeController::class, 'storeCertification'])
+            ->name('microsite.certifications.store');
+        Route::post('/mi-pagina/certificaciones/{certification}', [MicrositeController::class, 'updateCertification'])
+            ->name('microsite.certifications.update');
+        Route::delete('/mi-pagina/certificaciones/{certification}', [MicrositeController::class, 'destroyCertification'])
+            ->name('microsite.certifications.destroy');
+        Route::post('/mi-pagina/equipo', [MicrositeController::class, 'storeTeamMember'])
+            ->name('microsite.team.store');
+        Route::post('/mi-pagina/equipo/{teamMember}', [MicrositeController::class, 'updateTeamMember'])
+            ->name('microsite.team.update');
+        Route::delete('/mi-pagina/equipo/{teamMember}', [MicrositeController::class, 'destroyTeamMember'])
+            ->name('microsite.team.destroy');
+        Route::post('/mi-pagina/clientes', [MicrositeController::class, 'storeClient'])
+            ->name('microsite.clients.store');
+        Route::post('/mi-pagina/clientes/{client}', [MicrositeController::class, 'updateClient'])
+            ->name('microsite.clients.update');
+        Route::delete('/mi-pagina/clientes/{client}', [MicrositeController::class, 'destroyClient'])
+            ->name('microsite.clients.destroy');
+        // Servicios: solo enriquece (descripción + cover) los ya seleccionados.
+        Route::get('/mi-pagina/servicios', [MicrositeController::class, 'services'])
+            ->name('microsite.services');
+        Route::post('/mi-pagina/servicios/{service}', [MicrositeController::class, 'updateService'])
+            ->name('microsite.services.update');
+        // Proyectos: CRUD por ítem (imágenes en tabla hija).
+        Route::get('/mi-pagina/proyectos', [MicrositeController::class, 'projects'])
+            ->name('microsite.projects');
+        Route::post('/mi-pagina/proyectos', [MicrositeController::class, 'storeProject'])
+            ->name('microsite.projects.store');
+        Route::post('/mi-pagina/proyectos/{project}', [MicrositeController::class, 'updateProject'])
+            ->name('microsite.projects.update');
+        Route::delete('/mi-pagina/proyectos/{project}', [MicrositeController::class, 'destroyProject'])
+            ->name('microsite.projects.destroy');
+        // Contacto (reúsa perfil + WhatsApp/correo/fachada) e interruptor de publicado.
+        Route::get('/mi-pagina/contacto', [MicrositeController::class, 'contact'])
+            ->name('microsite.contact');
+        Route::post('/mi-pagina/contacto', [MicrositeController::class, 'updateContact'])
+            ->name('microsite.contact.update');
+        Route::post('/mi-pagina/publicado', [MicrositeController::class, 'togglePublished'])
+            ->name('microsite.published.toggle');
+
         // Bienes y Servicios (Associate) — beneficio de plan: se corta al vencer
         Route::middleware(['subscription.active'])->group(function () {
             Route::get('/bienes-y-servicios', [BienesServiciosController::class, 'index'])->name('bienes-servicios.index');
@@ -296,3 +347,12 @@ if (app()->environment('local')) {
         return Inertia::render('Dev/Componentes');
     })->name('dev.componentes');
 }
+
+// Micrositio por slug en el raíz (dominio/mi-empresa). DEBE ir de ÚLTIMO: todas las
+// rutas reales (login, panel, /empresas, /nosotros…) se resuelven antes; esto solo
+// captura un único segmento con forma de slug que nadie más reclamó. Un slug que pise
+// una ruta del sistema está en la lista de reservadas (config/microsite.php) y nunca
+// se pudo tomar. Ver ADR-0009 / plan 0021 (corte 21-A).
+Route::get('/{slug}', [PublicCompanyController::class, 'showBySlug'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('companies.microsite');

@@ -37,5 +37,6 @@ se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas
 | [0018](0018-admin-finanzas.md) | Admin · Finanzas (Pagos, Facturación, Datos bancarios) + menú | Hecho |
 | [0019](0019-integraciones-bold-y-limpieza-legacy.md) | Integraciones (Bold) + retiro del legado de solicitudes | Hecho |
 | [0020](0020-asociado-dashboard-galeria-sidebar.md) | Asociado · Dashboard + Galería (a base/) + card del plan al pie y badge "Próximamente" | Hecho |
+| [0021](0021-micrositio-publico-asociado.md) | Micrositio público del asociado ("Mi Página"): 5 pestañas + slug + authoring | Borrador |
 
 Estados posibles: `Borrador` · `Aprobado (#go)` · `En curso` · `Hecho` · `Descartado`.

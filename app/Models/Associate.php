@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Services\SubscriptionService;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
  * El ENUM real de `status` se amplió por migraciones con `DB::statement` que el análisis
@@ -46,6 +47,9 @@ class Associate extends Model
         'membership_interest', 'membership_interest_other', 'logo_path', 'cover_path', 'gallery_paths', 'files',
         'section_reviews', 'status', 'is_public', 'is_verified', 'plan_id', 'plan_expires_at',
         'billing_cycle', 'deactivated_at',
+        // Micrositio (plan 0021)
+        'slug', 'microsite_published', 'whatsapp', 'contact_email', 'about_story',
+        'about_image_path', 'facade_paths',
     ];
 
     protected $casts = [
@@ -57,12 +61,14 @@ class Associate extends Model
         'company_type' => 'array',
         'membership_interest' => 'array',
         'gallery_paths' => 'array',
+        'facade_paths' => 'array',
         'files' => 'array',
         'section_reviews' => 'array',
         'is_public' => 'boolean',
         'is_verified' => 'boolean',
         'plan_expires_at' => 'datetime',
         'deactivated_at' => 'datetime',
+        'microsite_published' => 'boolean',
     ];
 
     // ─── Relationships ────────────────────────────────────────────────────────
@@ -79,7 +85,50 @@ class Associate extends Model
 
     public function services()
     {
-        return $this->belongsToMany(Service::class, 'associate_service');
+        // Pivot enriquecido para el micrositio (plan 0021): descripción y cover por
+        // servicio, opcionales. La SELECCIÓN de servicios sigue siendo la sección
+        // revisada; aquí solo se adorna lo ya aprobado.
+        return $this->belongsToMany(Service::class, 'associate_service')
+            ->withPivot(['description', 'cover_path']);
+    }
+
+    // ─── Micrositio (plan 0021) ───────────────────────────────────────────────
+
+    public function projects()
+    {
+        return $this->hasMany(AssociateProject::class)->orderBy('sort');
+    }
+
+    public function certifications()
+    {
+        return $this->hasMany(AssociateCertification::class)->orderBy('sort');
+    }
+
+    public function teamMembers()
+    {
+        return $this->hasMany(AssociateTeamMember::class)->orderBy('sort');
+    }
+
+    public function clients()
+    {
+        return $this->hasMany(AssociateClient::class)->orderBy('sort');
+    }
+
+    /**
+     * Normaliza un texto a slug de micrositio (fuente de verdad, server-side).
+     * "Empresa X" → "empresa-x"; "Construcción Ñandú" → "construccion-nandu".
+     */
+    public static function normalizeSlug(?string $value): string
+    {
+        return Str::slug((string) $value);
+    }
+
+    /**
+     * ¿El slug (ya normalizado) está reservado por una ruta del sistema?
+     */
+    public static function isReservedSlug(string $slug): bool
+    {
+        return in_array($slug, config('microsite.reserved_slugs', []), true);
     }
 
     public function users()

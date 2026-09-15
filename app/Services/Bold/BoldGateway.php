@@ -173,6 +173,20 @@ class BoldGateway
     }
 
     /**
+     * Firma un cuerpo con NUESTRO secreto de webhook, con el mismo esquema que
+     * verifica {@see verifySignature}. Solo para uso interno de diagnóstico
+     * (p. ej. simular un webhook de Bold): el secreto nunca sale de aquí.
+     */
+    public function sign(string $rawBody): ?string
+    {
+        $secret = $this->webhookSecret();
+
+        return $secret === null
+            ? null
+            : hash_hmac('sha256', base64_encode($rawBody), $secret);
+    }
+
+    /**
      * Metadatos SEGUROS para diagnosticar por qué falló una firma, sin exponer
      * el secreto ni el cuerpo. Sirve para distinguir un escáner (sin header) de
      * un esquema equivocado (formato distinto) o una llave equivocada.

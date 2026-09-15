@@ -117,3 +117,23 @@ it('el diagnóstico de firma es seguro y distingue escáner, esquema y llave', f
     expect($wrong['received_format'])->toBe('base64');
     expect($wrong['matches'])->toBeFalse();
 });
+
+it('sign() produce una firma que verifySignature() acepta', function () {
+    BoldSetting::create([
+        'test_secret_key' => 'llave-de-test',
+        'environment' => 'test',
+        'is_active' => true,
+    ]);
+    $bold = app(BoldGateway::class);
+    $raw = '{"type":"SALE_APPROVED","data":{"metadata":{"reference":"CAMEP-1-AAA"}}}';
+
+    $sig = $bold->sign($raw);
+    expect($sig)->not->toBeNull();
+    expect($bold->verifySignature($raw, $sig))->toBeTrue();
+});
+
+it('payments:simulate-bold falla si la referencia no existe', function () {
+    $this->artisan('payments:simulate-bold', ['reference' => 'NO-EXISTE'])
+        ->expectsOutputToContain('No hay pago Bold con referencia NO-EXISTE.')
+        ->assertExitCode(1);
+});

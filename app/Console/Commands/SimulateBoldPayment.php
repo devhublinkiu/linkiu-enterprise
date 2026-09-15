@@ -4,18 +4,20 @@ namespace App\Console\Commands;
 
 use App\Models\Payment;
 use App\Services\Bold\BoldGateway;
-use App\Services\PaymentService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Http;
 
 /**
- * Simula un webhook de Bold para un pago concreto, firmándolo con NUESTRO propio
- * secreto y pasándolo por el mismo camino que el webhook real (verificar firma →
- * parsear → aplicar). Sirve para dos cosas:
+ * Simula un webhook de Bold para un pago concreto: arma el aviso con la estructura
+ * real de Bold, lo firma con NUESTRO propio secreto y lo **envía por HTTP al propio
+ * endpoint** `/webhooks/bold`. Al ir por HTTP corre en el mismo contexto que un
+ * aviso real de Bold (bajo Octane/Swoole, dentro de la corrutina de la petición),
+ * así que `defer()` y todo el pipeline funcionan igual que en producción.
  *
- *   1. Validar de punta a punta el pipeline (firma + aplicación) sin depender de
- *      que Bold entregue el aviso.
- *   2. Recuperar a mano un pago que quedó "procesando" porque el webhook se
- *      perdió (uso de diagnóstico/soporte, sólo por consola).
+ * Sirve para dos cosas:
+ *   1. Validar de punta a punta (firma + aplicación) sin depender de que Bold
+ *      entregue el aviso.
+ *   2. Recuperar a mano un pago que quedó "procesando" porque el webhook se perdió.
  *
  * OJO: aplicar un pago extiende la vigencia. Úsalo sólo cuando sepas que el pago
  * fue realmente aprobado en Bold. Ver docs/adr/0001-motor-de-cobro-unificado.md
@@ -25,11 +27,12 @@ class SimulateBoldPayment extends Command
     protected $signature = 'payments:simulate-bold
                             {reference : Referencia del pago (Payment->reference)}
                             {--outcome=approved : approved|rejected}
-                            {--dry-run : Verifica la firma y muestra el payload, sin aplicar}';
+                            {--url= : URL del webhook (por defecto, la del propio sitio)}
+                            {--dry-run : Verifica la firma y muestra el payload, sin enviarlo}';
 
     protected $description = 'Simula un webhook de Bold firmado con nuestro secreto (diagnóstico/recuperación manual).';
 
-    public function handle(BoldGateway $bold, PaymentService $payments): int
+    public function handle(BoldGateway $bold): int
     {
         $reference = (string) $this->argument('reference');
         $payment = Payment::where('method', Payment::METHOD_BOLD)
@@ -59,51 +62,39 @@ class SimulateBoldPayment extends Command
         ];
         $raw = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        // Firmamos con nuestro secreto y verificamos por el mismo camino del webhook.
+        // Firmamos con nuestro secreto (mismo esquema que verifica el webhook).
         $signature = $bold->sign($raw);
         if ($signature === null) {
             $this->error('No hay secreto de webhook configurado; no se puede firmar.');
 
             return self::FAILURE;
         }
-        if ($bold->verifySignature($raw, $signature) !== true) {
-            $this->error('La firma simulada no verifica (revisa la configuración de Bold).');
-
-            return self::FAILURE;
-        }
-        $this->info('Firma verificada ✔');
+        $this->info('Firma calculada ✔');
 
         if ($this->option('dry-run')) {
             $this->line($raw);
-            $this->warn('[DRY-RUN] No se aplicó nada.');
+            $this->warn('[DRY-RUN] No se envió nada.');
 
             return self::SUCCESS;
         }
 
-        if ($payment->isApplied()) {
-            $this->warn('El pago ya estaba aplicado. Nada que hacer.');
+        // Enviamos el aviso firmado al propio endpoint (contexto HTTP/Octane).
+        $url = (string) ($this->option('url') ?: url('/webhooks/bold'));
+        $response = Http::withHeaders([
+            $bold->signatureHeader() => $signature,
+            'Accept' => 'application/json',
+        ])->withBody($raw, 'application/json')->post($url);
+
+        $this->line("POST {$url} → HTTP {$response->status()}: ".$response->body());
+
+        if ($response->successful()) {
+            $this->info('Webhook procesado. Verifica el estado del pago.');
 
             return self::SUCCESS;
         }
 
-        $parsed = $bold->parseWebhook($body);
+        $this->error('El endpoint respondió con error (revisa la firma/config o la URL).');
 
-        if ($outcome === 'approved') {
-            $payments->approve($payment, null, [
-                'payment_id' => $parsed['payment_id'],
-                'payload' => $parsed['payload'],
-            ]);
-            $this->info("Pago {$reference} aplicado (simulado).");
-        } else {
-            $payments->reject(
-                $payment,
-                'Rechazo simulado con payments:simulate-bold.',
-                null,
-                ['payload' => $parsed['payload']],
-            );
-            $this->info("Pago {$reference} marcado como rechazado (simulado).");
-        }
-
-        return self::SUCCESS;
+        return self::FAILURE;
     }
 }

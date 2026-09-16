@@ -1,12 +1,19 @@
-import { useState, useRef, useEffect } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, Save, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+
+import { Button } from '@/Components/base/Button';
+import { Card, CardContent } from '@/Components/base/Card';
+import { Field, FieldError, FieldLabel } from '@/Components/base/Field';
+import { Input } from '@/Components/base/Input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/base/Select';
 import AppLayout from '@/Layouts/AppLayout';
-import { Button } from '@/Components/ui/Button';
-import { Input } from '@/Components/ui/Input';
-import { Label } from '@/Components/ui/Label';
-import { Card } from '@/Components/ui/Card';
-import { ArrowLeft, Save, Upload, X, Building2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface Company {
     id: number;
@@ -26,36 +33,34 @@ export default function Form({ company }: Props) {
 
     const { data, setData, post, processing, errors } = useForm({
         _method: isEditing ? 'put' : 'post',
-        nombre: company?.nombre || '',
-        departamento: company?.departamento || '',
-        ciudad: company?.ciudad || '',
-        estado: company?.estado || 'activo',
+        nombre: company?.nombre ?? '',
+        departamento: company?.departamento ?? '',
+        ciudad: company?.ciudad ?? '',
+        estado: company?.estado ?? 'activo',
         logo: null as File | null,
     });
 
-    const [logoPreview, setLogoPreview] = useState<string | null>(company?.logo_url || null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(
+        company?.logo_url ?? null,
+    );
     const logoInputRef = useRef<HTMLInputElement>(null);
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (isEditing) {
-            // Use post with _method: put because of multipart/form-data limitations in some environments
-            post(route('admin.bienes-servicios.companies.update', company.id));
-        } else {
-            post(route('admin.bienes-servicios.companies.store'));
-        }
+        post(
+            isEditing
+                ? route('admin.bienes-servicios.companies.update', company!.id)
+                : route('admin.bienes-servicios.companies.store'),
+        );
     };
 
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            setData('logo', file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setLogoPreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
+        if (!file) return;
+        setData('logo', file);
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoPreview(reader.result as string);
+        reader.readAsDataURL(file);
     };
 
     const removeLogo = () => {
@@ -65,135 +70,192 @@ export default function Form({ company }: Props) {
     };
 
     return (
-        <AppLayout
-            header={
-                <div className="flex items-center gap-4">
-                    <Link href={route('admin.bienes-servicios.companies.index')}>
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                            <ArrowLeft size={20} />
-                        </Button>
-                    </Link>
-                    <h2 className="font-semibold text-xl text-slate-800 leading-tight">
-                        {isEditing ? 'Editar Empresa' : 'Nueva Empresa'}
-                    </h2>
-                </div>
-            }
-        >
-            <Head title={`${isEditing ? 'Editar' : 'Crear'} Empresa - Admin`} />
+        <AppLayout>
+            <Head title={`${isEditing ? 'Editar' : 'Nueva'} empresa · Admin`} />
 
-            <div className="py-12">
-                <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
-                    <form onSubmit={submit} className="space-y-6">
-                        <Card className="p-6 border-slate-200 shadow-sm rounded-2xl">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Logo column */}
-                                <div className="space-y-4">
-                                    <Label className="text-sm font-bold text-slate-700 block">Logo de la Empresa</Label>
-                                    <div className="flex flex-col items-center">
-                                        {logoPreview ? (
-                                            <div className="relative rounded-2xl overflow-hidden h-48 w-48 border border-slate-200 group bg-slate-50">
-                                                <img src={logoPreview} alt="Preview" className="w-full h-full object-contain p-4" />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <Button type="button" variant="destructive" size="sm" onClick={removeLogo} className="gap-2 rounded-full font-bold">
-                                                        <X size={16} /> Quitar
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div 
-                                                onClick={() => logoInputRef.current?.click()}
-                                                className="border-2 border-dashed border-slate-200 rounded-2xl h-48 w-48 flex flex-col items-center justify-center text-slate-400 hover:text-orange-500 hover:border-orange-500 hover:bg-orange-50 transition-all cursor-pointer bg-white"
+            <div className="mx-auto max-w-3xl space-y-6">
+                <div className="flex items-center gap-3">
+                    <Button
+                        asChild
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Volver"
+                    >
+                        <Link
+                            href={route(
+                                'admin.bienes-servicios.companies.index',
+                            )}
+                        >
+                            <ArrowLeft className="size-4" />
+                        </Link>
+                    </Button>
+                    <h1 className="font-display text-h3">
+                        {isEditing ? 'Editar empresa' : 'Nueva empresa'}
+                    </h1>
+                </div>
+
+                <form onSubmit={submit}>
+                    <Card>
+                        <CardContent className="grid gap-6 md:grid-cols-[220px_1fr]">
+                            {/* Logo */}
+                            <Field>
+                                <FieldLabel htmlFor="logo">Logo</FieldLabel>
+                                {logoPreview ? (
+                                    <div className="group relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-muted ring-1 ring-foreground/10">
+                                        <img
+                                            src={logoPreview}
+                                            alt="Vista previa del logo"
+                                            className="size-full object-contain p-4"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center bg-foreground/40 opacity-0 transition-opacity group-hover:opacity-100">
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={removeLogo}
                                             >
-                                                <Upload className="mb-2" size={32} />
-                                                <span className="text-sm font-bold">Subir Logo</span>
-                                                <span className="text-[10px] font-medium mt-1">JPG, PNG o WebP</span>
-                                            </div>
-                                        )}
-                                        <Input
-                                            type="file"
-                                            id="logo"
-                                            ref={logoInputRef}
-                                            className="hidden"
-                                            onChange={handleLogoChange}
-                                            accept="image/jpeg,image/png,image/gif,image/webp"
-                                        />
-                                        {errors.logo && <p className="text-red-500 text-xs mt-2">{errors.logo}</p>}
+                                                <X className="size-4" /> Quitar
+                                            </Button>
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            logoInputRef.current?.click()
+                                        }
+                                        className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-input text-muted-foreground transition-colors hover:border-ring hover:bg-muted/50"
+                                    >
+                                        <Upload className="size-7" />
+                                        <span className="text-sm font-medium">
+                                            Subir logo
+                                        </span>
+                                        <span className="text-xs">
+                                            JPG, PNG o WebP
+                                        </span>
+                                    </button>
+                                )}
+                                <input
+                                    ref={logoInputRef}
+                                    type="file"
+                                    id="logo"
+                                    className="hidden"
+                                    onChange={handleLogoChange}
+                                    accept="image/jpeg,image/png,image/gif,image/webp"
+                                />
+                                {errors.logo && (
+                                    <FieldError>{errors.logo}</FieldError>
+                                )}
+                            </Field>
 
-                                {/* Fields column */}
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="nombre" className="text-sm font-bold text-slate-700">Nombre de la Empresa *</Label>
-                                        <Input
-                                            id="nombre"
-                                            value={data.nombre}
-                                            onChange={(e) => setData('nombre', e.target.value)}
-                                            placeholder="Nombre comercial..."
-                                            className="rounded-xl border-slate-200 focus-visible:ring-orange-500 h-11"
-                                            required
-                                        />
-                                        {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
-                                    </div>
+                            {/* Fields */}
+                            <div className="flex flex-col gap-4">
+                                <Field>
+                                    <FieldLabel htmlFor="nombre">
+                                        Nombre de la empresa *
+                                    </FieldLabel>
+                                    <Input
+                                        id="nombre"
+                                        value={data.nombre}
+                                        onChange={(e) =>
+                                            setData('nombre', e.target.value)
+                                        }
+                                        placeholder="Nombre comercial…"
+                                        required
+                                    />
+                                    {errors.nombre && (
+                                        <FieldError>{errors.nombre}</FieldError>
+                                    )}
+                                </Field>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="departamento" className="text-sm font-bold text-slate-700">Departamento</Label>
-                                        <Input
-                                            id="departamento"
-                                            value={data.departamento}
-                                            onChange={(e) => setData('departamento', e.target.value)}
-                                            placeholder="Ej: Casanare..."
-                                            className="rounded-xl border-slate-200 focus-visible:ring-orange-500 h-11"
-                                        />
-                                        {errors.departamento && <p className="text-red-500 text-xs mt-1">{errors.departamento}</p>}
-                                    </div>
+                                <Field>
+                                    <FieldLabel htmlFor="departamento">
+                                        Departamento
+                                    </FieldLabel>
+                                    <Input
+                                        id="departamento"
+                                        value={data.departamento}
+                                        onChange={(e) =>
+                                            setData(
+                                                'departamento',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Ej: Casanare"
+                                    />
+                                    {errors.departamento && (
+                                        <FieldError>
+                                            {errors.departamento}
+                                        </FieldError>
+                                    )}
+                                </Field>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="ciudad" className="text-sm font-bold text-slate-700">Ciudad</Label>
-                                        <Input
-                                            id="ciudad"
-                                            value={data.ciudad}
-                                            onChange={(e) => setData('ciudad', e.target.value)}
-                                            placeholder="Ej: Yopal..."
-                                            className="rounded-xl border-slate-200 focus-visible:ring-orange-500 h-11"
-                                        />
-                                        {errors.ciudad && <p className="text-red-500 text-xs mt-1">{errors.ciudad}</p>}
-                                    </div>
+                                <Field>
+                                    <FieldLabel htmlFor="ciudad">
+                                        Ciudad
+                                    </FieldLabel>
+                                    <Input
+                                        id="ciudad"
+                                        value={data.ciudad}
+                                        onChange={(e) =>
+                                            setData('ciudad', e.target.value)
+                                        }
+                                        placeholder="Ej: Yopal"
+                                    />
+                                    {errors.ciudad && (
+                                        <FieldError>{errors.ciudad}</FieldError>
+                                    )}
+                                </Field>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="estado" className="text-sm font-bold text-slate-700">Estado</Label>
-                                        <select
-                                            id="estado"
-                                            value={data.estado}
-                                            onChange={(e) => setData('estado', e.target.value as 'activo' | 'inactivo')}
-                                            className="w-full rounded-xl border-slate-200 focus:border-orange-500 focus:ring-orange-500 shadow-sm text-sm font-bold text-slate-700 h-11"
-                                        >
-                                            <option value="activo">Activo</option>
-                                            <option value="inactivo">Inactivo</option>
-                                        </select>
-                                        {errors.estado && <p className="text-red-500 text-xs mt-1">{errors.estado}</p>}
-                                    </div>
-                                </div>
+                                <Field>
+                                    <FieldLabel htmlFor="estado">
+                                        Estado
+                                    </FieldLabel>
+                                    <Select
+                                        value={data.estado}
+                                        onValueChange={(v) =>
+                                            setData(
+                                                'estado',
+                                                v as 'activo' | 'inactivo',
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger id="estado">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="activo">
+                                                Activo
+                                            </SelectItem>
+                                            <SelectItem value="inactivo">
+                                                Inactivo
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.estado && (
+                                        <FieldError>{errors.estado}</FieldError>
+                                    )}
+                                </Field>
                             </div>
-                        </Card>
+                        </CardContent>
+                    </Card>
 
-                        <div className="flex justify-end gap-4">
-                            <Link href={route('admin.bienes-servicios.companies.index')}>
-                                <Button type="button" variant="ghost" className="rounded-xl px-6 h-12 font-bold transition-all">
-                                    Cancelar
-                                </Button>
-                            </Link>
-                            <Button 
-                                type="submit" 
-                                disabled={processing}
-                                className="bg-slate-900 hover:bg-orange-500 text-white rounded-xl px-10 h-12 font-bold shadow-xl shadow-slate-900/10 transition-all gap-2"
+                    <div className="mt-6 flex justify-end gap-2">
+                        <Button asChild variant="ghost" type="button">
+                            <Link
+                                href={route(
+                                    'admin.bienes-servicios.companies.index',
+                                )}
                             >
-                                <Save size={18} />
-                                {processing ? 'Guardando...' : 'Guardar Empresa'}
-                            </Button>
-                        </div>
-                    </form>
-                </div>
+                                Cancelar
+                            </Link>
+                        </Button>
+                        <Button type="submit" disabled={processing}>
+                            <Save className="size-4" />
+                            {processing ? 'Guardando…' : 'Guardar empresa'}
+                        </Button>
+                    </div>
+                </form>
             </div>
         </AppLayout>
     );

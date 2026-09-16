@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BillingDocumentController;
+use App\Http\Controllers\LicitacionDocumentController;
 use App\Http\Controllers\ForumController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProfileController;
@@ -111,6 +112,10 @@ Route::get('/operadoras', [PublicCompanyController::class, 'operatorsShow'])->na
 
 // Bienes y Servicios Public Routes
 Route::get('/bienes-y-servicios', [PublicBienesServiciosController::class, 'index'])->name('bienes-servicios.index');
+// Descarga de documentos: gateada por el controlador (abierto → todos;
+// exclusivo → asociado activo/admin). Antes de los comodines de empresa/licitación.
+Route::get('/bienes-y-servicios/documentos/{tender}/{media}', [LicitacionDocumentController::class, 'download'])
+    ->name('bienes-servicios.document');
 Route::get('/bienes-y-servicios/{company}', [PublicBienesServiciosController::class, 'showCompany'])->name('bienes-servicios.company');
 Route::get('/bienes-y-servicios/{company}/{tender}', [PublicBienesServiciosController::class, 'showTender'])->name('bienes-servicios.tender');
 

@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\BienesServiciosEmpresa;
-use App\Models\Licitacion;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class PublicBienesServiciosController extends Controller
@@ -31,7 +29,10 @@ class PublicBienesServiciosController extends Controller
             ->where('estado', 'activo')
             ->firstOrFail();
 
+        // En el sitio público solo se listan las licitaciones ABIERTAS; las
+        // `exclusivo_asociados` no se muestran aquí (viven en el área de asociado).
         $tenders = $company->licitaciones()
+            ->where('publico_objetivo', 'abierto')
             ->whereIn('estado', ['publicado', 'cerrado'])
             ->latest('fecha_publicacion')
             ->get()
@@ -67,15 +68,17 @@ class PublicBienesServiciosController extends Controller
             ->whereIn('estado', ['publicado', 'cerrado'])
             ->firstOrFail();
 
-        $isRestricted = $tender->publico_objetivo === 'exclusivo_asociados' && !auth()->check();
+        // Regla única: abierto → todos; exclusivo → asociado activo o admin.
+        $isRestricted = ! $tender->isAccessibleBy(auth()->user());
 
-        $documents = $tender->getMedia('documents')->map(function ($media) {
+        $documents = $tender->getMedia('documents')->map(function ($media) use ($tender) {
             return [
                 'id' => $media->id,
                 'name' => $media->name,
                 'file_name' => $media->file_name,
                 'size' => $media->human_readable_size,
-                'url' => $media->getUrl(),
+                // URL gateada (no la pública de Spatie); el controlador reautoriza.
+                'url' => route('bienes-servicios.document', ['tender' => $tender->id, 'media' => $media->id]),
                 'ext' => $media->extension,
             ];
         });

@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Licitacion extends Model implements HasMedia
 {
@@ -38,7 +38,7 @@ class Licitacion extends Model implements HasMedia
     /**
      * Get the options for generating the slug.
      */
-    public function getSlugOptions() : SlugOptions
+    public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
             ->generateSlugsFrom('titulo')
@@ -55,6 +55,35 @@ class Licitacion extends Model implements HasMedia
     }
 
     /**
+     * ¿Este usuario puede ver el contenido/documentos de esta licitación?
+     *
+     * Las abiertas las ve cualquiera. Las `exclusivo_asociados` solo las ve un
+     * asociado con suscripción activa (al día o en gracia, igual que el área de
+     * asociado, gateada por `subscription.active`) o un admin (para previsualizar).
+     * Regla única reusada por el controlador público y el de descarga.
+     */
+    public function isAccessibleBy(?User $user): bool
+    {
+        if ($this->publico_objetivo !== 'exclusivo_asociados') {
+            return true;
+        }
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        // Como en AnnouncementController / CheckSubscription: se resuelve el
+        // asociado desde el id, no por la relación mágica.
+        $associate = Associate::find($user->associate_id);
+
+        return $associate !== null && $associate->isSubscriptionActive();
+    }
+
+    /**
      * Setup Media Collections
      */
     public function registerMediaCollections(): void
@@ -63,20 +92,24 @@ class Licitacion extends Model implements HasMedia
             ->singleFile()
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
+        // Los documentos van al disco PRIVADO: no se sirven por URL directa sino
+        // por LicitacionDocumentController, que autoriza según `publico_objetivo`.
+        // Ver ADR-0010. (La imagen destacada y el logo siguen en disco público.)
         $this->addMediaCollection('documents')
+            ->useDisk('local')
             ->acceptsMimeTypes([
-                'application/pdf', 
-                'application/msword', 
+                'application/pdf',
+                'application/msword',
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             ]);
     }
 
     /**
      * Setup Media Conversions
      */
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this->addMediaConversion('thumb')
             ->width(300)

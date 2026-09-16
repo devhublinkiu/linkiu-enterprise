@@ -1,25 +1,53 @@
-import { useState, useRef } from 'react';
-import { Head, Link, useForm, router } from '@inertiajs/react';
-import AppLayout from '@/Layouts/AppLayout';
-import { Button } from '@/Components/ui/Button';
-import { Input } from '@/Components/ui/Input';
-import { Label } from '@/Components/ui/Label';
-import { Card } from '@/Components/ui/Card';
-import { 
-    ArrowLeft, 
-    Save, 
-    Upload, 
-    X, 
-    ShieldAlert, 
-    Globe, 
-    Clock, 
-    FileText, 
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import {
+    ArrowLeft,
+    ExternalLink,
+    FileText,
+    Globe,
+    Save,
+    ShieldAlert,
     Trash2,
-    Building2,
-    ExternalLink
+    Upload,
+    X,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useRef, useState } from 'react';
+
+import { Button } from '@/Components/base/Button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/Components/base/Card';
+import { Field, FieldError, FieldLabel } from '@/Components/base/Field';
+import { Input } from '@/Components/base/Input';
+import { RadioGroup, RadioGroupItem } from '@/Components/base/RadioGroup';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/base/Select';
+import { Textarea } from '@/Components/base/Textarea';
 import TiptapEditor from '@/Components/TiptapEditor';
+import AppLayout from '@/Layouts/AppLayout';
+import { cn } from '@/lib/utils';
+
+const AUDIENCE_OPTIONS = [
+    {
+        value: 'abierto' as const,
+        icon: Globe,
+        title: 'Abierto',
+        desc: 'Visible para todos los visitantes del portal.',
+    },
+    {
+        value: 'exclusivo_asociados' as const,
+        icon: ShieldAlert,
+        title: 'Asociados',
+        desc: 'Exclusivo para asociados con suscripción activa.',
+    },
+];
 
 interface Company {
     id: number;
@@ -51,42 +79,41 @@ export default function Form({ tender, companies }: Props) {
 
     const { data, setData, post, processing, errors } = useForm({
         _method: isEditing ? 'put' : 'post',
-        empresa_id: tender?.empresa_id || '',
-        titulo: tender?.titulo || '',
-        enlace_externo: tender?.enlace_externo || '',
-        extracto: tender?.extracto || '',
-        contenido: tender?.contenido || '',
-        publico_objetivo: tender?.publico_objetivo || 'abierto',
-        estado: tender?.estado || 'publicado',
-        fecha_publicacion: tender?.fecha_publicacion || '',
-        fecha_cierre: tender?.fecha_cierre || '',
+        empresa_id: tender ? String(tender.empresa_id) : '',
+        titulo: tender?.titulo ?? '',
+        enlace_externo: tender?.enlace_externo ?? '',
+        extracto: tender?.extracto ?? '',
+        contenido: tender?.contenido ?? '',
+        publico_objetivo: tender?.publico_objetivo ?? 'abierto',
+        estado: tender?.estado ?? 'publicado',
+        fecha_publicacion: tender?.fecha_publicacion ?? '',
+        fecha_cierre: tender?.fecha_cierre ?? '',
         featured_image: null as File | null,
         documents: [] as File[],
     });
 
-    const [imagePreview, setImagePreview] = useState<string | null>(tender?.featured_image_url || null);
+    const [imagePreview, setImagePreview] = useState<string | null>(
+        tender?.featured_image_url ?? null,
+    );
     const imageInputRef = useRef<HTMLInputElement>(null);
     const docsInputRef = useRef<HTMLInputElement>(null);
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (isEditing) {
-            post(route('admin.bienes-servicios.tenders.update', tender.id));
-        } else {
-            post(route('admin.bienes-servicios.tenders.store'));
-        }
+        post(
+            isEditing
+                ? route('admin.bienes-servicios.tenders.update', tender!.id)
+                : route('admin.bienes-servicios.tenders.store'),
+        );
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            setData('featured_image', file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
+        if (!file) return;
+        setData('featured_image', file);
+        const reader = new FileReader();
+        reader.onloadend = () => setImagePreview(reader.result as string);
+        reader.readAsDataURL(file);
     };
 
     const removeImage = () => {
@@ -96,329 +123,467 @@ export default function Form({ tender, companies }: Props) {
     };
 
     const handleDocsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        if (files.length > 0) {
-            setData('documents', [...data.documents, ...files]);
-        }
+        const files = Array.from(e.target.files ?? []);
+        if (files.length) setData('documents', [...data.documents, ...files]);
         if (docsInputRef.current) docsInputRef.current.value = '';
     };
 
-    const removeNewDoc = (index: number) => {
-        const newDocs = [...data.documents];
-        newDocs.splice(index, 1);
-        setData('documents', newDocs);
-    };
+    const removeNewDoc = (index: number) =>
+        setData(
+            'documents',
+            data.documents.filter((_, i) => i !== index),
+        );
 
     const deleteExistingDoc = (mediaId: number) => {
-        if (confirm('¿Estás seguro de que quieres eliminar este documento?')) {
-            router.delete(route('admin.bienes-servicios.tenders.documents.destroy', [tender!.id, mediaId]), {
-                preserveScroll: true
-            });
+        if (confirm('¿Eliminar este documento?')) {
+            router.delete(
+                route('admin.bienes-servicios.tenders.documents.destroy', [
+                    tender!.id,
+                    mediaId,
+                ]),
+                { preserveScroll: true },
+            );
         }
     };
 
     return (
-        <AppLayout
-            header={
-                <div className="flex items-center gap-4">
-                    <Link href={route('admin.bienes-servicios.tenders.index')}>
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                            <ArrowLeft size={20} />
-                        </Button>
-                    </Link>
-                    <h2 className="font-semibold text-xl text-slate-800 leading-tight">
-                        {isEditing ? 'Editar Licitación' : 'Nueva Licitación'}
-                    </h2>
+        <AppLayout>
+            <Head
+                title={`${isEditing ? 'Editar' : 'Nueva'} licitación · Admin`}
+            />
+
+            <div className="mx-auto max-w-6xl space-y-6">
+                <div className="flex items-center gap-3">
+                    <Button
+                        asChild
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Volver"
+                    >
+                        <Link
+                            href={route('admin.bienes-servicios.tenders.index')}
+                        >
+                            <ArrowLeft className="size-4" />
+                        </Link>
+                    </Button>
+                    <h1 className="font-display text-h3">
+                        {isEditing ? 'Editar licitación' : 'Nueva licitación'}
+                    </h1>
                 </div>
-            }
-        >
-            <Head title={`${isEditing ? 'Editar' : 'Crear'} Licitación - Admin`} />
 
-            <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <form onSubmit={submit} className="flex flex-col lg:flex-row gap-8">
-                        {/* Columna Izquierda: Contenido Principal */}
-                        <div className="w-full lg:w-2/3 space-y-8">
-                            {/* Información Básica */}
-                            <Card className="p-6 border-slate-200 shadow-sm rounded-2xl">
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="empresa_id" className="text-sm font-bold text-slate-700">Empresa Proveedora *</Label>
-                                            <select
-                                                id="empresa_id"
-                                                value={data.empresa_id}
-                                                onChange={(e) => setData('empresa_id', e.target.value)}
-                                                className="w-full rounded-xl border-slate-200 focus:border-orange-500 focus:ring-orange-500 shadow-sm text-sm font-bold text-slate-700 h-11"
-                                                required
-                                            >
-                                                <option value="">Seleccionar empresa...</option>
-                                                {companies.map(c => (
-                                                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                <form
+                    onSubmit={submit}
+                    className="flex flex-col gap-6 lg:flex-row"
+                >
+                    {/* Columna principal */}
+                    <div className="flex w-full flex-col gap-6 lg:w-2/3">
+                        <Card>
+                            <CardContent className="flex flex-col gap-4">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <Field>
+                                        <FieldLabel htmlFor="empresa_id">
+                                            Empresa proveedora *
+                                        </FieldLabel>
+                                        <Select
+                                            value={data.empresa_id}
+                                            onValueChange={(v) =>
+                                                setData('empresa_id', v)
+                                            }
+                                        >
+                                            <SelectTrigger id="empresa_id">
+                                                <SelectValue placeholder="Seleccionar empresa…" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {companies.map((c) => (
+                                                    <SelectItem
+                                                        key={c.id}
+                                                        value={String(c.id)}
+                                                    >
+                                                        {c.nombre}
+                                                    </SelectItem>
                                                 ))}
-                                            </select>
-                                            {errors.empresa_id && <p className="text-red-500 text-xs">{errors.empresa_id}</p>}
+                                            </SelectContent>
+                                        </Select>
+                                        {errors.empresa_id && (
+                                            <FieldError>
+                                                {errors.empresa_id}
+                                            </FieldError>
+                                        )}
+                                    </Field>
+
+                                    <Field>
+                                        <FieldLabel htmlFor="enlace_externo">
+                                            Enlace externo (opcional)
+                                        </FieldLabel>
+                                        <div className="relative">
+                                            <ExternalLink className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                                            <Input
+                                                id="enlace_externo"
+                                                className="pl-8"
+                                                value={data.enlace_externo}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'enlace_externo',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="https://…"
+                                            />
                                         </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="enlace_externo" className="text-sm font-bold text-slate-700">Enlace Externo (Opcional)</Label>
-                                            <div className="relative">
-                                                <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                <Input
-                                                    id="enlace_externo"
-                                                    value={data.enlace_externo}
-                                                    onChange={(e) => setData('enlace_externo', e.target.value)}
-                                                    placeholder="https://..."
-                                                    className="pl-10 rounded-xl border-slate-200 focus-visible:ring-orange-500 h-11"
-                                                />
-                                            </div>
-                                            {errors.enlace_externo && <p className="text-red-500 text-xs">{errors.enlace_externo}</p>}
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2 pt-2">
-                                        <Label htmlFor="titulo" className="text-base font-bold text-slate-700">Título de la Licitación *</Label>
-                                        <Input
-                                            id="titulo"
-                                            value={data.titulo}
-                                            onChange={(e) => setData('titulo', e.target.value)}
-                                            placeholder="Ej: Suministro de materiales eléctricos..."
-                                            className="text-lg h-14 rounded-xl font-medium focus-visible:ring-orange-500"
-                                            required
-                                        />
-                                        {errors.titulo && <p className="text-red-500 text-xs">{errors.titulo}</p>}
-                                    </div>
-                                    
-                                    <div className="space-y-2 pt-2">
-                                        <Label htmlFor="extracto" className="text-sm font-bold text-slate-600">Extracto o Resumen Breve</Label>
-                                        <textarea
-                                            id="extracto"
-                                            value={data.extracto}
-                                            onChange={(e) => setData('extracto', e.target.value)}
-                                            className="w-full rounded-xl border-slate-200 focus:border-orange-500 focus:ring-orange-500 min-h-[80px] text-sm resize-y text-slate-600"
-                                            placeholder="Breve descripción para listados..."
-                                        />
-                                        {errors.extracto && <p className="text-red-500 text-xs">{errors.extracto}</p>}
-                                    </div>
+                                        {errors.enlace_externo && (
+                                            <FieldError>
+                                                {errors.enlace_externo}
+                                            </FieldError>
+                                        )}
+                                    </Field>
                                 </div>
-                            </Card>
 
-                            {/* Contenido (Tiptap) */}
-                            <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden flex flex-col">
-                                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                                    <Label className="text-base font-bold text-slate-700">Contenido Detallado</Label>
-                                </div>
-                                <div className="flex-1">
-                                    <TiptapEditor 
-                                        content={data.contenido} 
-                                        onChange={(html: string) => setData('contenido', html)} 
+                                <Field>
+                                    <FieldLabel htmlFor="titulo">
+                                        Título de la licitación *
+                                    </FieldLabel>
+                                    <Input
+                                        id="titulo"
+                                        value={data.titulo}
+                                        onChange={(e) =>
+                                            setData('titulo', e.target.value)
+                                        }
+                                        placeholder="Ej: Suministro de materiales eléctricos…"
+                                        required
                                     />
-                                </div>
-                                {errors.contenido && <p className="text-red-500 text-xs p-4">{errors.contenido}</p>}
-                            </Card>
-                            
-                            {/* Documentos */}
-                            <Card className="p-6 border-slate-200 shadow-sm rounded-2xl border-dashed border-2 bg-slate-50">
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center text-sm md:text-base">
-                                        <Label className="font-bold text-slate-700 flex items-center gap-2">
-                                            <FileText size={18} className="text-blue-500"/>
-                                            Documentos Adjuntos
-                                        </Label>
-                                        <Button 
-                                            type="button" 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={() => docsInputRef.current?.click()}
-                                            className="gap-2 rounded-xl text-blue-600 border-blue-200 hover:bg-blue-50"
-                                        >
-                                            <Upload size={14} /> Subir Archivos
-                                        </Button>
-                                        <input 
-                                            type="file" 
-                                            className="hidden" 
-                                            multiple 
-                                            ref={docsInputRef}
-                                            onChange={handleDocsChange}
-                                            accept=".pdf,.doc,.docx,.xls,.xlsx"
-                                        />
-                                    </div>
-
-                                    {/* Existing documents */}
-                                    {isEditing && tender.documents.length > 0 && (
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Documentos Actuales</p>
-                                            {tender.documents.map((doc) => (
-                                                <div key={doc.id} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
-                                                    <div className="flex items-center gap-3 overflow-hidden">
-                                                        <FileText size={18} className="text-blue-500 shrink-0" />
-                                                        <span className="text-sm font-medium text-slate-700 truncate">{doc.name}</span>
-                                                    </div>
-                                                    <Button type="button" variant="ghost" size="sm" onClick={() => deleteExistingDoc(doc.id)} className="text-red-500 hover:bg-red-50">
-                                                        <Trash2 size={16} />
-                                                    </Button>
-                                                </div>
-                                            ))}
-                                        </div>
+                                    {errors.titulo && (
+                                        <FieldError>{errors.titulo}</FieldError>
                                     )}
+                                </Field>
 
-                                    {/* New documents queue */}
-                                    {data.documents.length > 0 && (
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Nuevos para subir</p>
-                                            {data.documents.map((file, idx) => (
-                                                <div key={idx} className="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                                                    <div className="flex items-center gap-3 overflow-hidden">
-                                                        <FileText size={18} className="text-blue-400 shrink-0" />
-                                                        <span className="text-sm font-medium text-blue-700 truncate">{file.name}</span>
-                                                    </div>
-                                                    <Button type="button" variant="ghost" size="sm" onClick={() => removeNewDoc(idx)} className="text-blue-600 hover:bg-blue-100">
-                                                        <X size={16} />
-                                                    </Button>
-                                                </div>
-                                            ))}
-                                        </div>
+                                <Field>
+                                    <FieldLabel htmlFor="extracto">
+                                        Extracto o resumen breve
+                                    </FieldLabel>
+                                    <Textarea
+                                        id="extracto"
+                                        value={data.extracto}
+                                        onChange={(e) =>
+                                            setData('extracto', e.target.value)
+                                        }
+                                        placeholder="Breve descripción para los listados…"
+                                    />
+                                    {errors.extracto && (
+                                        <FieldError>
+                                            {errors.extracto}
+                                        </FieldError>
                                     )}
-                                    {errors.documents && <p className="text-red-500 text-xs">{errors.documents}</p>}
-                                </div>
-                            </Card>
-                        </div>
+                                </Field>
+                            </CardContent>
+                        </Card>
 
-                        {/* Columna Derecha: Configuración */}
-                        <div className="w-full lg:w-1/3 space-y-6">
-                            {/* Público Objetivo */}
-                            <Card className="p-6 border-slate-200 shadow-sm rounded-2xl border-t-4 border-t-purple-500">
-                                <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 mb-4">Público Objetivo</h3>
-                                <div className="space-y-3">
-                                    <label className={cn(
-                                        "flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all",
-                                        data.publico_objetivo === 'abierto' ? "border-blue-500 bg-blue-50" : "border-slate-100 bg-white hover:border-slate-200"
-                                    )}>
-                                        <input 
-                                            type="radio" 
-                                            name="publico_objetivo" 
-                                            value="abierto" 
-                                            checked={data.publico_objetivo === 'abierto'} 
-                                            onChange={(e) => setData('publico_objetivo', e.target.value as any)}
-                                            className="mt-1 w-4 h-4 text-blue-600"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="font-bold text-slate-900 flex items-center gap-2">
-                                                <Globe size={16} className="text-blue-500"/>
-                                                Abierto
-                                            </div>
-                                            <div className="text-[10px] text-slate-500 mt-1 uppercase font-bold">Visible para todos los visitantes del portal.</div>
-                                        </div>
-                                    </label>
+                        <Card>
+                            <CardHeader className="border-b">
+                                <CardTitle>Contenido detallado</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <TiptapEditor
+                                    content={data.contenido}
+                                    onChange={(html: string) =>
+                                        setData('contenido', html)
+                                    }
+                                />
+                                {errors.contenido && (
+                                    <FieldError className="mt-2">
+                                        {errors.contenido}
+                                    </FieldError>
+                                )}
+                            </CardContent>
+                        </Card>
 
-                                    <label className={cn(
-                                        "flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all",
-                                        data.publico_objetivo === 'exclusivo_asociados' ? "border-purple-500 bg-purple-50" : "border-slate-100 bg-white hover:border-slate-200"
-                                    )}>
-                                        <input 
-                                            type="radio" 
-                                            name="publico_objetivo" 
-                                            value="exclusivo_asociados" 
-                                            checked={data.publico_objetivo === 'exclusivo_asociados'} 
-                                            onChange={(e) => setData('publico_objetivo', e.target.value as any)}
-                                            className="mt-1 w-4 h-4 text-purple-600"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="font-bold text-slate-900 flex items-center gap-2">
-                                                <ShieldAlert size={16} className="text-purple-500"/>
-                                                Asociados
-                                            </div>
-                                            <div className="text-[10px] text-slate-500 mt-1 uppercase font-bold">Exclusivo para socios logueados.</div>
-                                        </div>
-                                    </label>
-                                </div>
-                            </Card>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <FileText className="size-4 text-muted-foreground" />
+                                    Documentos adjuntos
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex flex-col gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="self-start"
+                                    onClick={() =>
+                                        docsInputRef.current?.click()
+                                    }
+                                >
+                                    <Upload className="size-3.5" /> Subir
+                                    archivos
+                                </Button>
+                                <input
+                                    ref={docsInputRef}
+                                    type="file"
+                                    className="hidden"
+                                    multiple
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                    onChange={handleDocsChange}
+                                />
 
-                            {/* Publicación */}
-                            <Card className="p-6 border-slate-200 shadow-sm rounded-2xl border-t-4 border-t-orange-500">
-                                <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 mb-4">Estado y Fechas</h3>
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Estado *</Label>
-                                        <select
-                                            value={data.estado}
-                                            onChange={(e) => setData('estado', e.target.value as any)}
-                                            className="w-full rounded-xl border-slate-200 focus:border-orange-500 focus:ring-orange-500 text-sm font-bold h-11"
-                                        >
-                                            <option value="borrador">Borrador</option>
-                                            <option value="publicado">Publicado</option>
-                                            <option value="cerrado">Cerrado</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Publicación</Label>
-                                        <input
-                                            type="datetime-local"
-                                            value={data.fecha_publicacion}
-                                            onChange={(e) => setData('fecha_publicacion', e.target.value)}
-                                            className="w-full rounded-xl border-slate-200 focus:border-orange-500 text-sm h-11"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-red-500">Fecha de Cierre</Label>
-                                        <input
-                                            type="datetime-local"
-                                            value={data.fecha_cierre}
-                                            onChange={(e) => setData('fecha_cierre', e.target.value)}
-                                            className="w-full rounded-xl border-slate-200 focus:border-red-500 text-sm h-11"
-                                        />
-                                    </div>
-                                </div>
-                            </Card>
-
-                            {/* Featured Image */}
-                            <Card className="p-6 border-slate-200 shadow-sm rounded-2xl">
-                                <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 mb-4">Imagen Destacada</h3>
-                                <div className="space-y-4">
-                                    {imagePreview ? (
-                                        <div className="relative rounded-xl overflow-hidden aspect-video border border-slate-200 group bg-slate-50">
-                                            <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                <Button type="button" variant="destructive" size="sm" onClick={removeImage} className="gap-2 rounded-full font-bold">
-                                                    <X size={16} /> Quitar
+                                {isEditing && tender.documents.length > 0 && (
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-xs font-medium text-muted-foreground">
+                                            Documentos actuales
+                                        </p>
+                                        {tender.documents.map((doc) => (
+                                            <div
+                                                key={doc.id}
+                                                className="flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2 ring-1 ring-foreground/10"
+                                            >
+                                                <span className="flex items-center gap-2 overflow-hidden">
+                                                    <FileText className="size-4 shrink-0 text-muted-foreground" />
+                                                    <span className="truncate text-sm">
+                                                        {doc.name}
+                                                    </span>
+                                                </span>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon-sm"
+                                                    aria-label={`Eliminar ${doc.name}`}
+                                                    className="text-muted-foreground hover:text-destructive"
+                                                    onClick={() =>
+                                                        deleteExistingDoc(
+                                                            doc.id,
+                                                        )
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4" />
                                                 </Button>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div 
-                                            onClick={() => imageInputRef.current?.click()}
-                                            className="border-2 border-dashed border-slate-200 rounded-xl aspect-video flex flex-col items-center justify-center text-slate-400 hover:text-orange-500 hover:border-orange-500 hover:bg-orange-50 transition-all cursor-pointer bg-white"
-                                        >
-                                            <Upload className="mb-2" size={32} />
-                                            <span className="text-sm font-bold uppercase">Subir Imagen</span>
-                                        </div>
-                                    )}
-                                    <input
-                                        type="file"
-                                        ref={imageInputRef}
-                                        className="hidden"
-                                        onChange={handleImageChange}
-                                        accept="image/*"
-                                    />
-                                    {errors.featured_image && <p className="text-red-500 text-xs mt-1">{errors.featured_image}</p>}
-                                </div>
-                            </Card>
+                                        ))}
+                                    </div>
+                                )}
 
-                            <div className="sticky top-24">
-                                <Button 
-                                    type="submit" 
-                                    disabled={processing}
-                                    className="w-full h-14 bg-slate-900 hover:bg-orange-500 text-white rounded-xl text-base font-bold shadow-xl transition-all gap-2"
+                                {data.documents.length > 0 && (
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-xs font-medium text-muted-foreground">
+                                            Nuevos para subir
+                                        </p>
+                                        {data.documents.map((file, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="flex items-center justify-between gap-3 rounded-lg bg-primary/5 px-3 py-2 ring-1 ring-primary/20"
+                                            >
+                                                <span className="flex items-center gap-2 overflow-hidden">
+                                                    <FileText className="size-4 shrink-0 text-muted-foreground" />
+                                                    <span className="truncate text-sm">
+                                                        {file.name}
+                                                    </span>
+                                                </span>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon-sm"
+                                                    aria-label={`Quitar ${file.name}`}
+                                                    onClick={() =>
+                                                        removeNewDoc(idx)
+                                                    }
+                                                >
+                                                    <X className="size-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {errors.documents && (
+                                    <FieldError>{errors.documents}</FieldError>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Columna de configuración */}
+                    <div className="flex w-full flex-col gap-6 lg:w-1/3">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Público objetivo</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <RadioGroup
+                                    className="gap-3"
+                                    value={data.publico_objetivo}
+                                    onValueChange={(v) =>
+                                        setData(
+                                            'publico_objetivo',
+                                            v as Tender['publico_objetivo'],
+                                        )
+                                    }
                                 >
-                                    <Save size={20} />
-                                    {processing ? 'Guardando...' : 'Guardar Licitación'}
-                                </Button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+                                    {AUDIENCE_OPTIONS.map((opt) => {
+                                        const selected =
+                                            data.publico_objetivo === opt.value;
+                                        const Icon = opt.icon;
+                                        return (
+                                            <label
+                                                key={opt.value}
+                                                htmlFor={`po-${opt.value}`}
+                                                className={cn(
+                                                    'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors',
+                                                    selected
+                                                        ? 'border-primary bg-primary/5'
+                                                        : 'border-input hover:bg-muted/50',
+                                                )}
+                                            >
+                                                <RadioGroupItem
+                                                    value={opt.value}
+                                                    id={`po-${opt.value}`}
+                                                    className="mt-0.5"
+                                                />
+                                                <span className="grid gap-0.5">
+                                                    <span className="flex items-center gap-2 text-sm font-medium">
+                                                        <Icon className="size-4 text-muted-foreground" />
+                                                        {opt.title}
+                                                    </span>
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {opt.desc}
+                                                    </span>
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                                </RadioGroup>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Estado y fechas</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex flex-col gap-4">
+                                <Field>
+                                    <FieldLabel htmlFor="estado">
+                                        Estado *
+                                    </FieldLabel>
+                                    <Select
+                                        value={data.estado}
+                                        onValueChange={(v) =>
+                                            setData(
+                                                'estado',
+                                                v as Tender['estado'],
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger id="estado">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="borrador">
+                                                Borrador
+                                            </SelectItem>
+                                            <SelectItem value="publicado">
+                                                Publicado
+                                            </SelectItem>
+                                            <SelectItem value="cerrado">
+                                                Cerrado
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+
+                                <Field>
+                                    <FieldLabel htmlFor="fecha_publicacion">
+                                        Publicación
+                                    </FieldLabel>
+                                    <Input
+                                        id="fecha_publicacion"
+                                        type="datetime-local"
+                                        value={data.fecha_publicacion}
+                                        onChange={(e) =>
+                                            setData(
+                                                'fecha_publicacion',
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
+                                </Field>
+
+                                <Field>
+                                    <FieldLabel htmlFor="fecha_cierre">
+                                        Fecha de cierre
+                                    </FieldLabel>
+                                    <Input
+                                        id="fecha_cierre"
+                                        type="datetime-local"
+                                        value={data.fecha_cierre}
+                                        onChange={(e) =>
+                                            setData(
+                                                'fecha_cierre',
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
+                                </Field>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Imagen destacada</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {imagePreview ? (
+                                    <div className="group relative aspect-video overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10">
+                                        <img
+                                            src={imagePreview}
+                                            alt="Vista previa"
+                                            className="size-full object-contain"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center bg-foreground/40 opacity-0 transition-opacity group-hover:opacity-100">
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={removeImage}
+                                            >
+                                                <X className="size-4" /> Quitar
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            imageInputRef.current?.click()
+                                        }
+                                        className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-input text-muted-foreground transition-colors hover:border-ring hover:bg-muted/50"
+                                    >
+                                        <Upload className="size-7" />
+                                        <span className="text-sm font-medium">
+                                            Subir imagen
+                                        </span>
+                                    </button>
+                                )}
+                                <input
+                                    ref={imageInputRef}
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                />
+                                {errors.featured_image && (
+                                    <FieldError className="mt-2">
+                                        {errors.featured_image}
+                                    </FieldError>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="w-full"
+                        >
+                            <Save className="size-4" />
+                            {processing ? 'Guardando…' : 'Guardar licitación'}
+                        </Button>
+                    </div>
+                </form>
             </div>
         </AppLayout>
     );

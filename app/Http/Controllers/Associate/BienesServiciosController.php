@@ -5,21 +5,41 @@ namespace App\Http\Controllers\Associate;
 use App\Http\Controllers\Controller;
 use App\Models\BienesServiciosEmpresa;
 use App\Models\Licitacion;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class BienesServiciosController extends Controller
 {
     public function index()
     {
-        $companies = BienesServiciosEmpresa::where('estado', 'activo')
-            ->get()
-            ->map(fn ($company) => [
+        $companies = BienesServiciosEmpresa::where('estado', 'activo')->get();
+
+        // Licitaciones visibles para asociados (publicadas o cerradas), agrupadas
+        // por empresa en un solo query (sin N+1) para contar activas/vencidas.
+        $porEmpresa = Licitacion::whereIn('empresa_id', $companies->pluck('id'))
+            ->whereIn('estado', ['publicado', 'cerrado'])
+            ->get(['empresa_id', 'estado', 'fecha_cierre'])
+            ->groupBy('empresa_id');
+
+        $companies = $companies->map(function ($company) use ($porEmpresa) {
+            $licitaciones = $porEmpresa->get($company->id, collect());
+
+            // Vencida = cerrada a mano o con fecha de cierre ya pasada.
+            $vencidas = $licitaciones->filter(
+                fn ($l) => $l->estado === 'cerrado'
+                    || ($l->fecha_cierre && $l->fecha_cierre->isPast())
+            )->count();
+
+            return [
                 'id' => $company->id,
                 'nombre' => $company->nombre,
                 'slug' => $company->slug,
+                'departamento' => $company->departamento,
+                'ciudad' => $company->ciudad,
                 'logo_url' => $company->getFirstMediaUrl('logo') ?: null,
-            ]);
+                'licitaciones_activas' => $licitaciones->count() - $vencidas,
+                'licitaciones_vencidas' => $vencidas,
+            ];
+        });
 
         return Inertia::render('Associate/BusinessServices/Index', [
             'companies' => $companies,
@@ -51,6 +71,8 @@ class BienesServiciosController extends Controller
             'company' => [
                 'nombre' => $company->nombre,
                 'slug' => $company->slug,
+                'departamento' => $company->departamento,
+                'ciudad' => $company->ciudad,
                 'logo_url' => $company->getFirstMediaUrl('logo') ?: null,
             ],
             'tenders' => $tenders,
@@ -68,13 +90,14 @@ class BienesServiciosController extends Controller
             ->whereIn('estado', ['publicado', 'cerrado'])
             ->firstOrFail();
 
-        $documents = $tender->getMedia('documents')->map(function ($media) {
+        $documents = $tender->getMedia('documents')->map(function ($media) use ($tender) {
             return [
                 'id' => $media->id,
                 'name' => $media->name,
                 'file_name' => $media->file_name,
                 'size' => $media->human_readable_size,
-                'url' => $media->getUrl(),
+                // URL gateada (no la pública de Spatie); el controlador reautoriza.
+                'url' => route('bienes-servicios.document', ['tender' => $tender->id, 'media' => $media->id]),
                 'ext' => $media->extension,
             ];
         });
@@ -83,6 +106,8 @@ class BienesServiciosController extends Controller
             'company' => [
                 'nombre' => $company->nombre,
                 'slug' => $company->slug,
+                'departamento' => $company->departamento,
+                'ciudad' => $company->ciudad,
                 'logo_url' => $company->getFirstMediaUrl('logo') ?: null,
             ],
             'tender' => [

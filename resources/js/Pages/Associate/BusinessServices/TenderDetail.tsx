@@ -1,24 +1,27 @@
 import { Head, Link } from '@inertiajs/react';
-import AppLayout from '@/Layouts/AppLayout';
-import { Button } from '@/Components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/Card';
-import { Badge } from '@/Components/ui/Badge';
+import DOMPurify from 'dompurify';
 import {
     ArrowLeft,
-    Download,
+    Building2,
     Calendar,
     Clock,
-    FileText,
-    ShieldAlert,
-    Globe,
-    Building2,
+    Download,
     ExternalLink,
+    FileText,
+    Globe,
     MapPin,
-    Share2,
-    FileCheck
+    ShieldAlert,
 } from 'lucide-react';
-import DOMPurify from 'dompurify';
-import { motion } from 'framer-motion';
+
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/Components/base/Card';
+import AppLayout from '@/Layouts/AppLayout';
 
 interface Document {
     id: number;
@@ -58,202 +61,185 @@ interface Props {
 }
 
 export default function TenderDetail({ company, tender, documents }: Props) {
-    const sanitizedContent = tender.contenido ? DOMPurify.sanitize(tender.contenido) : '';
+    const sanitizedContent = tender.contenido
+        ? DOMPurify.sanitize(tender.contenido)
+        : '';
 
-    const getFileIcon = (ext: string) => {
-        const e = ext.toLowerCase();
-        if (['pdf'].includes(e)) return <FileText className="text-red-500" />;
-        if (['doc', 'docx'].includes(e)) return <FileText className="text-blue-500" />;
-        if (['xls', 'xlsx'].includes(e)) return <FileCheck className="text-emerald-500" />;
-        return <FileText className="text-slate-400" />;
-    };
+    const location = company.ciudad ?? company.departamento;
+    const companyUrl = route(
+        'associate.company.bienes-servicios.company',
+        company.slug,
+    );
 
     return (
         <AppLayout>
-            <Head title={`${tender.titulo} - ${company.nombre}`} />
+            <Head title={`${tender.titulo} · ${company.nombre}`} />
 
-            <div className="max-w-5xl mx-auto space-y-8 pb-20 mt-4">
-                {/* Navigation Bar */}
-                <div className="flex items-center justify-between">
-                    <Link href={route('associate.company.bienes-servicios.company', company.slug)}
-                        className="inline-flex items-center gap-2 text-slate-500 hover:text-green-600 transition-all font-black text-[11px] uppercase tracking-widest group bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
-                        <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
-                        Otras Licitaciones de {company.nombre}
+            <div className="mx-auto max-w-6xl space-y-6">
+                <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-2 text-muted-foreground"
+                >
+                    <Link href={companyUrl}>
+                        <ArrowLeft className="size-4" /> Licitaciones de{' '}
+                        {company.nombre}
                     </Link>
+                </Button>
 
-                    <div className="hidden sm:flex items-center gap-2">
-                        <Badge className="bg-slate-100 text-slate-600 border-none px-3 py-1 text-[10px] font-black uppercase tracking-widest">
-                            {tender.fecha_publicacion || 'N/A'}
-                        </Badge>
-                    </div>
-                </div>
-
-                {/* Main Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Left: Tender Content */}
-                    <div className="lg:col-span-8 space-y-8">
-                        {/* Header Section */}
-                        <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-xl p-8 md:p-12 relative border border-slate-800">
-                            <div className="relative z-10 space-y-6">
-                                <div className="flex flex-wrap gap-2">
-                                    {tender.publico_objetivo === 'exclusivo_asociados' ? (
-                                        <Badge className="bg-emerald-600 text-white border-none px-3 py-1 text-[10px] uppercase font-black tracking-widest">
-                                            <ShieldAlert size={12} className="mr-1.5" /> Exclusivo Asociados
-                                        </Badge>
-                                    ) : (
-                                        <Badge className="bg-blue-600 text-white border-none px-3 py-1 text-[10px] uppercase font-black tracking-widest">
-                                            <Globe size={12} className="mr-1.5" /> Público Abierto
-                                        </Badge>
-                                    )}
-
-                                    {tender.estado === 'cerrado' && (
-                                        <Badge variant="destructive" className="px-3 py-1 text-[10px] uppercase font-black tracking-widest">
-                                            <Clock size={12} className="mr-1.5" /> Cerrado
-                                        </Badge>
-                                    )}
-                                </div>
-
-                                <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight leading-tight uppercase">
-                                    {tender.titulo}
-                                </h1>
-
-                                <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-white/10 text-slate-400 font-bold uppercase text-[10px] tracking-widest">
-                                    <div className="flex items-center gap-2">
-                                        <Calendar size={14} className="text-green-500" />
-                                        <span>Inicio: {tender.fecha_publicacion || 'N/A'}</span>
-                                    </div>
-                                    {tender.fecha_cierre && (
-                                        <div className="flex items-center gap-2 text-red-400">
-                                            <Clock size={14} />
-                                            <span>Cierre: {tender.fecha_cierre}</span>
-                                        </div>
-                                    )}
-                                </div>
+                <div className="grid gap-6 lg:grid-cols-3">
+                    {/* Contenido */}
+                    <div className="space-y-6 lg:col-span-2">
+                        <div className="space-y-3">
+                            <div className="flex flex-wrap gap-2">
+                                {tender.publico_objetivo ===
+                                'exclusivo_asociados' ? (
+                                    <Badge variant="default">
+                                        <ShieldAlert /> Exclusivo asociados
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="secondary">
+                                        <Globe /> Público abierto
+                                    </Badge>
+                                )}
+                                {tender.estado === 'cerrado' && (
+                                    <Badge variant="outline">
+                                        <Clock /> Cerrado
+                                    </Badge>
+                                )}
                             </div>
-
-                            {/* Decoration */}
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-[80px] -mr-32 -mt-32 pointer-events-none" />
+                            <h1 className="font-display text-h2">
+                                {tender.titulo}
+                            </h1>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1.5">
+                                    <Calendar className="size-4" />
+                                    Inicio: {tender.fecha_publicacion ?? '—'}
+                                </span>
+                                {tender.fecha_cierre && (
+                                    <span className="flex items-center gap-1.5">
+                                        <Clock className="size-4" />
+                                        Cierre: {tender.fecha_cierre}
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
-                        {/* Featured Image */}
-                        {tender.featured_image_url && (
-                            <div className="rounded-2xl overflow-hidden shadow-sm border border-slate-100 aspect-video">
-                                <img
-                                    src={tender.featured_image_url}
-                                    alt={tender.titulo}
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                        )}
+                        <Card>
+                            <CardContent>
+                                {sanitizedContent ? (
+                                    <div
+                                        className="tiptap-content prose prose-neutral prose-headings:font-display max-w-none"
+                                        dangerouslySetInnerHTML={{
+                                            __html: sanitizedContent,
+                                        }}
+                                    />
+                                ) : (
+                                    <p className="text-sm italic text-muted-foreground">
+                                        No se ha proporcionado contenido
+                                        detallado adicional.
+                                    </p>
+                                )}
 
-                        {/* Content Body */}
-                        <article className="bg-white rounded-2xl border border-slate-200 p-8 md:p-12 shadow-sm">
-                            <div
-                                className="tiptap-content prose prose-slate max-w-none prose-headings:font-black prose-headings:tracking-tight prose-headings:uppercase prose-p:text-slate-600 prose-p:leading-relaxed prose-strong:text-slate-900 prose-img:rounded-xl prose-a:text-green-600 prose-a:font-black"
-                                dangerouslySetInnerHTML={{ __html: sanitizedContent }}
-                            />
-
-                            {!sanitizedContent && (
-                                <p className="text-slate-400 italic font-medium">No se ha proporcionado contenido detallado adicional.</p>
-                            )}
-
-                            {tender.enlace_externo && (
-                                <div className="mt-12 pt-8 border-t border-slate-100 flex justify-center md:justify-start">
-                                    <a
-                                        href={tender.enlace_externo}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-green-600 transition-all shadow-xl shadow-slate-900/10"
-                                    >
-                                        Portal de Licitación Externo <ExternalLink size={18} />
-                                    </a>
-                                </div>
-                            )}
-                        </article>
+                                {tender.enlace_externo && (
+                                    <div className="mt-6 border-t pt-6">
+                                        <Button asChild>
+                                            <a
+                                                href={tender.enlace_externo}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                Portal de licitación externo{' '}
+                                                <ExternalLink className="size-4" />
+                                            </a>
+                                        </Button>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
                     </div>
 
-                    {/* Right Side: Company & Documents */}
-                    <div className="lg:col-span-4 space-y-6">
-                        {/* Company Card */}
-                        <section className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                            <div className="p-6 text-center space-y-4">
+                    {/* Barra lateral */}
+                    <div className="space-y-6">
+                        <Card>
+                            <CardContent className="flex flex-col items-center gap-3 text-center">
                                 <Link
-                                    href={route('associate.company.bienes-servicios.company', company.slug)}
-                                    className="block mx-auto w-24 h-24 bg-slate-50 rounded-2xl p-4 border border-slate-100 group transition-all"
+                                    href={companyUrl}
+                                    className="flex size-20 items-center justify-center rounded-xl bg-muted/50 p-3 ring-1 ring-foreground/10"
                                 >
                                     {company.logo_url ? (
-                                        <img src={company.logo_url} alt={company.nombre} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
+                                        <img
+                                            src={company.logo_url}
+                                            alt={company.nombre}
+                                            className="max-h-full max-w-full object-contain"
+                                        />
                                     ) : (
-                                        <Building2 size={40} className="text-slate-200 mx-auto mt-2" />
+                                        <Building2 className="size-8 text-muted-foreground" />
                                     )}
                                 </Link>
                                 <div>
-                                    <h3 className="font-black text-slate-900 uppercase tracking-tight line-clamp-1">{company.nombre}</h3>
-                                    <div className="flex items-center justify-center gap-1.5 mt-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                        <MapPin size={12} className="text-green-500" />
-                                        <span>{company.ciudad || company.departamento}</span>
-                                    </div>
+                                    <h3 className="font-medium">
+                                        {company.nombre}
+                                    </h3>
+                                    {location && (
+                                        <span className="mt-0.5 flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                                            <MapPin className="size-3" />
+                                            {location}
+                                        </span>
+                                    )}
                                 </div>
-                                <Link href={route('associate.company.bienes-servicios.company', company.slug)} className="block">
-                                    <Button variant="outline" className="w-full h-10 rounded-xl border-slate-200 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50">
-                                        Perfil Operadora
-                                    </Button>
-                                </Link>
-                            </div>
-                        </section>
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full"
+                                >
+                                    <Link href={companyUrl}>
+                                        Ver perfil de la empresa
+                                    </Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
 
-                        {/* Documents Section */}
-                        <section className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm sticky top-6">
-                            <div className="p-5 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
-                                <div className="h-8 w-8 bg-slate-900 rounded-lg flex items-center justify-center text-white shrink-0">
-                                    <FileText size={16} />
-                                </div>
-                                <h2 className="text-xs font-black text-slate-800 uppercase tracking-widest">Pliegos y Anexos</h2>
-                            </div>
-
-                            <div className="p-5 space-y-4">
+                        <Card className="gap-0">
+                            <CardHeader className="border-b pb-3">
+                                <CardTitle className="flex items-center gap-2">
+                                    <FileText className="size-4 text-muted-foreground" />
+                                    Pliegos y anexos
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex flex-col gap-2 py-4">
                                 {documents.length > 0 ? (
-                                    <div className="space-y-2">
-                                        {documents.map((doc) => (
-                                            <div key={doc.id} className="group p-3 rounded-xl border border-slate-200 hover:border-green-300 transition-all flex items-center justify-between gap-3 bg-white hover:shadow-lg hover:shadow-green-500/5">
-                                                <div className="flex items-center gap-3 overflow-hidden">
-                                                    <div className="shrink-0 h-9 w-9 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center group-hover:bg-green-50 transition-colors">
-                                                        {getFileIcon(doc.ext)}
-                                                    </div>
-                                                    <div className="overflow-hidden">
-                                                        <p className="text-xs font-black text-slate-900 tracking-tight truncate uppercase mb-0.5">
-                                                            {doc.name}
-                                                        </p>
-                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{doc.ext} • {doc.size}</span>
-                                                    </div>
-                                                </div>
-
-                                                <a
-                                                    href={doc.url}
-                                                    target="_blank"
-                                                    download
-                                                    className="h-8 w-8 rounded-lg bg-slate-900 text-white flex items-center justify-center hover:bg-green-600 transition-all shadow-md shrink-0"
-                                                >
-                                                    <Download size={14} />
-                                                </a>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    documents.map((doc) => (
+                                        <a
+                                            key={doc.id}
+                                            href={doc.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="group flex items-center justify-between gap-3 rounded-lg border border-input p-2.5 transition-colors hover:bg-muted/50"
+                                        >
+                                            <span className="flex items-center gap-2.5 overflow-hidden">
+                                                <FileText className="size-4 shrink-0 text-muted-foreground" />
+                                                <span className="overflow-hidden">
+                                                    <span className="block truncate text-sm font-medium">
+                                                        {doc.name}
+                                                    </span>
+                                                    <span className="text-xs uppercase text-muted-foreground">
+                                                        {doc.ext} · {doc.size}
+                                                    </span>
+                                                </span>
+                                            </span>
+                                            <Download className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+                                        </a>
+                                    ))
                                 ) : (
-                                    <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl">
-                                        <FileText size={32} className="text-slate-200" strokeWidth={1} />
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No hay archivos adjuntos</p>
-                                    </div>
-                                )}
-
-                                <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3">
-                                    <ShieldAlert size={16} className="text-blue-500 shrink-0 mt-0.5" />
-                                    <p className="text-[9px] text-blue-800 font-black leading-relaxed uppercase tracking-widest">
-                                        Documentación técnica confidencial. Prohibida su reproducción parcial o total fuera del marco de la licitación.
+                                    <p className="py-4 text-center text-sm text-muted-foreground">
+                                        No hay archivos adjuntos.
                                     </p>
-                                </div>
-                            </div>
-                        </section>
+                                )}
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             </div>

@@ -237,7 +237,7 @@ parameters:
 		-
 			message: '#^Relation ''associate'' is not found in App\\Models\\User model\.$#'
 			identifier: larastan.relationExistence
-			count: 2
+			count: 1
 			path: app/Http/Controllers/Admin/LicitacionController.php
 
 		-
@@ -844,12 +844,6 @@ parameters:
 			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:performOnCollections\(\)\.$#'
 			identifier: method.notFound
 			count: 2
-			path: app/Models/Licitacion.php
-
-		-
-			message: '#^Deprecated in PHP 8\.4\: Parameter \#1 \$media \(Spatie\\MediaLibrary\\MediaCollections\\Models\\Media\) is implicitly nullable via default value null\.$#'
-			identifier: parameter.implicitlyNullable
-			count: 1
 			path: app/Models/Licitacion.php
 
 		-

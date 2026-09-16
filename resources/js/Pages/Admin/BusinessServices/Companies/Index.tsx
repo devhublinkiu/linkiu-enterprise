@@ -1,21 +1,23 @@
-import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { Building2, MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+
+import { Badge } from '@/Components/base/Badge';
+import { Button } from '@/Components/base/Button';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from '@/Components/base/InputGroup';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/Components/base/Table';
 import AppLayout from '@/Layouts/AppLayout';
-import { Button } from '@/Components/ui/Button';
-import { Badge } from "@/Components/ui/Badge";
-import { Card, CardContent } from '@/Components/ui/Card';
-import { Input } from '@/Components/ui/Input';
-import { 
-    Plus, 
-    Pencil, 
-    Trash2, 
-    Building2, 
-    CheckCircle2, 
-    XCircle, 
-    Search,
-    MapPin
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface Company {
     id: number;
@@ -33,150 +35,163 @@ interface Props {
 export default function Index({ companies }: Props) {
     const [search, setSearch] = useState('');
 
-    const deleteCompany = (id: number) => {
-        if (confirm('¿Estás seguro de que quieres eliminar esta empresa? Esta acción eliminará también todas sus licitaciones.')) {
-            router.delete(route('admin.bienes-servicios.companies.destroy', id));
-        }
-    };
-
-    const getStatusBadge = (status: string) => {
-        if (status === 'activo') {
-            return (
-                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1 font-bold uppercase text-[10px]">
-                    <CheckCircle2 size={10} /> Activo
-                </Badge>
+    const deleteCompany = (company: Company) => {
+        if (
+            confirm(
+                `¿Eliminar «${company.nombre}»? También se eliminarán todas sus licitaciones. Esta acción no se puede deshacer.`,
+            )
+        ) {
+            router.delete(
+                route('admin.bienes-servicios.companies.destroy', company.id),
             );
         }
-        return (
-            <Badge className="bg-slate-100 text-slate-600 border-slate-200 gap-1 font-bold uppercase text-[10px]">
-                <XCircle size={10} /> Inactivo
-            </Badge>
-        );
     };
 
-    const filteredCompanies = companies.filter(c => 
-        c.nombre.toLowerCase().includes(search.toLowerCase()) ||
-        (c.ciudad && c.ciudad.toLowerCase().includes(search.toLowerCase()))
+    const filtered = companies.filter(
+        (c) =>
+            c.nombre.toLowerCase().includes(search.toLowerCase()) ||
+            (c.ciudad ?? '').toLowerCase().includes(search.toLowerCase()),
     );
+
+    const location = (c: Company) =>
+        c.ciudad && c.departamento
+            ? `${c.ciudad}, ${c.departamento}`
+            : (c.ciudad ?? c.departamento ?? '—');
 
     return (
         <AppLayout>
-            <Head title="Empresas de Bienes y Servicios - Admin" />
+            <Head title="Empresas · Bienes y Servicios" />
 
-            <div className="space-y-6">
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="mx-auto max-w-6xl space-y-6">
+                <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="h-10 w-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-900/20">
-                                <Building2 size={20} />
-                            </div>
-                            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Empresas (Bienes y Servicios)</h1>
-                        </div>
-                        <p className="text-slate-500 text-sm pl-1">Gestiona los proveedores de bienes y servicios para CAMEP.</p>
+                        <h1 className="flex items-center gap-2 font-display text-h3">
+                            <Building2 className="size-6 text-muted-foreground" />
+                            Empresas
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Proveedores de bienes y servicios para CAMEP (
+                            {companies.length} en total).
+                        </p>
                     </div>
-                    
-                    <Link href={route('admin.bienes-servicios.companies.create')}>
-                        <Button className="bg-slate-900 hover:bg-orange-500 text-white rounded-xl px-6 h-12 font-bold shadow-xl shadow-slate-900/10 transition-all gap-2">
-                            <Plus size={20} />
-                            Nueva Empresa
-                        </Button>
-                    </Link>
+                    <Button asChild>
+                        <Link
+                            href={route(
+                                'admin.bienes-servicios.companies.create',
+                            )}
+                        >
+                            <Plus className="size-4" /> Nueva empresa
+                        </Link>
+                    </Button>
                 </div>
 
-                {/* Filters & Search */}
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="relative w-full md:w-96">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <Input 
-                            placeholder="Buscar por nombre o ciudad..." 
-                            className="pl-10 h-12 rounded-xl border-slate-200 focus:ring-orange-500 focus:border-orange-500 bg-white"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                    </div>
-                </div>
+                <InputGroup className="h-9 max-w-xs">
+                    <InputGroupAddon>
+                        <Search />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Buscar por nombre o ciudad…"
+                    />
+                </InputGroup>
 
-                {/* Table Content */}
-                <Card className="border-slate-200 shadow-sm overflow-hidden rounded-2xl bg-white">
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-slate-50/50 border-b border-slate-100">
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Logo</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Nombre</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Ubicación</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Estado</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {filteredCompanies.map((item) => (
-                                        <tr key={item.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/30">
-                                            <td className="px-6 py-4">
-                                                <div className="h-12 w-12 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center p-1">
-                                                    {item.logo_url ? (
-                                                        <img src={item.logo_url} alt={item.nombre} className="h-full w-full object-contain" />
-                                                    ) : (
-                                                        <Building2 className="text-slate-300" size={20} />
+                <div className="rounded-xl ring-1 ring-foreground/10">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-16">Logo</TableHead>
+                                <TableHead>Nombre</TableHead>
+                                <TableHead>Ubicación</TableHead>
+                                <TableHead className="text-center">
+                                    Estado
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    Acciones
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filtered.length === 0 && (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={5}
+                                        className="py-12 text-center text-muted-foreground"
+                                    >
+                                        No se encontraron empresas.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            {filtered.map((c) => (
+                                <TableRow key={c.id}>
+                                    <TableCell>
+                                        <div className="flex size-10 items-center justify-center overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10">
+                                            {c.logo_url ? (
+                                                <img
+                                                    src={c.logo_url}
+                                                    alt={c.nombre}
+                                                    className="size-full object-contain p-1"
+                                                />
+                                            ) : (
+                                                <Building2 className="size-5 text-muted-foreground" />
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="font-medium">
+                                        {c.nombre}
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground">
+                                        <span className="flex items-center gap-1.5">
+                                            <MapPin className="size-3.5" />
+                                            {location(c)}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <Badge
+                                            variant={
+                                                c.estado === 'activo'
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                        >
+                                            {c.estado === 'activo'
+                                                ? 'Activo'
+                                                : 'Inactivo'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end gap-1">
+                                            <Button
+                                                asChild
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                aria-label={`Editar ${c.nombre}`}
+                                            >
+                                                <Link
+                                                    href={route(
+                                                        'admin.bienes-servicios.companies.edit',
+                                                        c.id,
                                                     )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="font-bold text-slate-800 text-sm">{item.nombre}</span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                                                    <MapPin size={12} className="text-slate-400" />
-                                                    {item.ciudad && item.departamento ? `${item.ciudad}, ${item.departamento}` : (item.ciudad || item.departamento || 'N/A')}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {getStatusBadge(item.estado)}
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-1">
-                                                    <Link href={route('admin.bienes-servicios.companies.edit', item.id)}>
-                                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-blue-600 hover:bg-blue-50 rounded-lg">
-                                                            <Pencil size={16} />
-                                                        </Button>
-                                                    </Link>
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="icon" 
-                                                        className="h-9 w-9 text-red-600 hover:bg-red-50 rounded-lg"
-                                                        onClick={() => deleteCompany(item.id)}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {filteredCompanies.length === 0 && (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-20 text-center">
-                                                <div className="flex flex-col items-center justify-center">
-                                                    <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200 mb-4 border border-slate-100">
-                                                        <Building2 size={32} />
-                                                    </div>
-                                                    <h3 className="text-lg font-bold text-slate-800">No hay empresas registradas</h3>
-                                                    <p className="text-slate-500 text-sm mt-1 max-w-xs mx-auto">Comienza registrando la primera empresa proveedora pulsando el botón superior.</p>
-                                                    <Link href={route('admin.bienes-servicios.companies.create')} className="mt-6">
-                                                        <Button variant="outline" className="rounded-xl border-dashed border-2 hover:bg-slate-50">
-                                                            Registrar Empresa Ahora
-                                                        </Button>
-                                                    </Link>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </Link>
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                aria-label={`Eliminar ${c.nombre}`}
+                                                className="text-muted-foreground hover:text-destructive"
+                                                onClick={() => deleteCompany(c)}
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
         </AppLayout>
     );

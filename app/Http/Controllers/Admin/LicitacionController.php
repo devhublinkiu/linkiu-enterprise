@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\NewTenderPublished;
 use App\Models\BienesServiciosEmpresa;
 use App\Models\Licitacion;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class LicitacionController extends Controller
@@ -62,20 +66,9 @@ class LicitacionController extends Controller
             }
         }
 
-        // Notificar a todos los asociados si se publica
+        // Recién creada: si nace publicada, es una publicación nueva → avisar.
         if ($tender->estado === 'publicado') {
-            try {
-                $emails = \App\Models\User::whereHas('associate', function ($q) {
-                    $q->where('status', 'verified');
-                })->pluck('email')->toArray();
-
-                if (!empty($emails)) {
-                    \Illuminate\Support\Facades\Mail::bcc($emails)
-                        ->send(new \App\Mail\NewTenderPublished($tender));
-                }
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Error enviando alerta de licitación: ' . $e->getMessage());
-            }
+            $this->notifyAssociatesOfPublication($tender);
         }
 
         return redirect()->route('admin.bienes-servicios.tenders.index')
@@ -116,6 +109,10 @@ class LicitacionController extends Controller
             'featured_image' => 'nullable|image|max:2048',
         ]);
 
+        // Estado ANTES de guardar: solo avisamos en la transición a "publicado",
+        // no en cada edición de una licitación que ya estaba publicada.
+        $wasPublished = $tender->estado === 'publicado';
+
         $tender->update($validated);
 
         if ($request->hasFile('featured_image')) {
@@ -129,20 +126,10 @@ class LicitacionController extends Controller
             }
         }
 
-        // Notificar a todos los asociados si se actualiza y ya está publicada
-        if ($tender->estado === 'publicado') {
-            try {
-                $emails = \App\Models\User::whereHas('associate', function ($q) {
-                    $q->where('status', 'verified');
-                })->pluck('email')->toArray();
-
-                if (!empty($emails)) {
-                    \Illuminate\Support\Facades\Mail::bcc($emails)
-                        ->send(new \App\Mail\TenderUpdatedAlert($tender));
-                }
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Error enviando alerta de actualización de licitación: ' . $e->getMessage());
-            }
+        // Solo en la transición borrador/cerrado → publicado. Editar una ya
+        // publicada NO reenvía correo (antes se spameaba a todos en cada guardado).
+        if ($tender->estado === 'publicado' && ! $wasPublished) {
+            $this->notifyAssociatesOfPublication($tender);
         }
 
         return redirect()->route('admin.bienes-servicios.tenders.index')
@@ -152,14 +139,40 @@ class LicitacionController extends Controller
     public function destroy(Licitacion $tender)
     {
         $tender->delete();
+
         return redirect()->route('admin.bienes-servicios.tenders.index')
             ->with('success', 'Licitación eliminada correctamente.');
     }
-    
+
     public function deleteDocument(Licitacion $tender, $mediaId)
     {
         $media = $tender->media()->findOrFail($mediaId);
         $media->delete();
+
         return back()->with('success', 'Documento eliminado.');
+    }
+
+    /**
+     * Avisa a los asociados verificados de una licitación recién publicada.
+     *
+     * Diferido con defer() (se manda tras la respuesta; bajo Octane corre en la
+     * corrutina de la petición) y por lotes de BCC para no armar una cabecera
+     * gigante ni bloquear el guardado. Se llama solo en la transición a
+     * "publicado", nunca en cada edición.
+     */
+    private function notifyAssociatesOfPublication(Licitacion $tender): void
+    {
+        defer(function () use ($tender) {
+            User::whereHas('associate', fn ($q) => $q->where('status', 'verified'))
+                ->pluck('email')
+                ->chunk(50)
+                ->each(function ($emails) use ($tender) {
+                    try {
+                        Mail::bcc($emails->all())->send(new NewTenderPublished($tender));
+                    } catch (\Throwable $e) {
+                        Log::error('Error enviando alerta de licitación: '.$e->getMessage());
+                    }
+                });
+        });
     }
 }

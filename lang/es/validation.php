@@ -86,6 +86,8 @@ return [
     'not_in' => 'El valor seleccionado para :attribute no es válido.',
     'not_regex' => 'El formato del campo :attribute no es válido.',
     'numeric' => 'El campo :attribute debe ser un número.',
+    'lowercase' => 'El campo :attribute debe estar en minúsculas.',
+    'uppercase' => 'El campo :attribute debe estar en mayúsculas.',
     'password' => [
         'letters' => 'El campo :attribute debe contener al menos una letra.',
         'mixed' => 'El campo :attribute debe contener al menos una letra mayúscula y una minúscula.',

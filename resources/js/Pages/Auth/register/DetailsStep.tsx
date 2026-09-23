@@ -48,6 +48,9 @@ export function DetailsStep({ email }: { email: string }) {
             >
                 <CardContent>
                     <FieldGroup>
+                        {errors.email && (
+                            <FieldError>Correo: {errors.email}</FieldError>
+                        )}
                         <Field>
                             <FieldLabel htmlFor="name">
                                 Nombre completo
@@ -112,10 +115,6 @@ export function DetailsStep({ email }: { email: string }) {
                                 required
                             />
                         </Field>
-
-                        {errors.email && (
-                            <FieldError>{errors.email}</FieldError>
-                        )}
                     </FieldGroup>
                 </CardContent>
                 <CardFooter>

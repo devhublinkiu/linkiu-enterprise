@@ -73,6 +73,25 @@ class RegistrationTest extends TestCase
         $this->assertNotNull(User::where('email', 'test@example.com')->first()->email_verified_at);
     }
 
+    public function test_registration_accepts_email_with_uppercase_and_stores_it_lowercased(): void
+    {
+        Mail::fake();
+        // El flujo OTP normaliza a minúsculas; el usuario luego envía con mayúsculas.
+        $this->passOtp('mayus@example.com');
+
+        $response = $this->post('/register', [
+            'name' => 'Con Mayúsculas',
+            'email' => 'Mayus@Example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('associate.company.billing', absolute: false));
+        $this->assertNotNull(User::where('email', 'mayus@example.com')->first());
+        $this->assertNull(User::where('email', 'Mayus@Example.com')->first());
+    }
+
     public function test_registration_is_blocked_without_verified_email(): void
     {
         $response = $this->post('/register', [

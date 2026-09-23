@@ -33,9 +33,13 @@ export function EmailStep({ onSent }: { onSent: (email: string) => void }) {
         setError(null);
         setTaken(false);
 
+        // El correo se maneja en minúsculas en todo el flujo (backend incluido);
+        // lo normalizamos aquí para que el OTP, el correo mostrado y la cuenta coincidan.
+        const normalized = email.trim().toLowerCase();
+
         try {
-            await axios.post(route('register.otp'), { email });
-            onSent(email);
+            await axios.post(route('register.otp'), { email: normalized });
+            onSent(normalized);
         } catch (err) {
             if (axios.isAxiosError(err) && err.response) {
                 if (

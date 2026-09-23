@@ -29,9 +29,24 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Password::defaults()],
         ];
+    }
+
+    /**
+     * El correo se guarda y compara en minúsculas en todo el flujo (OTP incluido),
+     * así que lo normalizamos ANTES de validar. Evita rechazar correos válidos
+     * escritos con mayúsculas (p. ej. "Correo@Gmail.com"), que antes chocaban con
+     * la regla `lowercase` y mostraban un error confuso en el paso de contraseña.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => mb_strtolower(trim((string) $this->input('email'))),
+            ]);
+        }
     }
 
     /**

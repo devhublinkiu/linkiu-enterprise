@@ -151,7 +151,7 @@ Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
     Route::post('register', [RegisteredUserController::class, 'store'])
-        ->name('register.store');
+        ->name('register.store')->middleware('throttle:10,1');
 
     // Registro multipaso (Corte 3D). JSON + rate-limit por IP.
     Route::post('register/check-email', [RegisteredUserController::class, 'checkEmail'])

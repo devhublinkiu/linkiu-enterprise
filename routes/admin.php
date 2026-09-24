@@ -32,6 +32,8 @@ use Illuminate\Support\Facades\Route;
 // Users
 Route::get('users', [UserController::class, 'index'])->name('users.index');
 Route::post('users/{user}/password', [UserController::class, 'updatePassword'])->name('users.update-password');
+Route::post('users/purge-spam', [UserController::class, 'purgeSpam'])->name('users.purge-spam');
+Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
 // Asociados: auditoría / ciclo de vida (Admin\AssociateReviewController)
 Route::get('associates', [AssociateReviewController::class, 'index'])->name('associates.index');

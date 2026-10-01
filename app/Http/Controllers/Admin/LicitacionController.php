@@ -168,7 +168,11 @@ class LicitacionController extends Controller
                 ->chunk(50)
                 ->each(function ($emails) use ($tender) {
                     try {
-                        Mail::bcc($emails->all())->send(new NewTenderPublished($tender));
+                        // Resend exige un `to`: mandamos a la casilla de envío y
+                        // los asociados en BCC (ocultos entre sí). Sin `to`, la API
+                        // responde "Missing `to` field" y el aviso no sale.
+                        $to = config('mail.from.address') ?: 'afiliate@camepg.org';
+                        Mail::to($to)->bcc($emails->all())->send(new NewTenderPublished($tender));
                     } catch (\Throwable $e) {
                         Log::error('Error enviando alerta de licitación: '.$e->getMessage());
                     }

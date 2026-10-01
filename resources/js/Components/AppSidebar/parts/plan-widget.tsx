@@ -1,6 +1,12 @@
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
-import { AlertCircle, ArrowRight, CalendarClock, Clock } from 'lucide-react';
+import {
+    AlertCircle,
+    ArrowRight,
+    CalendarClock,
+    Clock,
+    Globe,
+} from 'lucide-react';
 
 export type Subscription = {
     status: 'none' | 'active' | 'grace' | 'expired';
@@ -28,10 +34,12 @@ export function PlanWidget({
     sub,
     needsProfileCompletion,
     hasNoPlan,
+    needsMicrositePublish = false,
 }: {
     sub: Subscription | null;
     needsProfileCompletion: boolean;
     hasNoPlan: boolean;
+    needsMicrositePublish?: boolean;
 }) {
     const planProgress = (() => {
         if (!sub || sub.status !== 'active' || sub.days_remaining === null) {
@@ -173,6 +181,26 @@ export function PlanWidget({
                         </span>
                         <span className="mt-0.5 block text-[11px] text-muted-foreground">
                             Completa los datos para aparecer en el directorio.
+                        </span>
+                    </span>
+                </Link>
+            )}
+
+            {/* CTA: publicar micrositio (perfil público pero página en borrador) */}
+            {needsMicrositePublish && (
+                <Link
+                    href={route('associate.company.microsite.contact')}
+                    className="group/cta flex items-start gap-3 rounded-lg border border-accent-strong/30 bg-accent-subtle p-3 transition-colors hover:bg-accent-subtle/70"
+                >
+                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
+                        <Globe className="size-3" />
+                    </span>
+                    <span>
+                        <span className="block text-xs font-medium text-accent-strong">
+                            Publica tu página
+                        </span>
+                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                            Está en borrador: publícala para que te encuentren.
                         </span>
                     </span>
                 </Link>

@@ -373,10 +373,23 @@ it('alterna el estado de publicado', function () {
 
 // ─── Compuerta de publicado (21-E) ────────────────────────────────────────────
 
-it('un micrositio en borrador da 404 al público', function () {
-    micrositeAssociate(['slug' => 'borrador-co', 'microsite_published' => false]);
+it('un micrositio en borrador muestra la página amigable al público (no 404)', function () {
+    micrositeAssociate([
+        'company_name' => 'Borrador SAS',
+        'slug' => 'borrador-co',
+        'microsite_published' => false,
+    ]);
 
-    $this->get('/borrador-co')->assertNotFound();
+    $this->get('/borrador-co')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Public/Companies/Unpublished')
+            ->where('companyName', 'Borrador SAS')
+        );
+});
+
+it('un slug inexistente sigue dando 404 (no la página amigable)', function () {
+    $this->get('/empresa-que-no-existe-xyz')->assertNotFound();
 });
 
 it('el dueño ve su micrositio en borrador como vista previa', function () {

@@ -114,8 +114,9 @@ class RegisteredUserController extends Controller
         try {
             Mail::to($user->email)->send(new WelcomeUser($user));
 
-            $adminRecipient = config('mail.admin_recipient') ?: 'afiliate@camepg.org';
-            Mail::to($adminRecipient)->send(new NewRegistrationToAdmin($user));
+            // El aviso de alta nueva va SIEMPRE a la casilla de afiliaciones,
+            // sin depender de ADMIN_EMAIL.
+            Mail::to('afiliate@camepg.org')->send(new NewRegistrationToAdmin($user));
         } catch (\Exception $e) {
             Log::error('Error enviando correos de registro: '.$e->getMessage());
         }

@@ -224,7 +224,11 @@ it('avisa a los asociados al publicar una licitación nueva', function () {
         'estado' => 'publicado',
     ]);
 
-    Mail::assertSent(NewTenderPublished::class);
+    // Debe llevar un `to` (Resend lo exige); los asociados van en BCC.
+    Mail::assertSent(
+        NewTenderPublished::class,
+        fn ($mail) => count($mail->to) >= 1 && count($mail->bcc) >= 1,
+    );
 });
 
 it('NO reenvía correo al editar una licitación ya publicada', function () {

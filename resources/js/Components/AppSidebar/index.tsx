@@ -16,7 +16,11 @@ import { PlanWidget, type Subscription } from './parts/plan-widget';
 type SidebarProps = {
     auth: {
         user: { name: string; is_superadmin?: boolean; role?: string };
-        associate?: { status?: string; is_public?: boolean } | null;
+        associate?: {
+            status?: string;
+            is_public?: boolean;
+            microsite_published?: boolean;
+        } | null;
     };
     associate_counts?: { approved: number; pending: number; inactive: number };
     subscription?: Subscription | null;
@@ -58,6 +62,9 @@ export default function AppSidebar() {
         !associate.is_public
     );
     const hasNoPlan = !isAdmin && (!sub || sub.status === 'none');
+    // Perfil público pero micrositio en borrador → recordatorio persistente.
+    const needsMicrositePublish =
+        !isAdmin && !!associate?.is_public && !associate?.microsite_published;
 
     const items = isAdmin
         ? buildAdminItems(counts, pendingPayments)
@@ -94,6 +101,7 @@ export default function AppSidebar() {
                         sub={sub}
                         needsProfileCompletion={needsProfileCompletion}
                         hasNoPlan={hasNoPlan}
+                        needsMicrositePublish={needsMicrositePublish}
                     />
                 </SidebarFooter>
             )}

@@ -1,6 +1,7 @@
-import { Head, usePage } from '@inertiajs/react';
-import { Building2 } from 'lucide-react';
+import { Head, useForm, usePage } from '@inertiajs/react';
+import { Building2, Globe } from 'lucide-react';
 
+import { Button } from '@/Components/base/Button';
 import AppLayout from '@/Layouts/AppLayout';
 import { InvoicesCard } from '@/Pages/Dashboard/Parts/InvoicesCard';
 import {
@@ -15,6 +16,8 @@ type Associate = {
     logo_url?: string | null;
     is_public?: boolean;
     company_name?: string;
+    microsite_published?: boolean;
+    microsite_url?: string | null;
 };
 
 export default function Dashboard() {
@@ -33,6 +36,16 @@ export default function Dashboard() {
     const { auth, associateProfile } = page;
     const isAdmin = auth.user?.is_superadmin || auth.user?.role === 'admin';
     const associate = auth.associate ?? null;
+
+    // Publicar el micrositio de un clic desde el aviso (hook antes de cualquier return).
+    const publishForm = useForm({});
+    const publish = () =>
+        publishForm.post(
+            route('associate.company.microsite.published.toggle'),
+            {
+                preserveScroll: true,
+            },
+        );
 
     // Vista de administrador (mínima; el panel admin real vive en sus módulos).
     if (isAdmin || !associateProfile) {
@@ -58,6 +71,10 @@ export default function Dashboard() {
         'tu empresa';
     const sub = page.subscription ?? null;
     const unread = page.unread_invoices ?? 0;
+
+    // Perfil ya público pero micrositio en borrador → nadie lo ve. Aviso accionable.
+    const micrositeInDraft =
+        !!associate?.is_public && !associate?.microsite_published;
 
     return (
         <AppLayout>
@@ -85,6 +102,47 @@ export default function Dashboard() {
                         </p>
                     </div>
                 </div>
+
+                {micrositeInDraft && (
+                    <div className="flex flex-col gap-3 rounded-xl border border-accent-strong/30 bg-accent-subtle p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-start gap-3">
+                            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                                <Globe className="size-4" />
+                            </span>
+                            <div>
+                                <p className="font-medium">
+                                    Tu página pública está en borrador
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    Publícala para aparecer en el directorio y
+                                    que tus clientes te encuentren.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                            {associate?.microsite_url && (
+                                <Button asChild variant="outline" size="sm">
+                                    <a
+                                        href={associate.microsite_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        Ver primero
+                                    </a>
+                                </Button>
+                            )}
+                            <Button
+                                size="sm"
+                                onClick={publish}
+                                disabled={publishForm.processing}
+                            >
+                                {publishForm.processing
+                                    ? 'Publicando…'
+                                    : 'Publicar ahora'}
+                            </Button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     <MembershipCard sub={sub} />

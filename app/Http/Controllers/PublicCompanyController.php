@@ -129,7 +129,13 @@ class PublicCompanyController extends Controller
         $live = $associate->is_public && $associate->microsite_published;
         $ownerPreview = $isOwner && $associate->is_public && ! $associate->microsite_published;
 
-        abort_unless($live || $ownerPreview, 404);
+        // La empresa existe pero su micrositio aún no está publicado: en vez de un
+        // 404 crudo, mostramos una página amigable (plan 0025). No se indexa.
+        if (! $live && ! $ownerPreview) {
+            return Inertia::render('Public/Companies/Unpublished', [
+                'companyName' => $associate->company_name,
+            ]);
+        }
 
         return $this->renderProfile($associate, $ownerPreview);
     }

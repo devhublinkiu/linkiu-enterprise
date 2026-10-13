@@ -39,7 +39,7 @@ class AssociateReviewController extends Controller
                 ->orWhere('nit', 'like', "%{$q}%")))
             ->when($estado, fn ($query) => $this->filterByEstado($query, $estado))
             ->latest()
-            ->paginate(25)
+            ->paginate(15)
             ->withQueryString()
             ->through(fn (Associate $a) => [
                 'id' => $a->id,

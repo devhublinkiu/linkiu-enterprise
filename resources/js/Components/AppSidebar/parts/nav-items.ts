@@ -53,7 +53,12 @@ export type AssociateLocks = {
 };
 
 export function buildAdminItems(
-    counts: { approved: number; pending: number; inactive: number },
+    counts: {
+        approved: number;
+        pending: number;
+        inactive: number;
+        total: number;
+    },
     pendingPayments: number,
 ): NavItem[] {
     return [
@@ -62,6 +67,13 @@ export function buildAdminItems(
             name: 'Empresas',
             icon: Building2,
             children: [
+                {
+                    name: 'Todas',
+                    href: route('admin.associates.index', {
+                        estado: 'todas',
+                    }),
+                    count: counts.total,
+                },
                 {
                     name: 'Activas',
                     href: route('admin.associates.index', {

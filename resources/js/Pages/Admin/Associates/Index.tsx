@@ -202,7 +202,11 @@ export default function Index({ associates, filters }: Props) {
                     </InputGroup>
 
                     <Select
-                        value={filters.estado || 'all'}
+                        value={
+                            !filters.estado || filters.estado === 'todas'
+                                ? 'all'
+                                : filters.estado
+                        }
                         onValueChange={(v) =>
                             applyFilter({ estado: v === 'all' ? '' : v })
                         }

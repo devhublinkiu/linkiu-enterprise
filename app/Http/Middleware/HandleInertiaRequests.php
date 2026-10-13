@@ -93,6 +93,7 @@ class HandleInertiaRequests extends Middleware
                 'approved' => Associate::where('status', 'approved')->count(),
                 'pending' => Associate::where('status', 'pending')->count(),
                 'inactive' => Associate::where('status', 'inactive')->count(),
+                'total' => Associate::count(),
             ]
             : null,
             // Comprobantes esperando revisión: los del motor nuevo más los que

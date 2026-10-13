@@ -116,6 +116,7 @@ export default function PaymentsIndex({ filter, counts, payments }: Props) {
     const [approving, setApproving] = useState<PaymentRow | null>(null);
     const [rejecting, setRejecting] = useState<PaymentRow | null>(null);
     const rejection = useForm({ admin_notes: '' });
+    const approval = useForm({});
 
     useEffect(() => {
         if (flash.success)
@@ -137,11 +138,13 @@ export default function PaymentsIndex({ filter, counts, payments }: Props) {
 
     const confirmApprove = () => {
         if (!approving) return;
-        router.patch(
-            route('admin.payments.approve', approving.id),
-            {},
-            { preserveScroll: true, onFinish: () => setApproving(null) },
-        );
+        // useForm expone `processing` para bloquear el botón mientras la petición
+        // está en vuelo (evita doble-submit). En error (red/servidor) NO se cierra
+        // el diálogo: queda abierto para reintentar a conciencia, no a ciegas.
+        approval.patch(route('admin.payments.approve', approving.id), {
+            preserveScroll: true,
+            onSuccess: () => setApproving(null),
+        });
     };
 
     const submitReject = (e: React.FormEvent) => {
@@ -370,7 +373,9 @@ export default function PaymentsIndex({ filter, counts, payments }: Props) {
             {/* Aprobar */}
             <Dialog
                 open={!!approving}
-                onOpenChange={(o) => !o && setApproving(null)}
+                onOpenChange={(o) =>
+                    !o && !approval.processing && setApproving(null)
+                }
             >
                 <DialogContent>
                     <DialogHeader>
@@ -382,10 +387,20 @@ export default function PaymentsIndex({ filter, counts, payments }: Props) {
                     </DialogHeader>
                     <DialogFooter>
                         <DialogClose asChild>
-                            <Button variant="outline">Cancelar</Button>
+                            <Button
+                                variant="outline"
+                                disabled={approval.processing}
+                            >
+                                Cancelar
+                            </Button>
                         </DialogClose>
-                        <Button onClick={confirmApprove}>
-                            Aprobar y aplicar
+                        <Button
+                            onClick={confirmApprove}
+                            disabled={approval.processing}
+                        >
+                            {approval.processing
+                                ? 'Aprobando…'
+                                : 'Aprobar y aplicar'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

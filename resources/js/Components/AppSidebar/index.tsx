@@ -22,7 +22,12 @@ type SidebarProps = {
             microsite_published?: boolean;
         } | null;
     };
-    associate_counts?: { approved: number; pending: number; inactive: number };
+    associate_counts?: {
+        approved: number;
+        pending: number;
+        inactive: number;
+        total: number;
+    };
     subscription?: Subscription | null;
     pending_payment_requests?: number;
     unread_invoices?: number;
@@ -41,6 +46,7 @@ export default function AppSidebar() {
         approved: 0,
         pending: 0,
         inactive: 0,
+        total: 0,
     };
     const pendingPayments: number = props.pending_payment_requests ?? 0;
     const unreadInvoices: number = props.unread_invoices ?? 0;

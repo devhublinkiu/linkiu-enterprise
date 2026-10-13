@@ -14,6 +14,8 @@ class PublicCompanyController extends Controller
 {
     public function index(Request $request)
     {
+        $perPage = 12;
+
         $query = Associate::where('associates.status', 'approved')
             ->where('is_public', true)
             // Micrositio en borrador → fuera del directorio (plan 0021, corte 21-E).
@@ -43,7 +45,7 @@ class PublicCompanyController extends Controller
             });
         }
 
-        $associates = $query->latest()->get()->map(function ($associate) {
+        $associates = $query->paginate($perPage)->withQueryString()->through(function ($associate) {
             $disk = config('filesystems.default');
 
             // Get unique categories for badges

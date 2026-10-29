@@ -9,7 +9,7 @@
   (va después, apoyada en este catálogo) ni **cambio alguno de modelo, BD, rutas o reglas de
   validación** — el backend ya está **completo y correcto** (ver §3).
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -57,7 +57,7 @@ Tabla auditada control por control contra el código real:
 - [ ] Este plan (`0012-admin-document-requirements.md`).
 - [ ] **Sin ADR nuevo.** No hay decisión de arquitectura nueva: la autorización del panel ya la fija
       **ADR-0006** (middleware `admin`), que este grupo de rutas ya aplica. Es modernización de UI.
-- [ ] `README.md` de actualizaciones — fila 0012.
+- [ ] `README.md` de modulos — fila 0012.
 - [ ] `orden-componentes.md` — **sin cambios** (no se crea ningún componente).
 - [ ] `docs/ejemplos/empresa-ficticia.md` — **sin cambios** (es catálogo global, no de una empresa).
 
@@ -173,7 +173,7 @@ Tabla auditada control por control contra el código real:
 - [x] Decisión §6: **una sola Table + columna "Obligatorio"** (no dos listas).
 - [x] Decisión §6: **conservar drag & drop** (asa en la fila; deshabilitado con búsqueda activa).
 - [x] Plan revisado.
-- [x] `#go` recibido → **12-A ✅ → 12-B ✅**. Plan 0012 implementado.
+- [x] `*go` recibido → **12-A ✅ → 12-B ✅**. Plan 0012 implementado.
 
 ## Decisiones cerradas
 
@@ -185,4 +185,4 @@ Tabla auditada control por control contra el código real:
 3. **Una sola tabla** con columna "Obligatorio" (consistente con el admin de Servicios), no dos listas.
 4. **Drag & drop conservado** sobre filas de la tabla, con asa; deshabilitado mientras hay búsqueda.
 5. **CRUD admin, no ficha.** No aplica ADR-0005 / section-reviews; se rige por design.md y §7 de
-   agents.md (validación al servidor, español, formatos Colombia).
+   AGENTS.md (validación al servidor, español, formatos Colombia).

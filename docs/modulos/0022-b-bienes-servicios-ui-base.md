@@ -11,7 +11,7 @@
   que por convención mantiene su paleta propia (Regla 10); ni paginación server-side / N+1 (queda para
   otro corte); ni el interruptor de plan.
 
-> Este plan documenta el corte que se está ejecutando tras el `#go`.
+> Este plan documenta el corte que se está ejecutando tras el `*go`.
 
 ## 1. Componentes (solo `/base`, sin nuevos)
 
@@ -60,7 +60,7 @@ y las URLs de documento **gateadas** de 0022-A (no se vuelve a `getUrl()`).
 
 ## 8. Aprobación
 
-- [x] Superficie confirmada (Ambas) · [x] `#go` · [x] Entregado
+- [x] Superficie confirmada (Ambas) · [x] `*go` · [x] Entregado
 - **Gates verdes:** types:check · ESLint · Prettier · Vitest (131) · build · Pint · Larastan (0).
 - **Nota de revisión:** las choice-cards de "Público objetivo" se rehicieron con borde consistente
   (ambas con `border-input`; seleccionada con `border-primary` + `bg-primary/5`) tras el feedback.

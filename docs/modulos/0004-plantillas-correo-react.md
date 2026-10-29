@@ -10,7 +10,7 @@
   sección aparte de configuración DNS/Resend (ver §10). Sí entra el arreglo de entregabilidad **de
   código** (texto plano, `List-Unsubscribe`, `Reply-To`) porque toca los Mailables.
 
-> Se trabaja por **cortes** (4A, 4B, …); cada corte se implementa con su propio `#go`. Los
+> Se trabaja por **cortes** (4A, 4B, …); cada corte se implementa con su propio `*go`. Los
 > componentes React de correo se crean **desde cero**. Las plantillas Blade viejas **no se borran**
 > hasta que su equivalente React esté migrado y verificado (§7, cierre).
 
@@ -39,7 +39,7 @@ su propio dominio y usa `@react-email/components`, no Tailwind ni tokens CSS).
 - [ ] **ADR-0004 · Plantillas de correo en React (react-email) compiladas a Blade.** Decisión de
   arquitectura: por qué React para correo, por qué se **compila a Blade en build** (y no render en
   runtime), y la convención de placeholders. Se escribe en el Corte 4A y se indexa en `docs/adr/`.
-- [ ] `docs/actualizaciones/orden-componentes.md`: no aplica (esos son de `base/`). En su lugar, este
+- [ ] `docs/modulos/orden-componentes.md`: no aplica (esos son de `base/`). En su lugar, este
   documento lleva el índice de plantillas migradas (§7, tabla de progreso).
 - [ ] `README.md` / `CLAUDE.md`: añadir la nota de flujo de correo (`npm run emails:build`,
   `npm run emails:dev` para previsualizar) al terminar el Corte 4A.
@@ -85,7 +85,7 @@ RUNTIME     Mailable → Blade → Resend            (100 % PHP; Mailables NO ca
 - **Preview:** `npm run emails:dev` levanta el servidor de `react-email` para ver las plantillas en el
   navegador sin enviar nada.
 
-## 5. Ajustes de marca acordados (#debate 2026-09-13)
+## 5. Ajustes de marca acordados (*debate 2026-09-13)
 
 1. **Enlaces del footer → `.org`.** Se mantienen los `mailto:@camepg.org` y `https://camepg.org` tal
    cual (decisión del usuario). *(Nota de entregabilidad: el desalineamiento envío `camepg.com` vs
@@ -117,7 +117,7 @@ es infra, §10.)*
 
 ## 7. Plan por cortes
 
-> Tabla de progreso de plantillas al pie. Cada corte = un `#go`.
+> Tabla de progreso de plantillas al pie. Cada corte = un `*go`.
 
 - **Corte 4A · Tooling + ADR.** ✅ **HECHO** (2026-09-13). Instaladas `react-email`,
   `@react-email/components` (1.0.12), `@react-email/render` (2.1.0), `tsx` (dev). Creado
@@ -238,4 +238,4 @@ Estos mueven la entregabilidad pero son configuración, no código de este plan:
 
 - [x] Plan revisado
 - [x] Pipeline confirmado (compilar a Blade en build)
-- [x] `#go` recibido → cortes 4A–4K + 4Z ejecutados. **Plan completado.**
+- [x] `*go` recibido → cortes 4A–4K + 4Z ejecutados. **Plan completado.**

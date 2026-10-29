@@ -128,7 +128,7 @@ componentes `base/`); nada de colores hardcodeados (hoy usan `slate/amber/emeral
 - **Este ADR (0005)** fija el esqueleto que heredan todas las secciones.
 - **Sub-ADR por sección** (`0005-a-informacion-basica`, `0005-b-caracterizacion`, …): reglas
   propias de cada una (campos, obligatorios, validaciones y mensajes específicos).
-- En `docs/actualizaciones/`: un **plan general** (0007) y un **plan por sección**.
+- En `docs/modulos/`: un **plan general** (0007) y un **plan por sección**.
 
 ---
 

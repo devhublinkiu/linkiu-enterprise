@@ -8,7 +8,7 @@
   **NO entra:** tocar el **módulo de galería** (asociado ni sus rutas admin) — se preserva íntegro
   (caución del usuario); ni corrección de datos ya guardados (el NIT malo existente se ajusta aparte).
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -31,7 +31,7 @@ Sin componentes nuevos. Se **retiran** piezas muertas y se **reorganiza** códig
 ## 2. Documentación *(segundo punto, obligatorio)*
 
 - [ ] Este plan (`0015-limpieza-y-particion.md`).
-- [ ] `README.md` de actualizaciones — fila 0015.
+- [ ] `README.md` de modulos — fila 0015.
 - [ ] Sin ADR nuevo (limpieza + reorganización; ninguna decisión de arquitectura nueva).
 
 ## 3. Flujo actual *(obligatorio, antes de proponer cambios)*
@@ -105,7 +105,7 @@ Sin componentes nuevos. Se **retiran** piezas muertas y se **reorganiza** códig
 - [x] Decisión: 15-B con la partición recomendada (controlador admin + `routes/admin.php` + sub-parts).
 - [x] Decisión: NIT existente malo se corrige **manual**; la validación frena los nuevos.
 - [x] Plan revisado y aprobado.
-- [x] `#go` recibido → **15-A ✅ → 15-B ✅**. Plan 0015 implementado.
+- [x] `*go` recibido → **15-A ✅ → 15-B ✅**. Plan 0015 implementado.
 
 ## Decisiones cerradas
 

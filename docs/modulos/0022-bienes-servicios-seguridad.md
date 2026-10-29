@@ -2,21 +2,21 @@
 
 - **Estado:** Implementado en local (gates verdes) — sin commit.
 - **Fecha:** 2026-09-16
-- **Decisiones (confirmadas por el usuario antes del `#go`):**
+- **Decisiones (confirmadas por el usuario antes del `*go`):**
   - Contenido/documentos `exclusivo_asociados` → **asociado con suscripción activa** (al día/gracia)
     **+ admin**. No cualquier logueado.
   - Documentos → **alinear con el patrón existente** (ruta gateada + disco privado), como
     `AssociateController::showDocument` / `BillingDocumentController`.
 - **Hallazgo de seguimiento:** el módulo **Anuncios** (misma base Spatie) comparte el mismo hueco de
   documentos públicos; conviene alinearlo en un corte posterior con esta misma decisión (ADR-0010).
-- **Alcance:** Cerrar las tres fugas/riesgos de seguridad del módulo detectadas en el `#review`.
+- **Alcance:** Cerrar las tres fugas/riesgos de seguridad del módulo detectadas en el `*review`.
   **Entra:** (1) fin del spam de correos a todos los asociados en cada edición; (2) documentos
   exclusivos servidos por ruta autenticada (disco privado); (3) el contenido `exclusivo_asociados`
   deja de abrirse a cualquier usuario logueado. **NO entra:** auto-cierre por `fecha_cierre`,
   paginación/N+1, deduplicación Associate/Public, modernización visual, ni el interruptor de plan
   (`feature:bienes_servicios`) — se decide aparte (ver §5).
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito.
 
 ---
 
@@ -142,7 +142,7 @@ puedeVerExclusivo = usuario->esAdmin()
 ## 8. Aprobación
 
 - [x] Plan revisado
-- [x] `#go` recibido → implementado
+- [x] `*go` recibido → implementado
 - [x] Gates verdes: Pint · Larastan (0 errores) · Pest (183 + 12 nuevas del módulo). JS sin cambios.
 
 **Pendiente de despliegue:** correr `php artisan bienes-servicios:secure-documents` para asegurar

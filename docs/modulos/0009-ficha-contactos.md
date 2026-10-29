@@ -12,7 +12,7 @@
   **Resumen**), que se trabaja al final. Del lado admin, este plan toca **solo** la pestaña de
   Contactos.
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -27,7 +27,7 @@ Se reconstruye con `base/` + tokens.
 **No hay ningún componente nuevo.** Se recorrieron los 4 *parts* y todos los controles quedan cubiertos
 por primitivos ya existentes en `base/` (creados en 0005–0008). Los dos **repetidores** (directorio de
 contactos y referencias) se **componen localmente** con `Card` + `Field` + `Input` + `Button` — no
-justifican un primitivo nuevo (regla §7.5 / §8 de `agents.md`: primero reutilizar).
+justifican un primitivo nuevo (regla §7.5 / §8 de `AGENTS.md`: primero reutilizar).
 
 Tabla auditada contra el código real:
 
@@ -79,7 +79,7 @@ Tabla auditada contra el código real:
 - [x] **Sub-ADR [0005-c](../adr/0005-c-contactos.md)** — reglas propias: campos y obligatorios,
       **contactos con todos los campos obligatorios**, **referencia verificable (teléfono o email, al
       menos uno) al servidor**, limpieza de filas vacías, reapertura con Editar, admin no edita.
-- [x] `README.md` de actualizaciones — fila 0009.
+- [x] `README.md` de modulos — fila 0009.
 - [x] `docs/adr/README.md` — fila 0005-c.
 - [x] `docs/ejemplos/empresa-ficticia.md` — empresa ficticia (PSL) **extendida** con Contactos
       (directorio de 2 contactos, comercial/facturación, referencias comercial + bancaria, canales
@@ -180,7 +180,7 @@ Tabla auditada contra el código real:
 ## 7. Plan de actualización (cortes)
 
 - **9-A · Backend Contactos + contrato** ✅ — Sub-ADR [0005-c](../adr/0005-c-contactos.md) (reglas
-  propias) + índices (adr/actualizaciones); acción `reopenContacts` (`approved → draft`, guard
+  propias) + índices (adr/modulos); acción `reopenContacts` (`approved → draft`, guard
   `canReopenSection`) + ruta `reopen.contacts` + allowlist del middleware de onboarding
   (`reopen.contacts` en pending/verified); guardas de servidor en draft/envío (`canEditSection` en
   `saveContactsDraft`); **nueva validación**: contactabilidad de referencias (teléfono **o** email) vía
@@ -225,7 +225,7 @@ types:check · ESLint · Prettier · Vitest (9-B/9-C).
 ## 8. Aprobación
 
 - [x] Plan revisado
-- [x] `#go` recibido → implementado corte a corte: 9-A ✅ → 9-B ✅ → 9-C ✅
+- [x] `*go` recibido → implementado corte a corte: 9-A ✅ → 9-B ✅ → 9-C ✅
 
 ## Decisiones cerradas
 

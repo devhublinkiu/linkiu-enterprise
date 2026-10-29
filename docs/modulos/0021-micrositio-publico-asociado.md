@@ -11,7 +11,7 @@
   de contacto son enlaces directos), editor de texto enriquecido (la historia es texto simple),
   page-builder libre (la plantilla es única y curada).
 
-> Este plan no se ejecuta hasta `#go`.
+> Este plan no se ejecuta hasta `*go`.
 
 ---
 
@@ -31,7 +31,7 @@
 ## 2. Documentación *(segundo punto, obligatorio)*
 
 - [ ] Este plan (`0021-micrositio-publico-asociado.md`).
-- [ ] `README.md` de actualizaciones — fila 0021.
+- [ ] `README.md` de modulos — fila 0021.
 - [ ] **ADR** para el **ruteo del slug** (fallback al raíz + lista de reservadas + resolución
       slug/id) y el modelo de datos del micrositio: es una decisión de arquitectura pública.
 
@@ -189,16 +189,16 @@ Páginas grandes se parten en `Parts/` (Regla 6).
 - [x] Alcance debatido y cerrado con el usuario (URL al raíz, 5 pestañas, servicios híbridos,
   contacto reusar+WhatsApp/correo/fachada, sin revisión ni cobro, preview+publicado, slug una vez).
 - [x] **Decisión resuelta:** imágenes de proyecto en **tabla hija** (`associate_project_images`).
-- [x] `#go` → **21-A ✅** (cimientos: datos + ruteo por slug + ADR-0009; preflight 7/7). Pendiente
-  `#commit`. Siguen 21-B … 21-F.
-- [x] `#go` → **21-B ✅**, **21-C ✅** (reestructurado a Tabs + CRUD por ítem; `base/Tabs` nuevo).
-- [x] `#go` → **21-D ✅** (Servicios + Proyectos authoring; preflight 7/7).
-- [x] `#go` → **21-E ✅** (Contacto + interruptor publicado + preview + compuerta pública + backfill;
+- [x] `*go` → **21-A ✅** (cimientos: datos + ruteo por slug + ADR-0009; preflight 7/7). Pendiente
+  `*commit`. Siguen 21-B … 21-F.
+- [x] `*go` → **21-B ✅**, **21-C ✅** (reestructurado a Tabs + CRUD por ítem; `base/Tabs` nuevo).
+- [x] `*go` → **21-D ✅** (Servicios + Proyectos authoring; preflight 7/7).
+- [x] `*go` → **21-E ✅** (Contacto + interruptor publicado + preview + compuerta pública + backfill;
   preflight 7/7).
-- [x] `#go` → **21-F ✅** (botón "Ver mi página" en el topbar del panel; preflight 7/7).
+- [x] `*go` → **21-F ✅** (botón "Ver mi página" en el topbar del panel; preflight 7/7).
 - [x] **Refactor (Regla 6):** `MicrositeController` (627 líneas) partido en traits por concern en
   `app/Http/Controllers/Associate/Concerns/`: `ManagesMicrositeSlug`, `ManagesMicrositeAbout`,
   `ManagesMicrositeServices`, `ManagesMicrositeProjects`, `ManagesMicrositeContact` +
   `InteractsWithMicrositeMedia` (helpers compartidos). El controlador queda en 32 líneas; ningún
   archivo supera 250. Sin cambios de comportamiento; preflight 7/7.
-  **Plan 0021 COMPLETO** (21-A … 21-F). Todo **verde pero SIN commitear** — pendiente `#commit`.
+  **Plan 0021 COMPLETO** (21-A … 21-F). Todo **verde pero SIN commitear** — pendiente `*commit`.

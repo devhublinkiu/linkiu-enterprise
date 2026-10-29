@@ -13,7 +13,7 @@
   **Integraciones/Bold** y el **borrado** de `payment_requests` (histórico) → **0019**. Tampoco se toca la
   aritmética de vigencia (`SubscriptionService`, día 19), que ya es correcta.
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -52,7 +52,7 @@ Las tres pantallas están en idioma **legacy** (`@/Components/ui/*`, colores `sl
       *EmpleaMEP*, *Reseñas* y *Soporte técnico* quedan **próximamente** (`is_enabled = false`), que *Anuncios*
       absorbe la antigua *descarga de pliegos* y que *Pago en línea (Bold)* **deja de ser módulo de plan**
       (es método de pago, va a Integraciones — 0019).
-- [ ] `README.md` de actualizaciones — fila 0016.
+- [ ] `README.md` de modulos — fila 0016.
 - [ ] `orden-componentes.md` — **sin cambios** (no se crea ningún componente).
 
 ## 3. Flujo actual *(obligatorio, antes de proponer cambios)*
@@ -218,7 +218,7 @@ Una sola regla, para **todos** los planes:
   Prettier · Vitest.
 
 **Gates a ejecutar** (proporcionales): **PHP** — Pint · Larastan · Pest (16-A) · **Frontend** — types:check ·
-ESLint · Prettier · Vitest (16-B/16-C). Preflight completo antes de `#commit`.
+ESLint · Prettier · Vitest (16-B/16-C). Preflight completo antes de `*commit`.
 
 ## 8. Aprobación
 
@@ -233,7 +233,7 @@ ESLint · Prettier · Vitest (16-B/16-C). Preflight completo antes de `#commit`.
       reseñas · actividad · vistas), registrado como *Próximamente* y abordado al final del módulo.
 - [x] Decisión: **alta siempre mensual** (sin selector de ciclo; se cambia luego en Gestión del Plan).
 - [x] Plan revisado.
-- [x] `#go` recibido → **16-A ✅ → 16-B ✅ → 16-C ✅**. Plan 0016 implementado (preflight 7/7 verde). Pendiente `#commit`.
+- [x] `*go` recibido → **16-A ✅ → 16-B ✅ → 16-C ✅**. Plan 0016 implementado (preflight 7/7 verde). Pendiente `*commit`.
 
 ## Roadmap del módulo (planes siguientes, no se ejecutan aquí)
 

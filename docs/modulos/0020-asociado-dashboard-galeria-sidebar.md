@@ -31,7 +31,7 @@ Todo de `base/`; **cero componentes nuevos**.
 ## 2. Documentación *(segundo punto, obligatorio)*
 
 - [x] Este plan (`0020-asociado-dashboard-galeria-sidebar.md`).
-- [x] `README.md` de actualizaciones — fila 0020.
+- [x] `README.md` de modulos — fila 0020.
 - Sin ADR: no hay decisión de arquitectura (solo UI del área de asociado).
 
 ## 3. Flujo actual *(obligatorio, antes de proponer cambios)*
@@ -81,7 +81,7 @@ Todo de `base/`; **cero componentes nuevos**.
 - **20-B · Galería** — reescritura `Gallery.tsx` en `base/`.
 - **20-C · Dashboard** — reescritura de la vista de asociado en `base/` con datos reales.
 - **Tests:** Vitest para sidebar (badge Próximamente), galería y dashboard. Gates **7/7**.
-- **Ampliación (mismo #go):** se marcan también **Mi Ranking** (asociado) y, en admin,
+- **Ampliación (mismo *go):** se marcan también **Mi Ranking** (asociado) y, en admin,
   **Roles y permisos** y **Reseñas** con badge Próximamente; Ranking se suma a los accesos rápidos
   del dashboard. Además, corrección **solo local**: `FILESYSTEM_DISK=public` en `.env` (Minio no
   instalado); el código usa `config('filesystems.default')`, no `MEDIA_DISK`. Producción intacta.
@@ -92,4 +92,4 @@ Recordatorio: no correr `npm run lint` (reformatea todo el árbol); usar gates e
 ## 8. Aprobación
 
 - [x] Propuesta debatida y ampliada (badge "Próximamente") por el usuario.
-- [x] `#go` recibido → 20-A → 20-B → 20-C. Preflight 7/7 al cierre.
+- [x] `*go` recibido → 20-A → 20-B → 20-C. Preflight 7/7 al cierre.

@@ -1,7 +1,7 @@
 # design.md — Sistema visual
 
 Reglas del sistema visual de CAMEPG. De obligado cumplimiento junto con
-[`agents.md`](agents.md). El objetivo es una interfaz **consistente** con un conjunto **reducido**
+[`AGENTS.md`](AGENTS.md). El objetivo es una interfaz **consistente** con un conjunto **reducido**
 de colores, tamaños tipográficos, componentes y variantes. Se evita crear variaciones visuales
 innecesarias.
 
@@ -129,7 +129,7 @@ por defecto de Tailwind —`text-sm`, `text-xl`…— siguen existiendo, pero se
 ## 5. Estado de la implementación
 
 Infraestructura visual establecida en el plan
-[`docs/actualizaciones/0001-fundacion-visual-y-tooling.md`](docs/actualizaciones/0001-fundacion-visual-y-tooling.md):
+[`docs/modulos/0001-fundacion-visual-y-tooling.md`](docs/modulos/0001-fundacion-visual-y-tooling.md):
 
 - ✅ Tokens de marca en `resources/css/app.css` (`:root`, solo tema claro).
 - ✅ Mapeo de tokens y `font-display` en `tailwind.config.js`; `font-sans` = Inter.

@@ -1,15 +1,15 @@
-# Planes de actualización
+# Planes por módulo
 
 Cada módulo o sección del proyecto tiene aquí **su propio plan** antes de intervenirlo. Un plan
-se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas en
-[`../../agents.md`](../../agents.md).
+se redacta con `*plan` y **no** se ejecuta hasta recibir `*go`. Reglas completas en
+[`../../AGENTS.md`](../../AGENTS.md).
 
 ## Cómo trabajar un plan
 
 1. Copia [`_plantilla.md`](_plantilla.md) a `NNNN-nombre-del-modulo.md` (número correlativo).
 2. Complétalo en el orden de la plantilla. Los tres primeros bloques son obligatorios y van
    siempre en este orden: **Componentes → Documentación → Flujo actual**.
-3. Se revisa y se aprueba con `#go`. Solo entonces se toca código, y únicamente lo que el plan
+3. Se revisa y se aprueba con `*go`. Solo entonces se toca código, y únicamente lo que el plan
    describe.
 4. Al terminar, se marca el estado del plan y se actualiza este índice.
 
@@ -39,4 +39,4 @@ se redacta con `#plan` y **no** se ejecuta hasta recibir `#go`. Reglas completas
 | [0020](0020-asociado-dashboard-galeria-sidebar.md) | Asociado · Dashboard + Galería (a base/) + card del plan al pie y badge "Próximamente" | Hecho |
 | [0021](0021-micrositio-publico-asociado.md) | Micrositio público del asociado ("Mi Página"): 5 pestañas + slug + authoring | Borrador |
 
-Estados posibles: `Borrador` · `Aprobado (#go)` · `En curso` · `Hecho` · `Descartado`.
+Estados posibles: `Borrador` · `Aprobado (*go)` · `En curso` · `Hecho` · `Descartado`.

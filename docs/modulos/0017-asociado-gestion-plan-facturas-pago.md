@@ -11,7 +11,7 @@
   intacta la inyección del script), el **borrado** de la tabla/modelo `payment_requests` (va en 0019), ni
   la reorganización del menú admin (0018).
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -40,7 +40,7 @@ Todo sale de `base/`; **cero componentes nuevos** (verificado: el inventario cub
 ## 2. Documentación *(segundo punto, obligatorio)*
 
 - [ ] Este plan (`0017-asociado-gestion-plan-facturas-pago.md`).
-- [ ] `README.md` de actualizaciones — fila 0017.
+- [ ] `README.md` de modulos — fila 0017.
 - [ ] Sin ADR nuevo: el modelo ya está en ADR-0001 (motor de cobro) y ADR-0008 (alta). Solo se **consume**.
 - [ ] `orden-componentes.md` — **sin cambios** (no se crea ningún componente).
 
@@ -125,7 +125,7 @@ Todo sale de `base/`; **cero componentes nuevos** (verificado: el inventario cub
   Gates: types:check · ESLint · Prettier · Vitest ✅. Preflight final **7/7 en verde**.
 
 **Gates a ejecutar** (proporcionales): **PHP** — Pint · Larastan · Pest (17-A) · **Frontend** —
-types:check · ESLint · Prettier · Vitest (17-B/17-C). Preflight completo antes de `#commit`.
+types:check · ESLint · Prettier · Vitest (17-B/17-C). Preflight completo antes de `*commit`.
 Recordatorio: **no** correr `npm run lint` (reformatea todo el árbol); usar `npx eslint`/`prettier --check`
 escopado o el preflight.
 
@@ -136,4 +136,4 @@ escopado o el preflight.
       tabla/modelo queda para 0019.
 - [x] Decisión: el panel del plan muestra **módulos reales** (catálogo), no banderas muertas.
 - [x] Plan revisado.
-- [x] `#go` recibido → **17-A ✅ → 17-B ✅ → 17-C ✅**. Plan 0017 implementado (preflight 7/7 verde). Pendiente `#commit`.
+- [x] `*go` recibido → **17-A ✅ → 17-B ✅ → 17-C ✅**. Plan 0017 implementado (preflight 7/7 verde). Pendiente `*commit`.

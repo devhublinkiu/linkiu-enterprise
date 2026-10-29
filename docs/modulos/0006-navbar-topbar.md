@@ -4,7 +4,7 @@
   usuario aunque estaba fuera de alcance; queda como primitivo listo), 6C·Topbar (menú de usuario con
   Avatar+Dropdown, "Mi perfil"/"Salir" movidos desde el `SidebarFooter`, campana como `Button ghost`,
   borrado del `ui/Avatar` legacy, backfill del índice). La campana sigue **sin** centro de
-  notificaciones (§6): es su propio módulo. Pendiente de `#commit`.
+  notificaciones (§6): es su propio módulo. Pendiente de `*commit`.
 - **Fecha:** 2026-09-13
 - **Alcance:** El **topbar del panel de gestión** (`resources/js/Layouts/AppLayout.tsx`),
   hermano del sidebar del plan [0005](0005-sidebar-navegacion.md). Entra: migrar el topbar al
@@ -13,7 +13,7 @@
   (`Components/Navbar.tsx`, otro módulo), ni el centro de notificaciones (campana) —ver §6—, ni
   cambios de backend.
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito.
 
 ---
 
@@ -55,14 +55,14 @@ orden de dependencias de [`orden-componentes.md`](orden-componentes.md).
 > Nota de convivencia: el `ui/DropdownMenu` (legacy) seguirá usándose en `Navbar.tsx`,
 > `Forums/TopicShow.tsx` y `Admin/Contacts/Index.tsx` hasta que esos módulos entren en alcance.
 > Este corte crea `base/DropdownMenu` y lo usa **solo en el topbar**; el viejo se borra cuando
-> quede sin referencias (regla incremental de `agents.md`/`design.md`).
+> quede sin referencias (regla incremental de `AGENTS.md`/`design.md`).
 
 ## 2. Documentación *(segundo punto, obligatorio)*
 
 - [x] Este plan (`0006-navbar-topbar.md`).
 - [ ] `orden-componentes.md` — marcar **Avatar** y **Dropdown Menu** como `[x]` al crearlos y
       registrarlos en la galería `/dev/componentes`.
-- [ ] `README.md` de actualizaciones — añadir la fila 0006 (y backfill de 0004/0005, que faltan).
+- [ ] `README.md` de modulos — añadir la fila 0006 (y backfill de 0004/0005, que faltan).
 - [ ] Resolver la nota de memoria *sidebar → navbar pendiente* al terminar el corte.
 - [ ] Sin **ADR**: es migración/consolidación de UI, no una decisión de arquitectura nueva.
 
@@ -108,7 +108,7 @@ orden de dependencias de [`orden-componentes.md`](orden-componentes.md).
 - Sin cambios de servidor: el topbar solo consume props ya expuestas por Inertia.
 - Logout conserva CSRF (POST de Inertia). No se exponen datos nuevos ni secretos.
 - El rol mostrado es informativo; la autorización real sigue en servidor (middleware/policies,
-  `agents.md` §7.4). No se toma ninguna decisión de acceso en el cliente.
+  `AGENTS.md` §7.4). No se toma ninguna decisión de acceso en el cliente.
 
 ## 6. Revisión funcional
 
@@ -140,7 +140,7 @@ orden de dependencias de [`orden-componentes.md`](orden-componentes.md).
   el índice `README.md` (0004/0005/0006) y resolver la nota de memoria del pendiente.
 
 Cada primitivo se crea **tal cual su spec** (solo tipografía/colores/tokens y las adaptaciones
-Tailwind v4→v3 ya documentadas en los componentes previos). El usuario pega la spec con cada `#go`.
+Tailwind v4→v3 ya documentadas en los componentes previos). El usuario pega la spec con cada `*go`.
 
 **Gates a ejecutar** (proporcionales al cambio): solo **frontend** —
 `types:check` · ESLint · Prettier · Vitest. (Sin PHP; no hay cambios de servidor.)
@@ -148,4 +148,4 @@ Tailwind v4→v3 ya documentadas en los componentes previos). El usuario pega la
 ## 8. Aprobación
 
 - [ ] Plan revisado
-- [ ] `#go` recibido → implementar (corte a corte: 6A → 6B → 6C)
+- [ ] `*go` recibido → implementar (corte a corte: 6A → 6B → 6C)

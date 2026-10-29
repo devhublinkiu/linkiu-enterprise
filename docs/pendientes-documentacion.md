@@ -28,7 +28,7 @@ Leyenda: 🔴 crítico · 🟠 importante · 🟡 conviene · ⬜ pendiente · �
 - [ ] 🟠 **ADR-0003 · Section reviews.** Documentar la migración de `audit_log` (campo a campo)
       a `section_reviews` (JSON, máquina de estados por sección). Decisión hecha y verificada;
       solo vive en memoria del agente.
-- [ ] 🟠 **ADR-0004 · Vitrina Empresarial / subdominios.** `propuesta-nuevos-modulos.md` la
+- [ ] 🟠 **ADR-0004 · Vitrina Empresarial / subdominios.** `propuestas/nuevos-modulos.md` la
       propone y `stancl/tenancy` ya es dependencia, pero no hay decisión escrita: subdominio real
       vs. ruta, resolución del tenant, wildcard DNS, plantilla de las 4 pestañas.
 - [ ] 🟠 **ADR-0005 · Notificaciones unificadas.** La rama principal es
@@ -81,7 +81,7 @@ Leyenda: 🔴 crítico · 🟠 importante · 🟡 conviene · ⬜ pendiente · �
       `className="flex flex-col gap-[var(--card-spacing)]"`. Aplicado ya en `Auth/Login`,
       `Auth/ForgotPassword` y `Auth/register/{Email,Otp,Details}Step`. **Pendiente opcional:**
       crear un componente `CardForm` en `Components/base/` que incorpore ese gap para no repetir
-      la clase ni olvidarla en futuros formularios (cambio de base → su propio `#plan`).
+      la clase ni olvidarla en futuros formularios (cambio de base → su propio `*plan`).
 
 ---
 

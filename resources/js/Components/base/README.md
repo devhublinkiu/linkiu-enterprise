@@ -3,7 +3,7 @@
 Aquí viven los **componentes nuevos o migrados** del sistema de diseño CAMEPG. Import:
 `@/Components/base/...`.
 
-## Reglas (ver `design.md` y `agents.md`)
+## Reglas (ver `design.md` y `AGENTS.md`)
 
 - **Solo tokens, cero hardcode de estilos.** Nada de `bg-slate-*`, `text-red-*`, `dark:*`. Se usan
   las utilidades de marca: `bg-primary`, `text-destructive`, `bg-accent`, `border`, `ring-ring`,

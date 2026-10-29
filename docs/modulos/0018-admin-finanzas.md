@@ -9,7 +9,7 @@
   (solo se **consume**; `PaymentService`, `BillingService` intactos), la pantalla de **Integraciones**
   (Bold) ni el **borrado** de `payment_requests` (tabla + páginas + rutas) → van en **0019**.
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -41,7 +41,7 @@ modales a mano con `fixed inset-0`, `slate-*`). Todo sale de `base/`; **cero com
 ## 2. Documentación *(segundo punto, obligatorio)*
 
 - [ ] Este plan (`0018-admin-finanzas.md`).
-- [ ] `README.md` de actualizaciones — fila 0018.
+- [ ] `README.md` de modulos — fila 0018.
 - [ ] Sin ADR nuevo (el motor ya está en ADR-0001; aquí solo se moderniza la UI que lo opera).
 - [ ] `orden-componentes.md` — **sin cambios** (no se crea ningún componente).
 
@@ -115,7 +115,7 @@ modales a mano con `fixed inset-0`, `slate-*`). Todo sale de `base/`; **cero com
 
 **Gates a ejecutar:** **Frontend** — types:check · ESLint · Prettier · Vitest (los tres cortes). No hay
 cambios de PHP previstos; si alguno surge, se añaden Pint · Larastan · Pest. Preflight completo antes de
-`#commit`. Recordatorio: **no** correr `npm run lint` (reformatea todo el árbol); usar `npx
+`*commit`. Recordatorio: **no** correr `npm run lint` (reformatea todo el árbol); usar `npx
 eslint`/`prettier --check` escopado o el preflight.
 
 ## 8. Aprobación
@@ -125,4 +125,4 @@ eslint`/`prettier --check` escopado o el preflight.
 - [x] Decisión: acciones de fila en **texto** (DropdownMenu) y confirmaciones con **Dialog** (sin `confirm()`).
 - [x] Decisión: **sin trazos superiores** en tarjetas (consistencia con `Card` de `base/`).
 - [x] Plan revisado.
-- [x] `#go` recibido → **18-A ✅ → 18-B ✅ → 18-C ✅**. Plan 0018 implementado (preflight 7/7 verde). Pendiente `#commit`.
+- [x] `*go` recibido → **18-A ✅ → 18-B ✅ → 18-C ✅**. Plan 0018 implementado (preflight 7/7 verde). Pendiente `*commit`.

@@ -2,7 +2,7 @@
 
 - **Estado:** Aceptada
 - **Fecha:** 2026-09-14
-- **Contexto del plan:** [0010-admin-servicios](../actualizaciones/0010-admin-servicios.md).
+- **Contexto del plan:** [0010-admin-servicios](../modulos/0010-admin-servicios.md).
 
 ---
 

@@ -10,7 +10,7 @@
   servicios (ya hecho), el directorio público (solo se respeta su contrato de lectura:
   `associate.description` + servicios), ni la vista general del admin (`Associates/Index` / Resumen).
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -61,7 +61,7 @@ Tabla auditada contra el código real:
       **límite de servicios por plan al servidor** (ADR-0002), reapertura con Editar, admin no edita,
       contrato con el catálogo (solo servicios activos).
 - [x] `docs/adr/README.md` — fila 0005-d.
-- [x] `README.md` de actualizaciones — fila 0011.
+- [x] `README.md` de modulos — fila 0011.
 - [x] `docs/ejemplos/empresa-ficticia.md` — empresa (PSL) **extendida** con Servicios (propuesta de
       valor + servicios elegidos del catálogo sembrado).
 - [ ] Hereda las reglas generales de [ADR-0005](../adr/0005-fichas-de-asociado-por-seccion.md).
@@ -184,7 +184,7 @@ types:check · ESLint · Prettier · Vitest (11-B/11-C).
 - [x] Plan revisado
 - [x] Decisiones §8: Select para filtro, `description` required, bloques Card; **selector escalable**
       (acotado + buscar primero, ADR-0005-d 3b).
-- [x] `#go` → **11-A ✅ → 11-B ✅ → 11-C ✅**. Plan 0011 implementado.
+- [x] `*go` → **11-A ✅ → 11-B ✅ → 11-C ✅**. Plan 0011 implementado.
 
 ### Decisiones a confirmar
 

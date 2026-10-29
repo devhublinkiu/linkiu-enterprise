@@ -2,13 +2,13 @@
 
 - **Estado:** Implementado en local — sin commit.
 - **Fecha:** 2026-10-13
-- **Decisión del usuario:** `#go` sobre el plan 0023 propuesto.
+- **Decisión del usuario:** `*go` sobre el plan 0023 propuesto.
 - **Alcance:** Añadir paginación server-side al listado público `/empresas`
   (`PublicCompanyController::index` + `resources/js/Pages/Public/Companies/Index.tsx`).
   **NO entra:** `show`/micrositio, categorías/servicios (vistas individuales), ni limpieza de la
   deuda de lint pre-existente del archivo (ver §5).
 
-> Este plan documenta el corte que se ejecutó tras el `#go`.
+> Este plan documenta el corte que se ejecutó tras el `*go`.
 
 ## 1. Problema
 

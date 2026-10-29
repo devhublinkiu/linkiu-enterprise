@@ -10,7 +10,7 @@
   (solo se **lee** la suscripción vía `SubscriptionService`), ni la migración de la galería del asociado
   a S3 (aquí la galería admin es solo gestión de UI sobre rutas existentes).
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -52,7 +52,7 @@ están migrados** (base/ + tokens + AuditPanel local) — **no se tocan**.
 - [x] **ADR-0007 — Ciclo de vida del asociado (estado derivado)**: el estado admin se **deriva** de
       `status` + suscripción + `deactivated_at`, no se guarda; admisión gateada a 5 secciones; regla de
       desactivación manual vs vencimiento. `docs/adr/README.md` — fila 0007. ✅
-- [ ] `README.md` de actualizaciones — fila 0014.
+- [ ] `README.md` de modulos — fila 0014.
 - [ ] `orden-componentes.md` — **sin cambios** (no se crea ningún componente).
 
 ## 3. Flujo actual *(obligatorio, antes de proponer cambios)*
@@ -166,7 +166,7 @@ types:check · ESLint · Prettier · Vitest (14-B/14-C).
 - [x] Decisión: **`is_verified` se conserva** (se escalará a futuro); no se retira.
 - [x] Decisión: **una sola tabla**, el **estado derivado** comunica ciclo de vida + pago (sin tabs).
 - [x] Plan revisado.
-- [x] `#go` recibido → **14-A ✅ → 14-B ✅ → 14-C ✅**. Plan 0014 implementado.
+- [x] `*go` recibido → **14-A ✅ → 14-B ✅ → 14-C ✅**. Plan 0014 implementado.
 
 ## Decisiones cerradas
 

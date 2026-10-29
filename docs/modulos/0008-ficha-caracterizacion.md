@@ -11,7 +11,7 @@
   `is_public`, ni la **vista general del admin** (`Associates/Index` y pestaña **Resumen**), que se
   trabaja al final. Del lado admin, este plan toca **solo** la pestaña de Caracterización.
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -47,7 +47,7 @@ Tabla auditada contra el código real:
 - **Reutilizar:** `Card*`, `Field*`, `Input`, `Select`, `Input Group`, `Textarea`, `Button`, `Alert`,
   `Badge`, `Progress`. Iconos por `lucide-react`.
 - **Crear en `base/` desde spec:** `RadioGroup` (8-A) — **único componente nuevo**. No se crea hasta
-  que el usuario pase su spec (regla de `agents.md`).
+  que el usuario pase su spec (regla de `AGENTS.md`).
 - **Auditoría cerrada:** se recorrió cada control de los 4 *parts*. Todos los adornos y controles
   quedan cubiertos por componentes ya existentes salvo el "elige una opción", que unifica
   `RadioGroup`. El sufijo "%" pasa de `<div>` absoluto a `Input Group`; el `pep_doc_type` pasa de
@@ -78,7 +78,7 @@ Tabla auditada contra el código real:
       **suma 100% al servidor**, `employees_direct_count` derivado, **condicionales obligatorios**,
       reapertura con Editar, admin no edita.
 - [x] `orden-componentes.md` — **Radio Group** marcado `[x]` (creado y en `/dev/componentes`).
-- [x] `README.md` de actualizaciones — fila 0008.
+- [x] `README.md` de modulos — fila 0008.
 - [x] `docs/ejemplos/empresa-ficticia.md` — empresa ficticia (PSL) **extendida** con Caracterización
       (total 41 = suma, ingresos 65/35, condicionales completos).
 - [ ] Hereda las reglas generales de [ADR-0005](../adr/0005-fichas-de-asociado-por-seccion.md); no se repiten aquí.
@@ -205,7 +205,7 @@ types:check · ESLint · Prettier · Vitest (8-A/8-C/8-D).
 ## 8. Aprobación
 
 - [ ] Plan revisado
-- [ ] `#go` recibido → implementar (corte a corte: 8-A → 8-B → 8-C → 8-D)
+- [ ] `*go` recibido → implementar (corte a corte: 8-A → 8-B → 8-C → 8-D)
 
 ## Decisiones cerradas
 

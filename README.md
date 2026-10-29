@@ -97,7 +97,7 @@ npm run lint            # ESLint + Prettier sobre resources/js
 ```
 
 El **preflight** (`scripts/preflight.mjs`) corre los gates que aplican al cambio; ver
-[docs/actualizaciones/0002-preflight.md](docs/actualizaciones/0002-preflight.md).
+[docs/modulos/0002-preflight.md](docs/modulos/0002-preflight.md).
 
 ## Despliegue
 

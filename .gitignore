@@ -3,6 +3,7 @@
 .env
 .env.backup
 .env.production
+.env.bak*
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -28,3 +29,7 @@ login_debug.txt
 
 # Dir de trabajo del preview de react-email (npm run emails:dev)
 /.react-email
+
+# Archivos que sobran a la espera de que el usuario los borre (ver AGENTS.md).
+# Nunca se sube: es una bandeja de salida local, no parte del repo.
+/temporal

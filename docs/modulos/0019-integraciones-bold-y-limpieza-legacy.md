@@ -8,7 +8,7 @@
   **NO entra** (queda como paso manual gated): el **borrado físico** de la tabla `payment_requests` en
   producción, que solo debe correrse **después** de ejecutar y verificar `billing:backfill-payment-requests`.
 
-> Este plan no se ejecuta hasta `#go`. Tiene **dos decisiones abiertas** (§8) que deben resolverse
+> Este plan no se ejecuta hasta `*go`. Tiene **dos decisiones abiertas** (§8) que deben resolverse
 > antes de tocar código, por tratarse de **secretos de pasarela** y de **datos históricos**.
 
 ---
@@ -32,7 +32,7 @@ Todo de `base/`; **cero componentes nuevos**.
 ## 2. Documentación *(segundo punto, obligatorio)*
 
 - [ ] Este plan (`0019-integraciones-bold-y-limpieza-legacy.md`).
-- [ ] `README.md` de actualizaciones — fila 0019.
+- [ ] `README.md` de modulos — fila 0019.
 - [ ] **ADR** — solo si la decisión de Integraciones es "llaves en BD" (nuevo store de settings cifrado):
       documentar el almacenamiento y el manejo de secretos. Si es "env + estado", basta una nota.
 - [ ] Actualizar el "Pendiente" de **ADR-0001** (retiro de `payment_requests`): marcar la superficie
@@ -118,5 +118,5 @@ Recordatorio: no correr `npm run lint` (reformatea todo el árbol); usar gates e
   rutas, controlador y eventos huérfanos; se **conservan** tabla+modelo+`billing:backfill-payment-requests`.
   El borrado físico queda como paso manual tras backfill verificado en producción.
 - [x] Plan revisado.
-- [x] `#go` recibido → **19-A ✅ → 19-B ✅**. Plan 0019 implementado (preflight 7/7 verde). Pendiente
-  `#commit`. El borrado físico de `payment_requests` sigue siendo un paso manual post-backfill.
+- [x] `*go` recibido → **19-A ✅ → 19-B ✅**. Plan 0019 implementado (preflight 7/7 verde). Pendiente
+  `*commit`. El borrado físico de `payment_requests` sigue siendo un paso manual post-backfill.

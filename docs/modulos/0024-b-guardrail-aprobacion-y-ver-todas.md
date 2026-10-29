@@ -2,7 +2,7 @@
 
 - **Estado:** Implementado en local (gates verdes) — sin commit.
 - **Fecha:** 2026-10-13
-- **Decisión del usuario:** `#go` sobre el guardrail (aprobación admin + comprobante asociado) y, de
+- **Decisión del usuario:** `*go` sobre el guardrail (aprobación admin + comprobante asociado) y, de
   paso, agregar la opción **"Todas"** en el sidebar de Empresas.
 - **Contexto:** secuela del incidente de swoole (ver [[prod-runtime-swoole]] / plan 0024). Cuando el
   approve crasheaba, el pago se aplicaba pero la respuesta no volvía → el admin reintentaba a ciegas →

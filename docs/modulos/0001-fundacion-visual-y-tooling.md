@@ -5,9 +5,9 @@
 - **Alcance:** Base transversal previa al trabajo por módulos. **Parte A:** definir y aplicar el
   sistema visual (tokens de color de marca + tipografía) sobre shadcn. **Parte B:** dejar los
   gates de calidad operativos (Larastan, Pest, Vitest, `types:check`) y configurar el remoto
-  `apolo`. **No entra:** rediseñar pantallas de módulos concretos ni cambiar su comportamiento.
+  `origin`. **No entra:** rediseñar pantallas de módulos concretos ni cambiar su comportamiento.
 
-> Este plan no se ejecuta hasta `#go`. Antes hay **decisiones requeridas** (ver §8).
+> Este plan no se ejecuta hasta `*go`. Antes hay **decisiones requeridas** (ver §8).
 
 ---
 
@@ -23,7 +23,7 @@
 - Falta el plugin **`tailwindcss-animate`** (requerido por el patrón shadcn).
 - Fuente actual **Figtree**; objetivo **Inter** (app) + **Cal Sans Semibold** (web).
 - Gates: **Pint** y **ESLint/Prettier** existen. **Larastan, Pest, Vitest** y `types:check` **no**.
-- Remotos git: solo **`origin`** (`linkiu-enterprise`). **`apolo` no existe.**
+- Remotos git: solo **`origin`** (`linkiu-enterprise`). **`origin` no existe.**
 
 ---
 
@@ -84,7 +84,7 @@ Mapeo semántico shadcn (tema claro) **recomendado**:
 > **Decisión de producto (§8):** el punto discutible es `--primary`. Recomiendo **neutro
 > (#151515)** por accesibilidad (el amarillo `#FBDC1D` no da contraste con blanco y satura si es
 > el color de todos los botones). Alternativa: **amarillo como `--primary`** con texto negro, más
-> "de marca" pero más ruidoso. Se decide antes de `#go`.
+> "de marca" pero más ruidoso. Se decide antes de `*go`.
 
 ## A.5 Propuesta de tipografía (recomendada — confirmar en §8)
 
@@ -105,7 +105,7 @@ Mapeo semántico shadcn (tema claro) **recomendado**:
 - **Carga de fuentes:** Inter vía `@fontsource`/CDN local; Cal Sans es fuente de pago/específica →
   confirmar disponibilidad de los archivos (§8).
 
-## A.6 Pasos (Parte A) — solo con `#go`
+## A.6 Pasos (Parte A) — solo con `*go`
 
 1. `npm i -D tailwindcss-animate` y registrarlo en `tailwind.config.js`.
 2. `tailwind.config.js`: añadir el mapeo `colors` de shadcn (`hsl(var(--token))`), `borderRadius`
@@ -133,7 +133,7 @@ Mapeo semántico shadcn (tema claro) **recomendado**:
 
 ## B.2 Documentación
 
-- [x] `agents.md` §5 — actualizar el estado de los gates cuando queden operativos.
+- [x] `AGENTS.md` §5 — actualizar el estado de los gates cuando queden operativos.
 - [ ] Breve nota en `README.md` (sección Pruebas) con los comandos nuevos.
 
 ## B.3 Flujo actual
@@ -141,7 +141,7 @@ Mapeo semántico shadcn (tema claro) **recomendado**:
 - `composer.json` tiene script `test` (PHPUnit). `package.json` tiene `build`, `dev`, `lint`.
 - No hay análisis estático PHP, ni Pest, ni tests de frontend, ni `types:check` aislado.
 
-## B.4 Pasos (Parte B) — solo con `#go`
+## B.4 Pasos (Parte B) — solo con `*go`
 
 1. **Larastan:** `composer require --dev larastan/larastan`; crear `phpstan.neon` (nivel inicial
    conservador, p. ej. 5, sobre `app/`); añadir script `composer analyse`.
@@ -151,13 +151,13 @@ Mapeo semántico shadcn (tema claro) **recomendado**:
 3. **Vitest:** `npm i -D vitest @testing-library/react @testing-library/jest-dom jsdom`; crear
    `vitest.config.ts` (jsdom); añadir scripts `test` y `test:watch`; un test de humo de un componente.
 4. **`types:check`:** añadir script `"types:check": "tsc --noEmit"` en `package.json`.
-5. **Remoto `apolo`:** `git remote add apolo <URL>` — **requiere la URL** (§8). Verificar con
+5. **Remoto `origin`:** `git remote add origin <URL>` — **requiere la URL** (§8). Verificar con
    `git remote -v`.
-6. Actualizar `agents.md`/`README.md` con el estado y los comandos.
+6. Actualizar `AGENTS.md`/`README.md` con el estado y los comandos.
 
 ## B.5 Seguridad / accesibilidad
 
-- Sin impacto directo. `apolo` debe ser un remoto de confianza (evitar filtrar `.env`/secretos;
+- Sin impacto directo. `origin` debe ser un remoto de confianza (evitar filtrar `.env`/secretos;
   `.gitignore` ya cubre `.env`).
 
 ---
@@ -167,7 +167,7 @@ Mapeo semántico shadcn (tema claro) **recomendado**:
 - Parte A (frontend): `types:check` · ESLint · Prettier · Vitest.
 - Parte B (según lo que instale): además Pint · Larastan · Pest en verde.
 
-## §8 Decisiones requeridas antes de `#go`
+## §8 Decisiones requeridas antes de `*go`
 
 1. **`--primary`:** ¿neutro `#151515` (recomendado) o amarillo de marca?
 2. **Migración de componentes:** ¿migrar los 16 `ui/*` a tokens **ahora** (consistencia inmediata)
@@ -175,20 +175,20 @@ Mapeo semántico shadcn (tema claro) **recomendado**:
 3. **Cal Sans Semibold:** ¿tenemos los archivos de la fuente (licencia/ubicación)? Si no, la web
    usa solo Inter hasta conseguirla.
 4. **Modo oscuro:** ¿se soporta? (define si `app.css` lleva bloque `.dark`). Recomiendo **no** por ahora.
-5. **URL del remoto `apolo`** (obligatoria para el paso B.4.5).
+5. **URL del remoto `origin`** (obligatoria para el paso B.4.5).
 6. **Niveles de gate:** ¿nivel de Larastan inicial 5 y sin bloquear el build todavía? (recomendado).
 
 ## §9 Aprobación
 
 - [x] Decisiones de §8 resueltas (ver §10)
 - [x] Plan revisado
-- [x] `#go` recibido → implementado
+- [x] `*go` recibido → implementado
 
 ## §10 Resultado (implementación)
 
 **Decisiones tomadas:** `--primary` neutro `#151515`; migración de componentes **incremental**
 (al rehacer un componente se borra el viejo); tipografía web con **Google Sans Flex** (en vez de
-Cal Sans); **sin** modo oscuro; push a **`origin`** (se descarta `apolo`); Larastan nivel 5 no
+Cal Sans); **sin** modo oscuro; push a **`origin`** (se descarta `origin`); Larastan nivel 5 no
 bloqueante con baseline.
 
 **Hecho:**

@@ -3,10 +3,10 @@
 - **Estado:** Hecho (2026-09-12)
 - **Fecha:** 2026-09-12
 - **Alcance:** Un comando único que corre los gates de calidad de forma **proporcional al cambio**,
-  para usarse antes de `#commit`/`#push`. **No entra:** cambiar los gates en sí, ni instalar hooks
+  para usarse antes de `*commit`/`*push`. **No entra:** cambiar los gates en sí, ni instalar hooks
   de git de forma automática (el hook queda documentado como opción).
 
-> No se ejecuta hasta `#go`. Ver decisiones en §8.
+> No se ejecuta hasta `*go`. Ver decisiones en §8.
 
 ---
 
@@ -14,7 +14,7 @@
 
 - Los gates ya existen y están verdes (plan 0001): Pint, Larastan (`composer analyse`, con
   baseline), Pest, `types:check`, ESLint, Prettier, Vitest.
-- Hoy se corren **a mano y por separado**; `agents.md` §5 los exige pero no hay un orquestador.
+- Hoy se corren **a mano y por separado**; `AGENTS.md` §5 los exige pero no hay un orquestador.
 - Entorno: Windows + PowerShell + Herd; Node ya es dependencia (Vite). Git disponible.
 
 ## 1. Componentes *(primer punto)*
@@ -24,8 +24,8 @@
 
 ## 2. Documentación
 
-- [x] `agents.md` §5 — referenciar el comando (`npm run preflight`) como la forma de correr los
-  gates; `#commit` usa la versión proporcional y `#push` la completa.
+- [x] `AGENTS.md` §5 — referenciar el comando (`npm run preflight`) como la forma de correr los
+  gates; `*commit` usa la versión proporcional y `*push` la completa.
 - [x] `README.md` — una línea en la sección de pruebas.
 - [ ] No requiere ADR (no es decisión de arquitectura del dominio).
 
@@ -68,13 +68,13 @@ Solo sobre archivos **cambiados**, como avisos (no rompen el preflight todavía)
 - **Regla 6 (250 líneas):** listar archivos cambiados que superen el umbral → aviso.
 - (La regla 1 —inglés en UI— se deja **fuera** por ser ruidosa/falible; se revisa a mano.)
 
-## 5. Pasos (con `#go`)
+## 5. Pasos (con `*go`)
 
 1. Crear `scripts/preflight.mjs`: parseo de flags (`--push`, `--all`), detección de cambios,
    despacho por carril, ejecución con `execSync` (heredando stdio), resumen y exit code.
 2. Añadir scripts a `package.json`: `"preflight"`, `"preflight:all"`, `"preflight:push"`.
 3. Chequeos §7 no bloqueantes (grep de hardcode y conteo de líneas sobre archivos cambiados).
-4. Actualizar `agents.md` §5 y `README.md`.
+4. Actualizar `AGENTS.md` §5 y `README.md`.
 5. (Opcional, según §8) documentar un hook `pre-push` en `.githooks/` sin instalarlo por defecto.
 
 ## 6. Revisión de accesibilidad / seguridad
@@ -87,7 +87,7 @@ Solo sobre archivos **cambiados**, como avisos (no rompen el preflight todavía)
 - Frontend (es un `.mjs` + `package.json`): `types:check` no aplica (JS puro), ESLint/Prettier sí
   sobre el script. Se prueba corriendo el propio `preflight` en sus tres modos.
 
-## §8 Decisiones requeridas antes de `#go`
+## §8 Decisiones requeridas antes de `*go`
 
 1. **Alcance de test/análisis:** ¿correr Larastan/Pest/Vitest **completos** (recomendado, simple) o
    invertir ya en "solo afectados"?
@@ -101,7 +101,7 @@ Solo sobre archivos **cambiados**, como avisos (no rompen el preflight todavía)
 
 - [x] Decisiones de §8 resueltas (§10)
 - [x] Plan revisado
-- [x] `#go` recibido → implementado
+- [x] `*go` recibido → implementado
 
 ## §10 Resultado (implementación)
 
@@ -115,8 +115,8 @@ hook **manual + documentado** (no instalado); entrada `npm run preflight`.
   `tsc` corren completos**. Salida en español con ✓/✗, avisos §7 y código de salida.
 - Scripts `preflight`, `preflight:push`, `preflight:all` en `package.json`.
 - Hook `.githooks/pre-push` documentado (se activa con `git config core.hooksPath .githooks`).
-- `agents.md` §5 y `README.md` actualizados: **el agente corre el preflight automáticamente** en
-  `#commit` (`preflight`) y `#push` (`preflight:push`).
+- `AGENTS.md` §5 y `README.md` actualizados: **el agente corre el preflight automáticamente** en
+  `*commit` (`preflight`) y `*push` (`preflight:push`).
 - Verificado end-to-end: orquestación, escopado de formato, avisos y exit codes correctos. Pint,
   Larastan, `types:check`, ESLint, Prettier y Vitest → verdes.
 

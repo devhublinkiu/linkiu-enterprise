@@ -1,6 +1,6 @@
 # Plan de actualización — 0005 · Sidebar y navegación (shell de la app)
 
-- **Estado:** ✅ COMPLETADO (2026-09-13, pendiente de `#commit`). Cortes: 5A·Tooltip, 5B·Sheet,
+- **Estado:** ✅ COMPLETADO (2026-09-13, pendiente de `*commit`). Cortes: 5A·Tooltip, 5B·Sheet,
   5C·Sidebar+Skeleton (+ hook `use-mobile`, tokens `--sidebar-*`), 5D·Navegación (`AppSidebar`,
   cableado de `AppLayout`, borrado del `Components/Sidebar.tsx` viejo), 5E·Ajustes (logo `h-14`,
   card "Sin suscripción" tras los ítems) y 5Z·Cierre (preflight en verde, sin residuos de `ui/`).
@@ -16,7 +16,7 @@
   (`AppLayout`) a tokens. **No entra:** rediseñar cada página interior ni tocar el backend (los props
   de navegación ya se comparten por Inertia); tampoco el menú público (`Navbar`/`PublicLayout`).
 
-> Se trabaja por **cortes** (5A, 5B, …); cada corte se implementa con su propio `#go`. Los
+> Se trabaja por **cortes** (5A, 5B, …); cada corte se implementa con su propio `*go`. Los
 > componentes de `base/` se crean **desde cero, tal cual la spec** (adaptación v4→v3, `dark:` fuera,
 > color→tokens, tipografía). Se agregan a la galería `/dev/componentes` y se marca el chulo en
 > `orden-componentes.md`.
@@ -46,7 +46,7 @@ Tooltip]`. Estado de esas dependencias:
   `useSidebar`).
 - **Reemplazar:** `resources/js/Components/Sidebar.tsx` (hecho a mano, colores hardcodeados) →
   navegación reconstruida sobre `base/Sidebar`. El viejo **se borra** al quedar sin referencias
-  (§2 agents.md, "no conviven dos versiones").
+  (§2 AGENTS.md, "no conviven dos versiones").
 - **Nuevo fuera de shadcn:** ninguno. Toda pieza sale de la spec de shadcn; la navegación concreta
   (lista de items admin/asociado) es composición, no un componente nuevo.
 
@@ -154,14 +154,14 @@ Tooltip]`. Estado de esas dependencias:
   (móvil) y alineado a tokens (hoy usa `slate-*`, `bg-white/80`…). El main deja de manejar
   `pl-72/pl-20` a mano (lo da `SidebarInset`).
 - **Borrar `resources/js/Components/Sidebar.tsx`** al quedar sin referencias; sin imports de `ui/`.
-- Si el archivo supera ~250 líneas o tiene 2+ secciones, partir en `parts/` (§7.4 agents.md):
+- Si el archivo supera ~250 líneas o tiene 2+ secciones, partir en `parts/` (§7.4 AGENTS.md):
   p. ej. `parts/nav-admin.tsx`, `parts/nav-associate.tsx`, `parts/plan-widget.tsx`.
 - **Gate:** types:check · ESLint · Prettier · Vitest · build; revisión visual admin y asociado
   (`active`, colapsado, móvil, bloqueos, contadores).
 
 ---
 
-## Decisiones a confirmar (recomendación incluida; se puede vetar en el `#go`)
+## Decisiones a confirmar (recomendación incluida; se puede vetar en el `*go`)
 
 1. **Modo móvil:** **incluirlo** (lo trae el `Sheet` de fábrica; hoy no existe y es un hueco real).
    *Recomendado: sí.*
@@ -184,4 +184,4 @@ Sin cambios PHP previstos → sin Pint/Larastan/Pest salvo que algo del backend 
 
 - [ ] Decisiones (§ arriba) confirmadas
 - [ ] Plan revisado
-- [ ] `#go` por corte (empezando por **5A · Tooltip**)
+- [ ] `*go` por corte (empezando por **5A · Tooltip**)

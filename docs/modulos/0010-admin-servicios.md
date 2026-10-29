@@ -8,7 +8,7 @@
   sección Servicios del asociado (va después, apoyada en este catálogo), ni el directorio público
   (solo se respeta su contrato de lectura: `name` + `slug`).
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -21,7 +21,7 @@ hardcodeados (**`slate-*`, `indigo-*`, `emerald-*`** → fuera de la paleta/toke
 
 Los **componentes nuevos** son **dos**, ambos de **alto reúso** en todo el admin (Empresas, Usuarios,
 Pagos, Facturas…) — por eso valen como primitivos de `base/` en vez de markup ad-hoc, y se crean
-**desde la spec que pase el usuario** (regla de `agents.md` §7.5), como RadioGroup (0008) y Breadcrumb:
+**desde la spec que pase el usuario** (regla de `AGENTS.md` §7.5), como RadioGroup (0008) y Breadcrumb:
 
 - **`Table`** (familia): la tabla del catálogo.
 - **`Pagination`** (familia): el pie de paginación (hoy escrito a mano con `Link`); se repite en **todas**
@@ -71,7 +71,7 @@ Tabla auditada control por control contra el código real:
 - [x] **ADR-0006 — Autorización del panel admin**: el panel `/admin/*` se protege con middleware de rol
       (`is_superadmin || role==='admin'`); documenta el hueco (solo `auth`) y la regla adoptada.
 - [x] `docs/adr/README.md` — fila 0006.
-- [ ] `README.md` de actualizaciones — fila 0010.
+- [ ] `README.md` de modulos — fila 0010.
 - [x] `orden-componentes.md` — **Table**, **Pagination** y **Switch** marcados `[x]` (creados y en galería).
 - [ ] `docs/ejemplos/empresa-ficticia.md` — sin cambios (es catálogo global, no de una empresa).
 
@@ -188,7 +188,7 @@ types:check · ESLint · Prettier · Vitest (10-A/10-C).
 
 - [x] Specs de `Table` y `Pagination` recibidas → **10-A hecho**. `is_active` con `Checkbox` (sin `Switch`).
 - [x] Decisión §5: gate **inclusivo** `is_superadmin || role==='admin'` (confirmado: 1 admin superadmin, 0 role-admin sueltos).
-- [x] `#go` → **10-A ✅ → 10-B ✅ → 10-C ✅**. Plan 0010 implementado.
+- [x] `*go` → **10-A ✅ → 10-B ✅ → 10-C ✅**. Plan 0010 implementado.
 
 ## Decisiones cerradas
 
@@ -203,4 +203,4 @@ types:check · ESLint · Prettier · Vitest (10-A/10-C).
    `base/Switch` (para `is_active`), todos desde spec. El resto se reutiliza; `confirm()`/`<select>`/
    `<table>`/paginación a mano y colores hardcodeados se retiran.
 6. **CRUD admin, no ficha.** No aplica ADR-0005 / section-reviews; se rige por design.md y §7 de
-   agents.md (validación al servidor, español, formatos Colombia).
+   AGENTS.md (validación al servidor, español, formatos Colombia).

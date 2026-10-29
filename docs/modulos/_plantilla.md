@@ -4,7 +4,7 @@
 - **Fecha:** <AAAA-MM-DD>
 - **Alcance:** <qué entra y qué NO entra en esta intervención>
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito.
 
 ---
 
@@ -64,4 +64,4 @@ Descripción del comportamiento existente para validar que sea el esperado.
 ## 8. Aprobación
 
 - [ ] Plan revisado
-- [ ] `#go` recibido → implementar
+- [ ] `*go` recibido → implementar

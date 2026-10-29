@@ -7,7 +7,7 @@
 **recuperación de contraseña por OTP**, notificación al **admin** por nuevo registro, y validación
 de correo antes de crear la cuenta. **No entra:** el wizard de afiliación (plan propio).
 
-> Se trabaja por **cortes** (3A, 3B, …); cada corte se implementa con su propio `#go`. Los
+> Se trabaja por **cortes** (3A, 3B, …); cada corte se implementa con su propio `*go`. Los
 > componentes de `base/` se crean **desde cero, tal cual la spec** (solo cambian color→tokens y
 > tipografía).
 
@@ -49,7 +49,7 @@ sin flujo). Los tests Breeze de esas rutas fallan por eso (ver deuda al final).
 - Errores con `role="alert"`/`aria-live` y `aria-invalid`/`aria-describedby` → vía **Field**.
 - `alt` del logo descriptivo (no genérico). Foco visible con token (`ring-ring`).
 
-## 5. Requisitos nuevos (de #debate 2026-09-13)
+## 5. Requisitos nuevos (de *debate 2026-09-13)
 
 ### Registro (flujo A · multipaso)
 
@@ -108,7 +108,7 @@ tipografía; adaptar v4→v3 si aparecen las mismas construcciones que en los ot
 El separador **reutiliza `base/Separator`** (ya existe) si la spec lo usa.
 - Galería `/dev/componentes`: grupo de 6 slots (patrón registro/recuperación). Chulo en `orden-componentes.md`.
 - **Gate:** types:check · ESLint · Prettier · Vitest (humo) · build (clases resuelven).
-- **Entrada requerida:** la **spec del componente** (me la pasas con el `#go`).
+- **Entrada requerida:** la **spec del componente** (me la pasas con el `*go`).
 
 ### Corte 3B · Infraestructura OTP (backend) + ADR-0003 — ✅ HECHO
 
@@ -244,7 +244,7 @@ reset ya quedaron adaptados en 3E.
 
 ---
 
-## §7 Decisiones — RESUELTAS (#debate 2026-09-13)
+## §7 Decisiones — RESUELTAS (*debate 2026-09-13)
 
 1. **Enlaces Términos/Política:** quitar por ahora.
 2. **Dominio correo:** verificado **camepg.com** (remitente `no-reply@camepg.com`); la notificación
@@ -268,8 +268,8 @@ reset ya quedaron adaptados en 3E.
 ## §8 Aprobación
 
 - [x] Decisiones §7 resueltas
-- [x] Plan revisado (`#plan`/`#review`)
-- [x] `#go` por corte (empezando por **3A · Input OTP**)
+- [x] Plan revisado (`*plan`/`*review`)
+- [x] `*go` por corte (empezando por **3A · Input OTP**)
 
 ---
 

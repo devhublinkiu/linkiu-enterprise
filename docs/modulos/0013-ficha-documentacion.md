@@ -8,7 +8,7 @@
   no-op y `SEC_CHANGE_PENDING`. **No entra:** el catálogo admin de documentos (ya modernizado en 0012,
   aquí solo se consume), ni Imágenes/logo/galería (dependen de S3, van al final).
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -57,7 +57,7 @@ Tabla auditada control por control contra el código real:
 - [x] **ADR-0005 (padre)**: marcado el cierre — retirado el flujo de solicitud de cambio y el
       `associates.update` no-op; todas las secciones migradas.
 - [x] `docs/adr/README.md` — fila 0005-e.
-- [ ] `README.md` de actualizaciones — fila 0013.
+- [ ] `README.md` de modulos — fila 0013.
 - [ ] `orden-componentes.md` — **sin cambios** (no se crea ningún componente).
 - [x] `docs/ejemplos/empresa-ficticia.md` — añadida la sección Documentación (docs + interés + declaración).
 
@@ -185,7 +185,7 @@ types:check · ESLint · Prettier · Vitest (13-B/13-C).
       actualizar los 4 tests de sección).
 - [x] Decisión §6: Declaración jurada = **tarjeta estándar + Checkbox** (design.md §6), sin "Trust Identity".
 - [x] Plan revisado.
-- [x] `#go` recibido → **13-A ✅ → 13-B ✅ → 13-C ✅**. Plan 0013 implementado; ADR-0005 cerrado.
+- [x] `*go` recibido → **13-A ✅ → 13-B ✅ → 13-C ✅**. Plan 0013 implementado; ADR-0005 cerrado.
 
 ## Decisiones cerradas
 

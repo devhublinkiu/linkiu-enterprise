@@ -11,7 +11,7 @@
   **vista general del admin** (listado `Associates/Index` y pestaña **Resumen**), que se trabajará
   al **final**. Del lado admin, este plan toca **solo** la pestaña de Información Básica.
 
-> Este plan no se ejecuta hasta `#go`. Solo se implementa lo aquí descrito, corte a corte.
+> Este plan no se ejecuta hasta `*go`. Solo se implementa lo aquí descrito, corte a corte.
 
 ---
 
@@ -51,7 +51,7 @@ Tabla auditada contra el código real:
   `lucide-react`.
 - **Crear en `base/` desde spec:** `Select` (7-A ✅), `Textarea` (7-E ✅), `Progress` (7-F ✅) y,
   para la búsqueda de ubicación, `Popover` (7-G), `Command` (7-H) y `Combobox` (7-I). Ninguno se
-  crea hasta que el usuario pase su spec (regla de `agents.md`).
+  crea hasta que el usuario pase su spec (regla de `AGENTS.md`).
 - **Composición local (no es `base/`):** `FormField` (envuelve `Field` + control + error para no
   repetir); vive junto a los *parts*, no en `base/`.
 - **Evaluados pero NO usados:** `Badge`, `Separator`, `Skeleton` (el estado va en `Alert`, no en
@@ -76,7 +76,7 @@ Tabla auditada contra el código real:
       lista de campos y obligatorios, unicidad por **NIT**, razón social libre, semántica de
       **Editar** (reabre a `draft`), guardas de servidor y decisión de ubicación (catálogo DANE).
 - [ ] `orden-componentes.md` — marcar **Select** como `[x]` al crearlo y registrarlo en `/dev/componentes`.
-- [ ] `README.md` de actualizaciones — fila 0007.
+- [ ] `README.md` de modulos — fila 0007.
 - [ ] Hereda las reglas generales de [ADR-0005](../adr/0005-fichas-de-asociado-por-seccion.md); no se repiten aquí.
 
 ## 3. Flujo actual *(obligatorio, antes de proponer cambios)*
@@ -177,7 +177,7 @@ Tabla auditada contra el código real:
   > fiel a la spec. Si se quiere que lectores de pantalla anuncien el %, basta añadir `value={value}`
   > al `Root` (decisión del usuario, no la tomo por mi cuenta).
 
-_Búsqueda de ubicación (debate cerrado tras 7-F; se implementa después del `#commit` de 7-A…7-F):_
+_Búsqueda de ubicación (debate cerrado tras 7-F; se implementa después del `*commit` de 7-A…7-F):_
 
 - **7-G · Popover** ✅ — `base/Popover` creado desde spec (Radix) + galería + test; `[x]` en `orden-componentes.md`.
 - **7-H · Dialog** ✅ — `base/Dialog` creado desde spec (Radix) + galería + test; `[x]`. Lo exige
@@ -200,7 +200,7 @@ _Búsqueda de ubicación (debate cerrado tras 7-F; se implementa después del `#
   reconcilian el id del catálogo. `ui/SearchableSelect` queda **marcado para retiro** cuando quede
   sin referencias (aún lo usan Servicios y Blog). Refs de `Input`/`InputGroup*`/`Dialog*` migradas a
   `forwardRef` (React 18) para el `render` de Base UI.
-  > Cada primitivo (7-H…7-K) se crea **solo cuando el usuario pase su spec** (regla de `agents.md`).
+  > Cada primitivo (7-H…7-K) se crea **solo cuando el usuario pase su spec** (regla de `AGENTS.md`).
 
 > `change_pending`, `requestSectionChange`, `auditChangeRequest`, el `PUT update()` completo y sus
 > correos se **eliminan del todo** cuando la última sección migre (limpieza registrada en ADR-0005);
@@ -212,7 +212,7 @@ _Búsqueda de ubicación (debate cerrado tras 7-F; se implementa después del `#
 ## 8. Aprobación
 
 - [ ] Plan revisado
-- [ ] `#go` recibido → implementar (corte a corte: 7-A → 7-B → 7-C → 7-D → 7-E → 7-F, y luego la
+- [ ] `*go` recibido → implementar (corte a corte: 7-A → 7-B → 7-C → 7-D → 7-E → 7-F, y luego la
       cadena de búsqueda 7-G → 7-H → 7-I → 7-J → 7-K → 7-L)
 
 ## Decisiones cerradas

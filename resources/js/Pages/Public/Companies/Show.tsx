@@ -70,7 +70,11 @@ export default function Show({
         }
         const el = document.getElementById(id);
         if (!el) return;
-        const y = el.getBoundingClientRect().top + window.scrollY - TOPBAR_H;
+        // Altura real del topbar (incluye la fila de nav en móvil) para que la
+        // sección no quede tapada al navegar.
+        const header = document.getElementById('microsite-topbar');
+        const offset = header ? header.offsetHeight : TOPBAR_H;
+        const y = el.getBoundingClientRect().top + window.scrollY - offset;
         window.scrollTo({ top: y, behavior: 'smooth' });
     };
 
@@ -88,7 +92,7 @@ export default function Show({
             </Head>
 
             {preview && (
-                <div className="sticky top-0 z-50 bg-[#d9531e] px-4 py-2 text-center text-[0.82rem] font-semibold text-white">
+                <div className="bg-[#d9531e] px-4 py-2 text-center text-[0.82rem] font-semibold text-white">
                     Vista previa — tu micrositio está en borrador. Publícalo
                     desde «Mi Página › Contacto» para que sea visible.
                 </div>

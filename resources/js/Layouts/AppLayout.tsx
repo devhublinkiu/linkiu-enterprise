@@ -124,7 +124,7 @@ export default function AppLayout({
                                     asChild
                                     variant="outline"
                                     size="sm"
-                                    className="hidden sm:inline-flex"
+                                    className="shrink-0"
                                 >
                                     <a
                                         href={associate.microsite_url}
@@ -132,7 +132,9 @@ export default function AppLayout({
                                         rel="noreferrer"
                                     >
                                         <Globe />
-                                        Ver mi página
+                                        <span className="hidden sm:inline">
+                                            Ver mi página
+                                        </span>
                                         {associate.microsite_published ===
                                             false && (
                                             <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">

@@ -18,13 +18,16 @@ export default function Topbar({
     onNavigate: (id: string) => void;
 }) {
     return (
-        <div className="sticky top-0 z-40 border-b border-white/10 bg-[#14110d]/90 backdrop-blur-md">
+        <div
+            id="microsite-topbar"
+            className="sticky top-0 z-40 border-b border-white/10 bg-[#14110d]/90 backdrop-blur-md"
+        >
             <div className="mx-auto flex h-[62px] max-w-[1180px] items-center gap-6 px-7">
                 <button
                     onClick={() => onNavigate('top')}
                     className="flex items-center gap-3 font-display text-[0.95rem] font-bold text-[#ece6db]"
                 >
-                    <span className="grid size-8 place-items-center overflow-hidden rounded-full bg-white/10 text-[0.66rem] font-extrabold text-[#d9531e]">
+                    <span className="grid size-10 place-items-center overflow-hidden rounded-full bg-white/10 text-[0.7rem] font-extrabold text-[#d9531e]">
                         {company.logo ? (
                             <img
                                 src={company.logo}
@@ -65,6 +68,25 @@ export default function Topbar({
                     Regresar a CAMEP
                 </Link>
             </div>
+
+            {/* Nav de secciones en móvil: fila desplazable (en escritorio va en la barra). */}
+            <nav className="flex flex-wrap gap-1.5 border-t border-white/10 px-4 py-2.5 md:hidden">
+                {sections.map((s) => (
+                    <button
+                        key={s.id}
+                        onClick={() => onNavigate(s.id)}
+                        aria-current={active === s.id}
+                        className={cn(
+                            'shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-[0.82rem] font-medium transition-colors',
+                            active === s.id
+                                ? 'bg-white/[0.11] text-white'
+                                : 'text-[#9a9287] hover:bg-white/[0.06] hover:text-[#ece6db]',
+                        )}
+                    >
+                        {s.label}
+                    </button>
+                ))}
+            </nav>
         </div>
     );
 }

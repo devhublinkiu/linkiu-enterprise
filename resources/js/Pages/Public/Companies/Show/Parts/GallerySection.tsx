@@ -20,7 +20,7 @@ export default function GallerySection({ company }: { company: Company }) {
                 <h2 className="mb-[42px] font-display text-[clamp(1.7rem,3.4vw,2.5rem)] font-bold tracking-[-0.015em]">
                     Galería
                 </h2>
-                <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
                     {shown.map((img, i) => (
                         <button
                             key={i}

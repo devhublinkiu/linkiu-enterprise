@@ -36,10 +36,10 @@ export default function Hero({ company }: { company: Company }) {
             )}
 
             <div className="relative mx-auto max-w-[1180px] px-7 pb-[60px] pt-[76px]">
-                <div className="mb-7 flex items-center gap-8">
+                <div className="mb-7 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-8">
                     <div className="relative shrink-0">
                         <div
-                            className="grid size-[132px] place-items-center overflow-hidden rounded-full bg-white font-display text-[1.5rem] font-extrabold text-[#b8410f]"
+                            className="grid size-24 place-items-center overflow-hidden rounded-full bg-white font-display text-[1.5rem] font-extrabold text-[#b8410f] sm:size-[132px]"
                             style={
                                 company.is_verified
                                     ? { boxShadow: '0 0 0 3px #1d7a56' }

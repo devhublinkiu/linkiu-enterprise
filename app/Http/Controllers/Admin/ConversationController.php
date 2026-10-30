@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\MessageSent;
 use App\Http\Controllers\Concerns\HandlesMessageAttachments;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminSendMessageRequest;
@@ -104,6 +105,7 @@ class ConversationController extends Controller
         ]);
 
         $this->storeAttachments($message, $request->file('attachments') ?? []);
+        MessageSent::dispatch($message);
         $conversation->markReadBy($user);
 
         return redirect()
@@ -137,6 +139,7 @@ class ConversationController extends Controller
         ]);
 
         $this->storeAttachments($message, $request->file('attachments') ?? []);
+        MessageSent::dispatch($message);
         $conversation->update(['last_message_at' => now()]);
         $conversation->markReadBy($user);
 

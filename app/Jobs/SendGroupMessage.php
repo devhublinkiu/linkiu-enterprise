@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\MessageGroup;
 use Illuminate\Bus\Queueable;
@@ -42,10 +43,12 @@ class SendGroupMessage implements ShouldQueue
                 'last_message_at' => now(),
             ]);
 
-            $conversation->messages()->create([
+            $message = $conversation->messages()->create([
                 'sender_id' => $this->adminId,
                 'body' => $this->body,
             ]);
+
+            MessageSent::dispatch($message);
         }
     }
 }

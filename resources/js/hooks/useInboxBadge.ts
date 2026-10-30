@@ -9,7 +9,9 @@ import { getEcho } from '@/lib/echo';
  * solo esa prop sin recargar la página. Lo usa el layout (corte 7).
  */
 export function useInboxBadge(): void {
-    const { auth } = usePage().props as any;
+    const { auth } = usePage().props as unknown as {
+        auth: { user?: { id?: number } };
+    };
     const userId = auth?.user?.id;
 
     useEffect(() => {

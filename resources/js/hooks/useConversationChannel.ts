@@ -2,6 +2,17 @@ import { useEffect, useRef } from 'react';
 
 import { getEcho } from '@/lib/echo';
 
+// Payload del evento .MessageSent (ver App\Events\MessageSent::broadcastWith).
+export interface IncomingMessage {
+    id: number;
+    conversation_id: number;
+    body: string | null;
+    sender_id: number;
+    sender: string | null;
+    at: string | null;
+    has_attachments?: boolean;
+}
+
 /**
  * Suscribe al canal privado de un hilo (conversation.{id}) y entrega los mensajes
  * nuevos en vivo (evento .MessageSent). Reúsa el Echo/Ably ya configurado. Las
@@ -10,7 +21,7 @@ import { getEcho } from '@/lib/echo';
  */
 export function useConversationChannel(
     conversationId: number | null,
-    onMessage: (payload: any) => void,
+    onMessage: (payload: IncomingMessage) => void,
 ): void {
     const cb = useRef(onMessage);
     cb.current = onMessage;
@@ -27,7 +38,10 @@ export function useConversationChannel(
         }
 
         const channel = `conversation.${conversationId}`;
-        echo.private(channel).listen('.MessageSent', (payload: any) => cb.current(payload));
+        echo.private(channel).listen(
+            '.MessageSent',
+            (payload: IncomingMessage) => cb.current(payload),
+        );
 
         return () => {
             echo.leave(channel);

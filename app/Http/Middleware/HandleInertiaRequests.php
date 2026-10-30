@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Associate;
+use App\Models\Conversation;
 use App\Models\Feature;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -133,6 +134,7 @@ class HandleInertiaRequests extends Middleware
             'unread_invoices' => $user && $user->associate_id
                 ? Invoice::where('associate_id', $user->associate_id)->whereNull('read_at')->count()
                 : null,
+            'unread_messages' => $this->unreadMessages($user),
             'service_categories' => ServiceCategory::withCount('services')->get(['id', 'name', 'slug', 'services_count']),
             'recent_companies' => Associate::where('status', 'approved')
                 ->where('is_public', true)
@@ -180,5 +182,36 @@ class HandleInertiaRequests extends Middleware
         }
 
         return $map;
+    }
+
+    /**
+     * Nº de conversaciones con mensajes sin leer para el usuario (bandeja interna,
+     * plan 0026). No leído = mensaje de otro, más nuevo que mi last_read_at, en un
+     * hilo no archivado que puedo ver (asociado: su empresa; admin: todas).
+     */
+    private function unreadMessages(?User $user): ?int
+    {
+        if (! $user || (! $user->isAdmin() && ! $user->associate_id)) {
+            return null;
+        }
+
+        $query = Conversation::query();
+        if (! $user->isAdmin()) {
+            $query->where('associate_id', $user->associate_id);
+        }
+
+        return $query
+            ->whereDoesntHave('participants', fn ($q) => $q
+                ->where('users.id', $user->id)
+                ->whereNotNull('conversation_user.archived_at'))
+            ->whereHas('messages', fn ($q) => $q
+                ->where('sender_id', '!=', $user->id)
+                ->whereRaw(
+                    'messages.created_at > COALESCE((select last_read_at from conversation_user '
+                    .'where conversation_user.conversation_id = messages.conversation_id '
+                    .'and conversation_user.user_id = ?), ?)',
+                    [$user->id, '1970-01-01 00:00:00']
+                ))
+            ->count();
     }
 }

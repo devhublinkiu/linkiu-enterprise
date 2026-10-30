@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Events\MessageSent;
 use App\Listeners\EnsureEmailPlainText;
+use App\Listeners\HandleNewMessage;
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
@@ -33,5 +35,9 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Event::listen(MessageSending::class, EnsureEmailPlainText::class);
+
+        // Efectos de un mensaje nuevo en la bandeja interna (plan 0026, corte 6):
+        // badge en vivo (inbox.{userId}) + correo al asociado cuando escribe el admin.
+        Event::listen(MessageSent::class, HandleNewMessage::class);
     }
 }

@@ -82,9 +82,23 @@ Corre en este orden:
       Activa: `invoices:generate-monthly` (día 15), `billing:send-reminders` (diario),
       `subscription:check-expiration` (diario) y `payments:reconcile-bold` (cada hora).
 - [ ] 🤖 Verificar con `php artisan schedule:list`.
-- [ ] ℹ️ **Cola:** hoy los correos se envían con `defer()` (tras la respuesta), así que
-      **no hace falta un worker**. Si en el futuro se corre `php artisan queue:work`, se
-      pueden migrar los mailables a `ShouldQueue`.
+- [ ] 🙋 **Cola (Redis + Horizon — [ADR-0011](adr/0011-cola-y-worker-redis-horizon.md)). Producción = Laravel Forge:**
+      - Forge **ya instala Redis** por defecto (localhost `127.0.0.1:6379`, cerrado al exterior).
+        Con `predis` en `composer` **no** hace falta la extensión `ext-redis`.
+      - En **Environment** de Forge: `QUEUE_CONNECTION=redis`, `BROADCAST_CONNECTION=ably`,
+        `ABLY_KEY=…` (los `REDIS_HOST`/`REDIS_PORT` por defecto sirven).
+      - Activar el **toggle "Laravel Horizon"** del sitio → Forge crea el **daemon**
+        (`php artisan horizon` bajo Supervisor) y **añade `php artisan horizon:terminate`** al
+        deploy script automáticamente. **No** usar además los queue workers estándar.
+      - Scheduler (ya requerido arriba): `php artisan schedule:run` cubre `horizon:snapshot`
+        (métricas de Horizon). `CACHE_STORE` **no** debe ser `array` (o `horizon:terminate` falla
+        en silencio).
+      - Dashboard en `/horizon`, **gateado a superadmin**.
+- [ ] ℹ️ **Local (Windows/Herd):** Horizon no corre (faltan `ext-pcntl`/`ext-posix`). Para
+      desarrollar **sin instalar Redis**, usar `QUEUE_CONNECTION=sync` (los jobs corren al instante,
+      en proceso). Si se instala Redis (Memurai/WSL/Docker), se puede usar `php artisan queue:work
+      redis`. Los correos con `defer()` siguen igual; los eventos de mensajería (plan 0026) y el
+      fan-out van por cola **en producción**.
 
 ---
 

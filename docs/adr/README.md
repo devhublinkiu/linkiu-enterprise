@@ -26,6 +26,7 @@ ADR nuevo que la sustituya y se marca la anterior como `Sustituida por ADR-XXXX`
 | [0008](0008-modelo-de-alta-unificado.md) | Modelo de alta unificado (cuota inicial que exonera el mes 1) | Aceptada | 2026-09-14 |
 | [0009](0009-micrositio-y-ruteo-por-slug.md) | Micrositio del asociado: modelo de datos y ruteo por slug | Aceptada | 2026-09-14 |
 | [0010](0010-documentos-licitacion-privados.md) | Documentos de licitación en disco privado y descarga gateada | Aceptada | 2026-09-16 |
+| [0011](0011-cola-y-worker-redis-horizon.md) | Cola de trabajos y worker con Redis + Horizon | Aceptada | 2026-10-29 |
 
 ## Cómo escribir uno nuevo
 

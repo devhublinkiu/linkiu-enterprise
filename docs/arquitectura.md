@@ -80,8 +80,12 @@ npm run preflight      # gates proporcionales al cambio (desde PowerShell)
   [ADR-0004](adr/0004-plantillas-correo-react.md)). El runtime no cambia: los Mailables siguen
   apuntando a `resources/views/emails/**.blade.php` (archivos **generados**, no editar a mano). Los
   estilos van inline con hex literal (los clientes de correo no soportan tokens).
-- Los correos de facturación se envían con `defer()` (tras la respuesta), así que **hoy no hace
-  falta un worker de cola**. Si se corre `queue:work`, se pueden migrar a `ShouldQueue`.
+- Los correos de facturación se envían con `defer()` (tras la respuesta). **Cola/worker:** a partir
+  del [ADR-0011](adr/0011-cola-y-worker-redis-horizon.md) se adopta **Redis + Horizon**
+  (`QUEUE_CONNECTION=redis`); los eventos de mensajería (plan 0026) y el fan-out van por cola.
+  Horizon corre en producción (Linux); en local Windows se usa `php artisan queue:work redis`
+  (Horizon necesita `ext-pcntl`/`ext-posix`, ausentes en Windows). Los correos con `defer()`
+  pueden migrar a `ShouldQueue` cuando convenga.
 - Realtime con **Ably + Laravel Echo**. La unificación de notificaciones venía en curso en la rama
   `feature/camep-unified-notifications`; aún no hay `app/Notifications` — confírmalo antes de asumir.
 

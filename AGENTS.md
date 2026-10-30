@@ -205,6 +205,10 @@ bienes y servicios, convocatorias/licitaciones y blog. Detalle en
 - **0008 Modelo de alta unificado** (cuota inicial que exonera el mes 1).
 - **0009 Micrositio del asociado** (modelo de datos y ruteo por slug).
 - **0010 Documentos de licitación privados** (disco privado, descarga gateada).
+- **0011 Cola y worker Redis + Horizon:** eventos de mensajería y fan-out por cola; Horizon en
+  producción (Linux), `queue:work redis` en local Windows.
+- **0012 Mensajería interna:** bandeja admin↔asociado; fan-out a hilos privados por asociado,
+  autorización acotada a la empresa (Policies), adjuntos en disco privado, correo solo admin→asociado.
 
 > Cada ADR nuevo deja aquí su línea. Una enmienda cambia la línea; nunca se contradice un ADR sin
 > enmendarlo.

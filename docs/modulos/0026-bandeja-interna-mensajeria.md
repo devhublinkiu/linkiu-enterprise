@@ -1,6 +1,6 @@
 # Plan de actualización — Bandeja interna de mensajería (tiempo real)
 
-- **Estado:** Borrador
+- **Estado:** Implementado (cortes 1–8) — cerrado el 2026-10-30.
 - **Fecha:** 2026-10-29
 - **Alcance:** Módulo nuevo de **mensajería tipo bandeja, en tiempo real**, entre admin y
   asociados (ambos inician). Admin → asociado específico o **grupos** (fan-out a hilos privados).
@@ -122,9 +122,26 @@ Es un módulo **nuevo**; no hay bandeja hoy. Lo relevante que ya existe:
 
 ## 8. Aprobación
 
-- [ ] Plan revisado
-- [ ] `*go` recibido → implementar (empezando por el corte 1, infra)
+- [x] Plan revisado
+- [x] `*go` recibido → implementado por cortes (1 infra → 7 UI → 8 cierre).
 
 > **Nota de alcance mayor:** adoptar Redis + Horizon **revierte** el "sin worker" documentado y
 > afecta a todo el proyecto (no solo a la bandeja). Se formaliza en el **ADR-A** antes de tocar
 > código de infraestructura.
+
+## 9. Cierre (corte 8)
+
+- **Documentación:** [ADR-0011](../adr/0011-cola-y-worker-redis-horizon.md) y
+  [ADR-0012](../adr/0012-mensajeria-interna.md) aceptados e indexados; módulo reflejado en
+  [`arquitectura.md`](../arquitectura.md) y [`seguridad.md`](../seguridad.md); despliegue (Horizon +
+  Ably) en [`despliegue.md`](../despliegue.md); su línea en [`../../AGENTS.md`](../../AGENTS.md).
+- **Repaso de accesibilidad:** botones reales con `aria-label`, campos con `Label`, foco visible de
+  shadcn, navegación por teclado (⌘/Ctrl+Enter envía), estados vacíos y contraste por tokens.
+  Mobile-first (una columna). Pendiente de validar con lector de pantalla en una pasada manual.
+- **Repaso de seguridad:** aislamiento por `ConversationPolicy` (hilos y canales), adjuntos en disco
+  privado con descarga gateada, cerrar hilo solo admin, correo solo admin→asociado. Cubierto por
+  `Messaging*Test` (acceso, aislamiento, fan-out, no leída, cierre).
+- **Fuera de este módulo (pendientes, ver [`../pendientes.md`](../pendientes.md)):**
+  **Silenciar notificaciones** (requiere migración `muted_at`; diferido por decisión del usuario) y
+  migrar `NewMessageMail` a **react-email** para cumplir [ADR-0004](../adr/0004-plantillas-correo-react.md)
+  (hoy es Blade a mano).

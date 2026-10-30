@@ -9,7 +9,8 @@ vive en [`../design.md`](../design.md).
 Plataforma B2B (Laravel 12 + Inertia/React/TS) para las empresas asociadas de CAMEP (minería e
 hidrocarburos, Colombia). El asociado llena su perfil por secciones, un admin lo revisa, y si se
 aprueba la empresa sale en el directorio público. Encima van membresía/cobro, foros (Red CAMEP),
-bienes y servicios, convocatorias/licitaciones y blog.
+bienes y servicios, convocatorias/licitaciones, blog y una **bandeja interna de mensajería** en
+tiempo real entre el equipo CAMEP y las empresas asociadas.
 
 **Stack:** Laravel 12 · PHP 8.2+ · Inertia 2 + React 18 + TypeScript · Tailwind 3 + Radix/shadcn ·
 Tiptap · Framer Motion · MySQL (`camepg`) · Spatie MediaLibrary sobre Minio/S3 · Resend (correo) ·
@@ -62,6 +63,16 @@ npm run preflight      # gates proporcionales al cambio (desde PowerShell)
 - **Perfil por secciones:** `section_reviews` (JSON, máquina de estados) reemplazó al viejo
   `audit_log` campo a campo. Estados: `draft → pending → approved | rejected → change_pending`.
   Lógica en `App\Models\Associate` (`getSectionReview`, `setSectionStatus`, `canEditSection`).
+- **Mensajería interna (bandeja)** — [ADR-0012](adr/0012-mensajeria-interna.md), plan
+  [0026](modulos/0026-bandeja-interna-mensajeria.md). Un hilo (`conversations`) pertenece a **una
+  empresa**; el estado por participante (leído/archivado) vive en el pivote `conversation_user`.
+  Ambos lados inician; el admin puede difundir a un **grupo** (`message_groups`), que hace **fan-out
+  a un hilo privado por asociado** (Job en cola), nunca un hilo compartido. **Aislamiento por
+  `ConversationPolicy`:** un asociado solo ve/responde los hilos de su empresa. Adjuntos en **disco
+  privado** con descarga gateada. Tiempo real por hilo (`conversation.{id}`) y contador de no leídos
+  (`inbox.{userId}` + prop compartida `unread_messages`) vía Ably/Echo. **Correo solo en
+  admin→asociado** (el asociado→admin no manda correo). Cerrar un hilo (`status=closed`, solo admin)
+  bloquea responder.
 
 ## Middleware (alias, ver `bootstrap/app.php`)
 

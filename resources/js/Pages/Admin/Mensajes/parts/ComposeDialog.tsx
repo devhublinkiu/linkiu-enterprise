@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { Paperclip, Send, Users, X } from 'lucide-react';
+import { Send, Users } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ import { Input } from '@/Components/base/Input';
 import { Label } from '@/Components/base/Label';
 import { Tabs, TabsList, TabsTrigger } from '@/Components/base/Tabs';
 import { Textarea } from '@/Components/base/Textarea';
+import AttachmentField from '@/Components/messaging/AttachmentField';
 
 import SearchPicker, { type PickerOption } from './SearchPicker';
 
@@ -89,12 +90,6 @@ export default function ComposeDialog({
             },
         });
     };
-
-    const removeFile = (idx: number) =>
-        setData(
-            'attachments',
-            data.attachments.filter((_, i) => i !== idx),
-        );
 
     return (
         <Dialog
@@ -191,68 +186,12 @@ export default function ComposeDialog({
                     </div>
 
                     {mode === 'associate' && (
-                        <div className="space-y-2">
-                            <div>
-                                <input
-                                    id="compose-files"
-                                    type="file"
-                                    multiple
-                                    className="hidden"
-                                    onChange={(e) =>
-                                        setData(
-                                            'attachments',
-                                            [
-                                                ...data.attachments,
-                                                ...Array.from(
-                                                    e.target.files ?? [],
-                                                ),
-                                            ].slice(0, 5),
-                                        )
-                                    }
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    asChild
-                                >
-                                    <label htmlFor="compose-files">
-                                        <Paperclip className="size-4" />
-                                        Adjuntar archivos
-                                    </label>
-                                </Button>
-                                <span className="ml-2 text-xs text-muted-foreground">
-                                    Hasta 5 · 10 MB c/u
-                                </span>
-                            </div>
-                            {data.attachments.length > 0 && (
-                                <ul className="space-y-1">
-                                    {data.attachments.map((f, i) => (
-                                        <li
-                                            key={`${f.name}-${i}`}
-                                            className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs"
-                                        >
-                                            <span className="truncate">
-                                                {f.name}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeFile(i)}
-                                                className="shrink-0 text-muted-foreground hover:text-foreground"
-                                                aria-label={`Quitar ${f.name}`}
-                                            >
-                                                <X className="size-4" />
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                            {errors.attachments && (
-                                <p className="text-sm text-destructive">
-                                    {errors.attachments}
-                                </p>
-                            )}
-                        </div>
+                        <AttachmentField
+                            id="compose-files"
+                            files={data.attachments}
+                            onChange={(f) => setData('attachments', f)}
+                            error={errors.attachments}
+                        />
                     )}
 
                     <DialogFooter className="gap-2">

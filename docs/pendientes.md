@@ -14,16 +14,19 @@ Prioridad: **P0** bloquea / urgente · **P1** importante · **P2** conviene · *
 
 ## Gates en rojo (barrera de `*push`; se corrigen a medida que se avanza)
 
-- [ ] **P1 · Larastan (2 errores).** `app/Http/Controllers/PublicCompanyController.php`:
-      `argument.unresolvableType` en `->through()` (línea ~48) + una entrada del
-      `phpstan-baseline.neon` quedó *stale* ("ignore.unmatched" del `map()` que ya no existe).
-      Viene de la paginación del directorio. Arreglar el tipo y limpiar la entrada del baseline.
-- [ ] **P1 · Pest (1 de 191).** `tests/Feature/MicrositeTest.php:413` — "el directorio oculta los
+- [ ] **P1 · Larastan (~52 errores).** Tres focos, ninguno nuevo del corte 7: (a) `nonQueued()` del
+      refactor de media en `BlogPost`/`Licitacion`/`BienesServiciosEmpresa`/`Announcement`
+      (`method.notFound`) + entradas *stale* del `phpstan-baseline.neon` que ya no casan; (b) deuda
+      de **genéricos** en mensajería (`$conversation->messages()->create()` devuelve `Model`, no
+      `Message` → `storeAttachments`/`MessageSent::dispatch`): se cierra anotando
+      `@return HasMany<Message, $this>` en las relaciones; (c) el viejo `->through()` de
+      `PublicCompanyController`. Arreglar tipos y regenerar/limpiar el baseline.
+- [ ] **P1 · Pest (1 de 213).** `tests/Feature/MicrositeTest.php` — "el directorio oculta los
       micrositios en borrador" espera `associates` = 1 y ve 13. Revisar el filtro de publicación del
       directorio y/o el aislamiento de datos del test.
-- [ ] **P2 · Vitest (2 de 105 + flakiness).** 2 fallas reales (detalle sin capturar aún) y
-      *timeouts* de arranque al aislar 48 workers. Evaluar `isolate:false` (lo sugiere el propio
-      runner) para estabilizar y acelerar.
+- [ ] **P2 · Vitest (4 de 131 + flakiness).** `Dashboard.test.tsx` (el mock de `@inertiajs/react` no
+      exporta `useForm` que usa `Dashboard.tsx`) y `PublicMicrosite.test.tsx` (`getByRole` encuentra
+      varios "Servicios"). Más *timeouts* de arranque al aislar workers. Evaluar `isolate:false`.
 - [ ] **P2 · Preflight da "rojo" falso desde Git Bash.** `php`/`composer` (Herd) no están en el PATH
       fuera de PowerShell → los gates PHP fallan por *command not found*. Ya documentado en
       `AGENTS.md`/`arquitectura.md`; opcional: que `scripts/preflight.mjs` avise si no encuentra `php`.
@@ -44,6 +47,13 @@ Prioridad: **P0** bloquea / urgente · **P1** importante · **P2** conviene · *
       unificadas, Vitrina/subdominios (stancl/tenancy ya es dependencia), roles y autorización.
 - [ ] **P2 · Entregabilidad de correo (infra, plan 0004 §10):** dominio remitente `camepg.org`,
       DKIM completo, DMARC `p=quarantine`, calentamiento.
+- [ ] **P2 · Mensajería: correo `NewMessageMail` en Blade a mano.** Contradice
+      [ADR-0004](adr/0004-plantillas-correo-react.md) (plantillas en react-email compiladas a Blade).
+      Migrar `resources/views/emails/messaging/new-message.blade.php` a `resources/js/emails/` +
+      `npm run emails:build`.
+- [ ] **P3 · Mensajería: "Silenciar notificaciones" (diferido por el usuario).** Requiere migración
+      aditiva `muted_at` en `conversation_user` + saltar correo/ping de inbox en `HandleNewMessage`,
+      y su prueba. Definir alcance (¿solo admin?, ¿apaga correo, badge o ambos?) antes de implementar.
 - [ ] **P3 · Referencia:** diagrama ER del núcleo (Associate ↔ Invoice ↔ Payment ↔ Plan ↔ Feature),
       glosario de dominio, mapa de módulos con su interruptor de plan, modelos huérfanos
       `Ticket`/`TicketReply`.

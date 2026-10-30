@@ -13,6 +13,11 @@ detectados. Complementa a [`../AGENTS.md`](../AGENTS.md) y a los ADR de segurida
   carpetas (`Admin/`, `Associate/`, `Public/`) es claridad, **no** seguridad: la que impide la fuga
   es la **autorización en servidor** (middleware + Policies/Gates + queries siempre acotadas al
   dueño). Toda ruta con datos sensibles pasa por su Policy.
+- **Mensajería interna** ([ADR-0012](adr/0012-mensajeria-interna.md)): `ConversationPolicy` acota
+  cada hilo a su empresa — un asociado nunca ve ni responde una conversación de otra. La difusión a
+  grupos hace **fan-out a hilos privados por asociado** (jamás un hilo compartido donde se filtren
+  destinatarios). Cerrar/reabrir un hilo es acción solo de admin. Los canales de tiempo real
+  (`conversation.{id}`, `inbox.{userId}`) se autorizan en `routes/channels.php` con la misma Policy.
 
 ## Validación y entrada
 
@@ -34,6 +39,8 @@ detectados. Complementa a [`../AGENTS.md`](../AGENTS.md) y a los ADR de segurida
 - **Documentos de cobro** (comprobantes, facturas) y **documentos de licitación** no son públicos:
   disco privado y descarga **gateada** por autorización
   ([ADR-0010](adr/0010-documentos-licitacion-privados.md)). No accesibles por URL directa sin sesión.
+- **Adjuntos de mensajería** en **disco privado** (`local`), con descarga gateada por
+  `ConversationPolicy` (solo participantes del hilo). Nunca en disco público.
 - Media de perfil/empresa vía Spatie MediaLibrary sobre Minio/S3.
 
 ## Secretos y datos

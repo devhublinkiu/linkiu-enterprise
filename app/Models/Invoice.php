@@ -14,6 +14,7 @@ class Invoice extends Model
         'plan_id',
         'type',
         'period',
+        'period_key',
         'cycle',
         'amount',
         'due_date',
@@ -30,12 +31,11 @@ class Invoice extends Model
     ];
 
     protected $casts = [
-        'amount'   => 'decimal:2',
+        'amount' => 'decimal:2',
         'due_date' => 'date',
-        'paid_at'  => 'datetime',
-        'read_at'  => 'datetime',
+        'paid_at' => 'datetime',
+        'read_at' => 'datetime',
     ];
-
 
     public function associate(): BelongsTo
     {

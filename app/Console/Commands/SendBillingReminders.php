@@ -2,9 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\SubscriptionExpired;
+use App\Mail\SubscriptionExpiringSoon;
 use App\Models\Associate;
+use App\Models\BillingSetting;
 use App\Models\Invoice;
-use App\Services\SubscriptionService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -34,7 +36,7 @@ class SendBillingReminders extends Command
     public function handle(): int
     {
         $dryRun = (bool) $this->option('dry-run');
-        $today  = Carbon::now()->startOfDay();
+        $today = Carbon::now()->startOfDay();
 
         $associates = Associate::with(['plan', 'users'])
             ->whereNotNull('plan_id')
@@ -43,6 +45,7 @@ class SendBillingReminders extends Command
 
         if ($associates->isEmpty()) {
             $this->info('No hay suscripciones que vigilar.');
+
             return self::SUCCESS;
         }
 
@@ -52,7 +55,7 @@ class SendBillingReminders extends Command
         foreach ($associates as $associate) {
             $aviso = $this->avisoPara($associate, $today);
 
-            if (!$aviso) {
+            if (! $aviso) {
                 continue;
             }
 
@@ -60,21 +63,24 @@ class SendBillingReminders extends Command
 
             // Sin cuenta de cobro pendiente no hay nada que reclamar: el
             // asociado ya pagó o todavía no se le ha emitido.
-            if (!$this->tienePendiente($associate)) {
+            if (! $this->tienePendiente($associate)) {
                 $rows[] = [$associate->company_name, $tipo, '—', 'sin cobro pendiente'];
+
                 continue;
             }
 
             $recipient = $associate->users->first()?->email ?? $associate->billing_email;
 
-            if (!$recipient) {
+            if (! $recipient) {
                 $rows[] = [$associate->company_name, $tipo, '—', 'sin correo'];
+
                 continue;
             }
 
             if ($dryRun) {
                 $rows[] = [$associate->company_name, $tipo, $recipient, 'se enviaría'];
                 $sent++;
+
                 continue;
             }
 
@@ -89,22 +95,23 @@ class SendBillingReminders extends Command
 
         if (empty($rows)) {
             $this->info('Hoy no le toca aviso a nadie.');
+
             return self::SUCCESS;
         }
 
         $this->table(['Asociado', 'Aviso', 'Destinatario', 'Resultado'], $rows);
-        $this->info(($dryRun ? '[DRY-RUN] ' : '') . "{$sent} aviso(s).");
+        $this->info(($dryRun ? '[DRY-RUN] ' : '')."{$sent} aviso(s).");
 
         return self::SUCCESS;
     }
 
     /**
-     * @return array{0:string,1:int}|null  [tipo de aviso, días relevantes]
+     * @return array{0:string,1:int}|null [tipo de aviso, días relevantes]
      */
     private function avisoPara(Associate $associate, Carbon $today): ?array
     {
         $expira = $associate->plan_expires_at->copy()->startOfDay();
-        $gracia = (int) ($associate->plan->grace_days ?? 0);
+        $gracia = BillingSetting::graceDays();
         $finGracia = $expira->copy()->addDays($gracia);
 
         // Víspera del corte.
@@ -138,14 +145,15 @@ class SendBillingReminders extends Command
     {
         try {
             $mailable = $tipo === 'ultimo'
-                ? new \App\Mail\SubscriptionExpired($associate)
-                : new \App\Mail\SubscriptionExpiringSoon($associate, $dias);
+                ? new SubscriptionExpired($associate)
+                : new SubscriptionExpiringSoon($associate, $dias);
 
             Mail::to($recipient)->send($mailable);
 
             return true;
         } catch (\Exception $e) {
-            Log::error("Error enviando recordatorio '{$tipo}' al asociado {$associate->id}: " . $e->getMessage());
+            Log::error("Error enviando recordatorio '{$tipo}' al asociado {$associate->id}: ".$e->getMessage());
+
             return false;
         }
     }

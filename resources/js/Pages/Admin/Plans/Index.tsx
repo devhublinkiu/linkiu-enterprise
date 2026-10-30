@@ -45,7 +45,6 @@ interface Plan {
     price_semiannual: string;
     price_annual: string;
     color_hex: string;
-    grace_days: number;
     is_active: boolean;
     is_popular: boolean;
     signup_fee: string;
@@ -295,8 +294,7 @@ function PlanCard({ plan, onDelete }: { plan: Plan; onDelete: () => void }) {
                     )}
                 </div>
 
-                <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
-                    <span>Prórroga: {plan.grace_days} días</span>
+                <div className="flex items-center justify-end border-t border-border pt-3 text-xs text-muted-foreground">
                     <span>{plan.associates_count} asociada(s)</span>
                 </div>
             </CardContent>

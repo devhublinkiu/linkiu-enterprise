@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\InteractsWithAssociateFiles;
 use App\Mail\AssociateDocsSubmitted;
 use App\Models\Associate;
+use App\Models\BillingSetting;
 use App\Models\Feature;
 use App\Models\Plan;
 use App\Models\Service;
@@ -1162,7 +1163,7 @@ class AssociateController extends Controller
             if ($associate->plan_id && $associate->plan_expires_at) {
                 if ($associate->isSubscriptionActive()) {
                     $daysRemaining = (int) now()->diffInDays($associate->plan_expires_at, false);
-                    $graceDays = $associate->plan->grace_days ?? 0;
+                    $graceDays = BillingSetting::graceDays();
 
                     $subscriptionStatus = $daysRemaining >= 0 ? 'active' : 'grace';
                     if ($subscriptionStatus === 'grace') {

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Associate;
+use App\Models\BillingSetting;
 use App\Models\Conversation;
 use App\Models\Feature;
 use App\Models\Invoice;
@@ -59,7 +60,7 @@ class HandleInertiaRequests extends Middleware
 
                     if ($associate->isSubscriptionActive()) {
                         $daysRemaining = (int) now()->diffInDays($associate->plan_expires_at, false);
-                        $graceDays = $associate->plan->grace_days ?? 0;
+                        $graceDays = BillingSetting::graceDays();
 
                         if ($daysRemaining >= 0) {
                             $status = 'active';

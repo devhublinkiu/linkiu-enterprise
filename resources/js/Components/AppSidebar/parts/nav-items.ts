@@ -151,6 +151,10 @@ export function buildAdminItems(
                     name: 'Facturación',
                     href: route('admin.invoices.index'),
                 },
+                {
+                    name: 'Ajustes de cobro',
+                    href: route('admin.billing-settings.edit'),
+                },
             ],
         },
         {

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Associate;
+use App\Models\BillingSetting;
 use App\Services\BillingService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -15,7 +16,8 @@ class GenerateMonthlyInvoices extends Command
      * @var string
      */
     protected $signature = 'invoices:generate-monthly
-                            {--dry-run : Muestra qué cuentas de cobro se generarían sin crearlas}';
+                            {--dry-run : Muestra qué cuentas de cobro se generarían sin crearlas}
+                            {--force : Genera aunque hoy no sea el día de corte}';
 
     /**
      * The console command description.
@@ -35,9 +37,19 @@ class GenerateMonthlyInvoices extends Command
     public function handle(): int
     {
         $dryRun = (bool) $this->option('dry-run');
-        $now    = Carbon::now();
+        $force = (bool) $this->option('force');
+        $now = Carbon::now();
 
-        $this->info(($dryRun ? '[DRY-RUN] ' : '') . 'Generando cuentas de cobro para: ' . BillingService::periodLabel($now));
+        // El cron corre a diario; solo emite el DÍA DE CORTE (configurable).
+        // `--dry-run` y `--force` permiten previsualizar o emitir cualquier día.
+        $cutoffDay = BillingSetting::cutoffDay();
+        if (! $dryRun && ! $force && $now->day !== $cutoffDay) {
+            $this->info("Hoy no es el día de corte (día {$cutoffDay}); no se emite nada.");
+
+            return self::SUCCESS;
+        }
+
+        $this->info(($dryRun ? '[DRY-RUN] ' : '').'Generando cuentas de cobro para: '.BillingService::periodLabel($now));
         $this->newLine();
 
         // Se factura a quien DEBE, no solo a quien vence justo este mes.
@@ -55,23 +67,25 @@ class GenerateMonthlyInvoices extends Command
 
         if ($associates->isEmpty()) {
             $this->info('No hay asociados por facturar este mes.');
+
             return self::SUCCESS;
         }
 
         $created = 0;
         $skipped = 0;
-        $rows    = [];
+        $rows = [];
 
         foreach ($associates as $associate) {
             $overdue = $associate->plan_expires_at->isPast();
 
             if ($dryRun) {
-                $cycle       = $associate->billing_cycle ?: 'monthly';
+                $cycle = $associate->billing_cycle ?: 'monthly';
                 $periodLabel = BillingService::periodLabel($now, $this->prefixLabel($cycle));
 
                 if ($this->billing->periodAlreadyBilled($associate, $periodLabel)) {
                     $skipped++;
                     $rows[] = [$associate->id, $associate->company_name, '—', 'ya existe'];
+
                     continue;
                 }
 
@@ -82,14 +96,16 @@ class GenerateMonthlyInvoices extends Command
                     number_format(BillingService::amountFor($associate->plan, $cycle), 2),
                     $overdue ? 'se crearía (en mora)' : 'se crearía',
                 ];
+
                 continue;
             }
 
             $invoice = $this->billing->issuePeriodInvoice($associate, $now);
 
-            if (!$invoice) {
+            if (! $invoice) {
                 $skipped++;
                 $rows[] = [$associate->id, $associate->company_name, '—', 'ya existe o sin plan'];
+
                 continue;
             }
 
@@ -100,7 +116,7 @@ class GenerateMonthlyInvoices extends Command
                 $associate->id,
                 $associate->company_name,
                 number_format((float) $invoice->amount, 2),
-                ($sent ? 'creada + correo' : 'creada (sin correo)') . ($overdue ? ' · en mora' : ''),
+                ($sent ? 'creada + correo' : 'creada (sin correo)').($overdue ? ' · en mora' : ''),
             ];
         }
 
@@ -120,8 +136,8 @@ class GenerateMonthlyInvoices extends Command
     {
         return match ($cycle) {
             'semiannual' => 'Semestralidad',
-            'annual'     => 'Anualidad',
-            default      => 'Mensualidad',
+            'annual' => 'Anualidad',
+            default => 'Mensualidad',
         };
     }
 }

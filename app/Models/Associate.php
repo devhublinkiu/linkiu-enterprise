@@ -232,8 +232,8 @@ class Associate extends Model
             return false;
         }
 
-        $graceDays = $this->plan->grace_days ?? 0;
+        $graceDays = BillingSetting::graceDays();
 
-        return now()->lessThanOrEqualTo($this->plan_expires_at->addDays($graceDays));
+        return now()->lessThanOrEqualTo($this->plan_expires_at->copy()->addDays($graceDays));
     }
 }

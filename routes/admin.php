@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\AssociateReviewController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\BienesServiciosEmpresaController;
+use App\Http\Controllers\Admin\BillingSettingController;
 use App\Http\Controllers\Admin\BlogController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\ConversationController;
@@ -134,11 +135,17 @@ Route::get('payments', [PaymentController::class, 'index'])->name('payments.inde
 Route::patch('payments/{payment}/approve', [PaymentController::class, 'approve'])->name('payments.approve');
 Route::patch('payments/{payment}/reject', [PaymentController::class, 'reject'])->name('payments.reject');
 
+// Ajustes globales de cobro: día de corte y prórroga.
+Route::get('ajustes-cobro', [BillingSettingController::class, 'edit'])->name('billing-settings.edit');
+Route::patch('ajustes-cobro', [BillingSettingController::class, 'update'])->name('billing-settings.update');
+
 Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
 Route::post('invoices', [InvoiceController::class, 'store'])->name('invoices.store');
 Route::patch('invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
 // Riel 3: pago en efectivo u otro canal que la plataforma no ve.
 Route::post('invoices/{invoice}/register-payment', [InvoiceController::class, 'registerPayment'])->name('invoices.register-payment');
+// 0.B: registrar la mensualidad en efectivo generando la cuenta de cobro al vuelo.
+Route::post('invoices/register-period-payment', [InvoiceController::class, 'registerPeriodPayment'])->name('invoices.register-period-payment');
 Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
 
 // Solicitudes / Contacto

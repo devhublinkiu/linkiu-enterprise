@@ -123,7 +123,9 @@ class PlanController extends Controller
             'price_semiannual' => 'required|numeric|min:0',
             'price_annual' => 'required|numeric|min:0',
             'currency' => 'required|string|max:3',
-            'grace_days' => 'required|integer|min:0',
+            // La prórroga pasó a ser global (BillingSetting); ya no se edita por
+            // plan. Se deja nullable por compatibilidad, pero no se expone en la UI.
+            'grace_days' => 'nullable|integer|min:0',
             'signup_fee' => 'required|numeric|min:0',
             'is_active' => 'required|boolean',
             'is_popular' => 'required|boolean',

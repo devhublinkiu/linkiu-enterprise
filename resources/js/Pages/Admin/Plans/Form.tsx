@@ -33,7 +33,6 @@ interface Plan {
     price_annual: number;
     currency: string;
     color_hex: string;
-    grace_days: number;
     is_active: boolean;
     is_popular: boolean;
     signup_fee: number;
@@ -99,7 +98,6 @@ export default function Form({
         price_semiannual: plan?.price_semiannual || 0,
         price_annual: plan?.price_annual || 0,
         currency: plan?.currency || 'COP',
-        grace_days: plan?.grace_days || 0,
         is_active: plan?.is_active ?? true,
         is_popular: plan?.is_popular ?? false,
         signup_fee: plan?.signup_fee || 0,
@@ -285,25 +283,6 @@ export default function Form({
                             onChange={(v) => setData('price_annual', v)}
                             error={errors.price_annual}
                         />
-                        <FormField
-                            id="grace_days"
-                            label="Prórroga (días de gracia)"
-                            error={errors.grace_days}
-                            hint="Días tras el corte antes de ocultar el perfil."
-                        >
-                            <Input
-                                id="grace_days"
-                                type="number"
-                                min={0}
-                                value={data.grace_days}
-                                onChange={(e) =>
-                                    setData(
-                                        'grace_days',
-                                        parseInt(e.target.value) || 0,
-                                    )
-                                }
-                            />
-                        </FormField>
                     </CardContent>
                 </Card>
 

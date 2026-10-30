@@ -16,9 +16,7 @@ use Inertia\Inertia;
  */
 class PaymentController extends Controller
 {
-    public function __construct(private PaymentService $payments)
-    {
-    }
+    public function __construct(private PaymentService $payments) {}
 
     public function index(Request $request)
     {
@@ -28,7 +26,9 @@ class PaymentController extends Controller
             ->orderByRaw("FIELD(status, 'pendiente', 'aprobado', 'rechazado', 'fallido', 'cancelado')")
             ->orderBy('created_at', 'desc');
 
-        if (in_array($filter, [
+        if ($filter === 'revision') {
+            $query->where('needs_review', true);
+        } elseif (in_array($filter, [
             Payment::STATUS_PENDING,
             Payment::STATUS_APPROVED,
             Payment::STATUS_REJECTED,
@@ -37,46 +37,54 @@ class PaymentController extends Controller
         }
 
         return Inertia::render('Admin/Payments/Index', [
-            'filter'   => $filter,
-            'counts'   => [
+            'filter' => $filter,
+            'counts' => [
                 'pendiente' => Payment::where('status', Payment::STATUS_PENDING)->count(),
-                'aprobado'  => Payment::where('status', Payment::STATUS_APPROVED)->count(),
+                'aprobado' => Payment::where('status', Payment::STATUS_APPROVED)->count(),
                 'rechazado' => Payment::where('status', Payment::STATUS_REJECTED)->count(),
+                'revision' => Payment::where('needs_review', true)->count(),
             ],
             'payments' => $query->limit(200)->get()->map(fn (Payment $p) => [
-                'id'             => $p->id,
+                'id' => $p->id,
                 'associate_name' => $p->associate?->company_name ?? '—',
                 'invoice_period' => $p->invoice?->period ?? '—',
-                'invoice_id'     => $p->invoice_id,
-                'method'         => $p->method,
-                'method_label'   => $p->methodLabel(),
-                'status'         => $p->status,
-                'amount'         => $p->amount,
-                'reference'      => $p->reference,
-                'proof_url'      => $p->proof_path ? route('billing.payment-proof', $p->id) : null,
-                'notes'          => $p->notes,
-                'admin_notes'    => $p->admin_notes,
-                'paid_at'        => $p->paid_at?->format('d/m/Y'),
-                'created_at'     => $p->created_at->format('d/m/Y H:i'),
-                'reviewed_at'    => $p->reviewed_at?->format('d/m/Y H:i'),
-                'reviewer_name'  => $p->reviewer?->name ?? $p->registrar?->name,
-                'applied'        => $p->isApplied(),
-                'can_review'     => $p->isPending() && $p->method !== Payment::METHOD_BOLD,
+                'invoice_id' => $p->invoice_id,
+                'method' => $p->method,
+                'method_label' => $p->methodLabel(),
+                'status' => $p->status,
+                'needs_review' => $p->needs_review,
+                'amount' => $p->amount,
+                'reference' => $p->reference,
+                'proof_url' => $p->proof_path ? route('billing.payment-proof', $p->id) : null,
+                'notes' => $p->notes,
+                'admin_notes' => $p->admin_notes,
+                'paid_at' => $p->paid_at?->copy()->setTimezone('America/Bogota')->format('d/m/Y'),
+                'created_at' => $p->created_at->copy()->setTimezone('America/Bogota')->format('d/m/Y H:i'),
+                'reviewed_at' => $p->reviewed_at?->copy()->setTimezone('America/Bogota')->format('d/m/Y H:i'),
+                'reviewer_name' => $p->reviewer?->name ?? $p->registrar?->name,
+                'applied' => $p->isApplied(),
+                'can_review' => $p->isPending() && $p->method !== Payment::METHOD_BOLD,
             ]),
         ]);
     }
 
     public function approve(Request $request, Payment $payment)
     {
-        if (!$payment->isPending()) {
+        if (! $payment->isPending()) {
             return back()->with('error', 'Este pago ya fue procesado.');
+        }
+
+        // Un pago en línea (Bold) lo confirma la pasarela por webhook, nunca a
+        // mano: aprobarlo manualmente extendería la vigencia sin dinero real.
+        if ($payment->method === Payment::METHOD_BOLD) {
+            return back()->with('error', 'Los pagos en línea los confirma la pasarela automáticamente; no se aprueban a mano.');
         }
 
         $payment = $this->payments->approve($payment, $request->user());
 
         $message = 'Pago aprobado.';
         if ($payment->isApplied() && $payment->associate?->plan_expires_at) {
-            $message .= ' Vigencia hasta el ' . $payment->associate->plan_expires_at->format('d/m/Y') . '.';
+            $message .= ' Vigencia hasta el '.$payment->associate->plan_expires_at->format('d/m/Y').'.';
         }
 
         return back()->with('success', $message);
@@ -84,7 +92,7 @@ class PaymentController extends Controller
 
     public function reject(Request $request, Payment $payment)
     {
-        if (!$payment->isPending()) {
+        if (! $payment->isPending()) {
             return back()->with('error', 'Este pago ya fue procesado.');
         }
 

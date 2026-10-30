@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Mail\NewInvoiceGenerated;
 use App\Models\Associate;
+use App\Models\BillingSetting;
 use App\Models\Invoice;
 use App\Models\Plan;
 use Illuminate\Support\Carbon;
@@ -67,8 +68,16 @@ class BillingService
 
         $cycle = $associate->billing_cycle ?: SubscriptionService::DEFAULT_CYCLE;
         $periodLabel = self::periodLabel($period, self::prefixFor($cycle));
+        $periodKey = $period->format('Y-m');
 
-        if ($this->periodAlreadyBilled($associate, $periodLabel)) {
+        // Dedup por periodo real (YYYY-MM), no por la etiqueta: así cambiar de
+        // ciclo dentro del mes no genera una segunda cuenta de cobro.
+        $alreadyBilled = Invoice::where('associate_id', $associate->id)
+            ->where('type', 'cuenta_cobro')
+            ->where('period_key', $periodKey)
+            ->exists();
+
+        if ($alreadyBilled) {
             return null;
         }
 
@@ -78,10 +87,11 @@ class BillingService
             'plan_id' => $plan->id,
             'type' => 'cuenta_cobro',
             'period' => $periodLabel,
+            'period_key' => $periodKey,
             'cycle' => $cycle,
             'amount' => self::amountFor($plan, $cycle),
-            'due_date' => $period->copy()->day(Associate::BILLING_DAY),
-            'notes' => $notes ?? 'Cuenta de cobro generada automáticamente. Fecha de pago: día '.Associate::BILLING_DAY.'.',
+            'due_date' => $period->copy()->day(BillingSetting::cutoffDay()),
+            'notes' => $notes ?? 'Cuenta de cobro generada automáticamente. Fecha de pago: día '.BillingSetting::cutoffDay().'.',
             'status' => 'pendiente',
         ]);
     }

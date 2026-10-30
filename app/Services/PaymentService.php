@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Http\Controllers\BillingDocumentController;
+use App\Mail\PaymentProofUploaded;
+use App\Mail\PaymentSettled;
 use App\Models\Associate;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -28,8 +31,7 @@ class PaymentService
 {
     public function __construct(
         private SubscriptionService $subscriptions,
-    ) {
-    }
+    ) {}
 
     // ─── Riel 1 · Bold ────────────────────────────────────────────────────────
 
@@ -51,13 +53,13 @@ class PaymentService
         }
 
         return Payment::create([
-            'invoice_id'   => $invoice->id,
+            'invoice_id' => $invoice->id,
             'associate_id' => $invoice->associate_id,
-            'method'       => Payment::METHOD_BOLD,
-            'status'       => Payment::STATUS_PENDING,
-            'amount'       => $invoice->amount ?? 0,
-            'currency'     => $invoice->associate?->plan?->currency ?? 'COP',
-            'reference'    => $this->newReference($invoice),
+            'method' => Payment::METHOD_BOLD,
+            'status' => Payment::STATUS_PENDING,
+            'amount' => $invoice->amount ?? 0,
+            'currency' => $invoice->associate?->plan?->currency ?? 'COP',
+            'reference' => $this->newReference($invoice),
             'submitted_by' => $user?->id,
         ]);
     }
@@ -68,7 +70,7 @@ class PaymentService
      */
     private function newReference(Invoice $invoice): string
     {
-        return 'CAMEP-' . $invoice->id . '-' . strtoupper(Str::random(8));
+        return 'CAMEP-'.$invoice->id.'-'.strtoupper(Str::random(8));
     }
 
     // ─── Riel 2 · Transferencia ───────────────────────────────────────────────
@@ -80,7 +82,7 @@ class PaymentService
     public function submitTransfer(Invoice $invoice, UploadedFile $proof, User $user, ?string $notes = null): Payment
     {
         // Un comprobante bancario no puede quedar accesible por URL directa.
-        $path = $proof->store('payment-proofs', \App\Http\Controllers\BillingDocumentController::DISK);
+        $path = $proof->store('payment-proofs', BillingDocumentController::DISK);
 
         // Solo puede haber un comprobante en revisión por factura: el nuevo
         // reemplaza al anterior.
@@ -90,15 +92,15 @@ class PaymentService
             ->update(['status' => Payment::STATUS_CANCELLED]);
 
         $payment = Payment::create([
-            'invoice_id'   => $invoice->id,
+            'invoice_id' => $invoice->id,
             'associate_id' => $invoice->associate_id,
-            'method'       => Payment::METHOD_TRANSFER,
-            'status'       => Payment::STATUS_PENDING,
-            'amount'       => $invoice->amount ?? 0,
-            'currency'     => $invoice->associate?->plan?->currency ?? 'COP',
-            'proof_path'   => $path,
+            'method' => Payment::METHOD_TRANSFER,
+            'status' => Payment::STATUS_PENDING,
+            'amount' => $invoice->amount ?? 0,
+            'currency' => $invoice->associate?->plan?->currency ?? 'COP',
+            'proof_path' => $path,
             'submitted_by' => $user->id,
-            'notes'        => $notes,
+            'notes' => $notes,
         ]);
 
         $this->notifyAdminOfProof($payment);
@@ -112,25 +114,25 @@ class PaymentService
      * Un administrador asienta un pago que la plataforma no vio. Nace aprobado
      * y aplica de inmediato.
      *
-     * @param array{method:string,paid_at:string,reference?:?string,notes?:?string,amount?:?float} $data
+     * @param  array{method:string,paid_at:string,reference?:?string,notes?:?string,amount?:?float}  $data
      */
     public function registerManual(Invoice $invoice, array $data, User $admin): Payment
     {
         $payment = Payment::create([
-            'invoice_id'    => $invoice->id,
-            'associate_id'  => $invoice->associate_id,
-            'method'        => $data['method'],
-            'status'        => Payment::STATUS_APPROVED,
-            'amount'        => $data['amount'] ?? $invoice->amount ?? 0,
-            'currency'      => $invoice->associate?->plan?->currency ?? 'COP',
+            'invoice_id' => $invoice->id,
+            'associate_id' => $invoice->associate_id,
+            'method' => $data['method'],
+            'status' => Payment::STATUS_APPROVED,
+            'amount' => $data['amount'] ?? $invoice->amount ?? 0,
+            'currency' => $invoice->associate?->plan?->currency ?? 'COP',
             // La referencia es opcional aquí; si viene vacía no ocupamos el
             // índice único con una cadena vacía.
-            'reference'     => !empty($data['reference']) ? $data['reference'] : null,
-            'paid_at'       => Carbon::parse($data['paid_at']),
+            'reference' => ! empty($data['reference']) ? $data['reference'] : null,
+            'paid_at' => Carbon::parse($data['paid_at']),
             'registered_by' => $admin->id,
-            'reviewed_by'   => $admin->id,
-            'reviewed_at'   => now(),
-            'notes'         => $data['notes'] ?? null,
+            'reviewed_by' => $admin->id,
+            'reviewed_at' => now(),
+            'notes' => $data['notes'] ?? null,
         ]);
 
         $this->apply($payment);
@@ -151,16 +153,16 @@ class PaymentService
         }
 
         $payment->fill([
-            'status'      => Payment::STATUS_APPROVED,
+            'status' => Payment::STATUS_APPROVED,
             'reviewed_by' => $reviewer?->id,
             'reviewed_at' => now(),
-            'paid_at'     => $payment->paid_at ?? now(),
+            'paid_at' => $payment->paid_at ?? now(),
         ]);
 
-        if (!empty($gateway['payment_id'])) {
+        if (! empty($gateway['payment_id'])) {
             $payment->gateway_payment_id = $gateway['payment_id'];
         }
-        if (!empty($gateway['payload'])) {
+        if (! empty($gateway['payload'])) {
             $payment->gateway_payload = $gateway['payload'];
         }
 
@@ -177,17 +179,18 @@ class PaymentService
             // Un pago ya aplicado no se revierte por aquí: hay que emitir una
             // nota de ajuste. Se deja constancia y no se toca la vigencia.
             Log::warning("Se intentó rechazar el pago {$payment->id}, que ya había extendido la suscripción.");
+
             return $payment;
         }
 
         $payment->fill([
-            'status'      => $gateway ? Payment::STATUS_FAILED : Payment::STATUS_REJECTED,
+            'status' => $gateway ? Payment::STATUS_FAILED : Payment::STATUS_REJECTED,
             'admin_notes' => $reason,
             'reviewed_by' => $reviewer?->id,
             'reviewed_at' => now(),
         ]);
 
-        if (!empty($gateway['payload'])) {
+        if (! empty($gateway['payload'])) {
             $payment->gateway_payload = $gateway['payload'];
         }
 
@@ -208,7 +211,7 @@ class PaymentService
             /** @var Payment $locked */
             $locked = Payment::whereKey($payment->id)->lockForUpdate()->first();
 
-            if (!$locked || $locked->applied_at !== null || $locked->status !== Payment::STATUS_APPROVED) {
+            if (! $locked || $locked->applied_at !== null || $locked->status !== Payment::STATUS_APPROVED) {
                 return null;
             }
 
@@ -217,17 +220,24 @@ class PaymentService
             $locked->applied_at = now();
             $locked->save();
 
-            if (!$invoice) {
+            if (! $invoice) {
                 return null;
             }
 
+            // Guardia por factura: si la factura YA estaba pagada (otro pago la
+            // saldó), este pago no debe volver a mover la vigencia. La
+            // idempotencia de `applied_at` es por pago; sin esto, dos pagos sobre
+            // la misma factura (p. ej. Bold + transferencia) extendían el ciclo
+            // dos veces.
+            $alreadyPaid = $invoice->status === 'pagada';
+
             $invoice->fill([
-                'status'            => 'pagada',
-                'payment_method'    => $locked->method,
+                'status' => 'pagada',
+                'payment_method' => $locked->method,
                 'payment_reference' => $locked->reference,
-                'payment_notes'     => $locked->notes,
-                'paid_at'           => $locked->paid_at ?? now(),
-                'paid_by'           => $locked->registered_by ?? $locked->reviewed_by,
+                'payment_notes' => $locked->notes,
+                'paid_at' => $locked->paid_at ?? now(),
+                'paid_by' => $locked->registered_by ?? $locked->reviewed_by,
             ])->save();
 
             // Solo una cuenta de cobro renueva el ciclo. Una factura suelta
@@ -236,8 +246,13 @@ class PaymentService
                 return null;
             }
 
+            // La factura ya estaba saldada: no se extiende de nuevo la vigencia.
+            if ($alreadyPaid) {
+                return null;
+            }
+
             $associate = Associate::find($invoice->associate_id);
-            if (!$associate) {
+            if (! $associate) {
                 return null;
             }
 
@@ -266,7 +281,7 @@ class PaymentService
             return ['payment' => $locked, 'expiration' => $newExpiration];
         });
 
-        if (!$outcome) {
+        if (! $outcome) {
             return null;
         }
 
@@ -299,14 +314,14 @@ class PaymentService
         // al servidor de correo, sin depender de un worker de cola.
         defer(function () use ($payment) {
             $recipient = config('mail.admin_recipient', env('ADMIN_EMAIL'));
-            if (!$recipient) {
+            if (! $recipient) {
                 return;
             }
 
             try {
-                Mail::to($recipient)->send(new \App\Mail\PaymentProofUploaded($payment));
+                Mail::to($recipient)->send(new PaymentProofUploaded($payment));
             } catch (\Exception $e) {
-                Log::error('Error avisando al admin de un comprobante nuevo: ' . $e->getMessage());
+                Log::error('Error avisando al admin de un comprobante nuevo: '.$e->getMessage());
             }
         });
     }
@@ -320,14 +335,14 @@ class PaymentService
             $recipient = $payment->associate?->users->first()?->email
                 ?? $payment->associate?->billing_email;
 
-            if (!$recipient) {
+            if (! $recipient) {
                 return;
             }
 
             try {
-                Mail::to($recipient)->send(new \App\Mail\PaymentSettled($payment, $newExpiration));
+                Mail::to($recipient)->send(new PaymentSettled($payment, $newExpiration));
             } catch (\Exception $e) {
-                Log::error('Error avisando al asociado del pago aplicado: ' . $e->getMessage());
+                Log::error('Error avisando al asociado del pago aplicado: '.$e->getMessage());
             }
         });
     }

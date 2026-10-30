@@ -48,7 +48,9 @@ import {
     TableRow,
 } from '@/Components/base/Table';
 import { Textarea } from '@/Components/base/Textarea';
+
 import AppLayout from '@/Layouts/AppLayout';
+import RegisterPeriodDialog from './parts/RegisterPeriodDialog';
 
 interface Associate {
     id: number;
@@ -112,6 +114,7 @@ export default function InvoicesIndex({ invoices, associates }: Props) {
         msg: string;
     } | null>(null);
     const [showCreate, setShowCreate] = useState(false);
+    const [showRegisterPeriod, setShowRegisterPeriod] = useState(false);
     const [payingInvoice, setPayingInvoice] = useState<InvoiceRow | null>(null);
     const [deleting, setDeleting] = useState<InvoiceRow | null>(null);
 
@@ -190,9 +193,18 @@ export default function InvoicesIndex({ invoices, associates }: Props) {
                             asociados.
                         </p>
                     </div>
-                    <Button onClick={() => setShowCreate(true)}>
-                        <Plus className="size-4" /> Nueva factura
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowRegisterPeriod(true)}
+                        >
+                            <Banknote className="size-4" /> Registrar
+                            mensualidad
+                        </Button>
+                        <Button onClick={() => setShowCreate(true)}>
+                            <Plus className="size-4" /> Nueva factura
+                        </Button>
+                    </div>
                 </div>
 
                 {notice && (
@@ -363,6 +375,12 @@ export default function InvoicesIndex({ invoices, associates }: Props) {
                     </Table>
                 </div>
             </div>
+
+            <RegisterPeriodDialog
+                open={showRegisterPeriod}
+                onOpenChange={setShowRegisterPeriod}
+                associates={associates}
+            />
 
             {/* Nueva factura */}
             <Dialog open={showCreate} onOpenChange={setShowCreate}>

@@ -4,20 +4,22 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\BillingDocumentController;
 use App\Http\Controllers\Controller;
+use App\Mail\NewInvoiceGenerated;
 use App\Models\Associate;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\BillingService;
 use App\Services\PaymentService;
 use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class InvoiceController extends Controller
 {
-    public function __construct(private PaymentService $payments)
-    {
-    }
+    public function __construct(private PaymentService $payments) {}
 
     public function index()
     {
@@ -25,25 +27,25 @@ class InvoiceController extends Controller
             ->orderByRaw("FIELD(status, 'pendiente', 'pagada')")
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(fn($inv) => [
-                'id'             => $inv->id,
+            ->map(fn ($inv) => [
+                'id' => $inv->id,
                 'associate_name' => $inv->associate?->company_name ?? '—',
-                'type'           => $inv->type,
-                'period'         => $inv->period,
-                'cycle'          => $inv->cycle,
-                'amount'         => $inv->amount,
-                'due_date'       => $inv->due_date?->format('d/m/Y'),
-                'status'         => $inv->status,
-                'has_document'   => !empty($inv->document_path),
-                'external_link'  => $inv->external_link,
+                'type' => $inv->type,
+                'period' => $inv->period,
+                'cycle' => $inv->cycle,
+                'amount' => $inv->amount,
+                'due_date' => $inv->due_date?->format('d/m/Y'),
+                'status' => $inv->status,
+                'has_document' => ! empty($inv->document_path),
+                'external_link' => $inv->external_link,
                 // Las cuentas de cobro del cron no tienen autor humano.
-                'creator_name'   => $inv->creator?->name ?? 'Sistema',
+                'creator_name' => $inv->creator?->name ?? 'Sistema',
                 'payment_method' => $inv->payment_method,
                 'payment_reference' => $inv->payment_reference,
-                'paid_at'        => $inv->paid_at?->format('d/m/Y'),
-                'payer_name'     => $inv->payer?->name,
-                'created_at'     => $inv->created_at->format('d/m/Y'),
-                'read_at'        => $inv->read_at?->format('d/m/Y H:i'),
+                'paid_at' => $inv->paid_at?->format('d/m/Y'),
+                'payer_name' => $inv->payer?->name,
+                'created_at' => $inv->created_at->format('d/m/Y'),
+                'read_at' => $inv->read_at?->format('d/m/Y H:i'),
             ]);
 
         // Cualquier empresa ya admitida puede recibir un cobro. Filtrar solo por
@@ -54,7 +56,7 @@ class InvoiceController extends Controller
             ->get(['id', 'company_name']);
 
         return Inertia::render('Admin/Invoices/Index', [
-            'invoices'   => $invoices,
+            'invoices' => $invoices,
             'associates' => $associates,
         ]);
     }
@@ -62,15 +64,15 @@ class InvoiceController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'associate_id'  => 'required|exists:associates,id',
-            'type'          => 'required|in:factura,cuenta_cobro',
-            'period'        => 'required|string|max:50',
-            'cycle'         => 'nullable|in:monthly,semiannual,annual',
-            'amount'        => 'nullable|numeric|min:0',
-            'due_date'      => 'nullable|date',
-            'document'      => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'associate_id' => 'required|exists:associates,id',
+            'type' => 'required|in:factura,cuenta_cobro',
+            'period' => 'required|string|max:50',
+            'cycle' => 'nullable|in:monthly,semiannual,annual',
+            'amount' => 'nullable|numeric|min:0',
+            'due_date' => 'nullable|date',
+            'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'external_link' => 'nullable|url|max:500',
-            'notes'         => 'nullable|string|max:1000',
+            'notes' => 'nullable|string|max:1000',
         ]);
 
         $path = null;
@@ -79,26 +81,26 @@ class InvoiceController extends Controller
         }
 
         $invoice = Invoice::create([
-            'associate_id'  => $request->associate_id,
-            'created_by'    => auth()->id(),
-            'type'          => $request->type,
-            'period'        => $request->period,
-            'cycle'         => $request->cycle ?? SubscriptionService::DEFAULT_CYCLE,
-            'amount'        => $request->amount,
-            'due_date'      => $request->due_date,
+            'associate_id' => $request->associate_id,
+            'created_by' => auth()->id(),
+            'type' => $request->type,
+            'period' => $request->period,
+            'cycle' => $request->cycle ?? SubscriptionService::DEFAULT_CYCLE,
+            'amount' => $request->amount,
+            'due_date' => $request->due_date,
             'document_path' => $path,
             'external_link' => $request->external_link,
-            'notes'         => $request->notes,
-            'status'        => 'pendiente',
+            'notes' => $request->notes,
+            'status' => 'pendiente',
         ]);
 
         try {
             $recipientEmail = $invoice->associate->users->first()?->email ?? $invoice->associate->billing_email;
             if ($recipientEmail) {
-                \Illuminate\Support\Facades\Mail::to($recipientEmail)->send(new \App\Mail\NewInvoiceGenerated($invoice));
+                Mail::to($recipientEmail)->send(new NewInvoiceGenerated($invoice));
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error enviando correo de nueva factura: ' . $e->getMessage());
+            Log::error('Error enviando correo de nueva factura: '.$e->getMessage());
         }
 
         return redirect()->route('admin.invoices.index')
@@ -117,9 +119,9 @@ class InvoiceController extends Controller
         }
 
         $this->payments->registerManual($invoice, [
-            'method'  => Payment::METHOD_OTHER,
+            'method' => Payment::METHOD_OTHER,
             'paid_at' => now()->toDateString(),
-            'notes'   => 'Marcada como pagada sin detalle de medio de pago.',
+            'notes' => 'Marcada como pagada sin detalle de medio de pago.',
         ], $request->user());
 
         return back()->with('success', 'Factura marcada como pagada.');
@@ -139,23 +141,80 @@ class InvoiceController extends Controller
         }
 
         $data = $request->validate([
-            'payment_method'    => 'required|in:' . implode(',', array_keys(Payment::MANUAL_METHODS)),
-            'paid_at'           => 'required|date|before_or_equal:today',
+            'payment_method' => 'required|in:'.implode(',', array_keys(Payment::MANUAL_METHODS)),
+            'paid_at' => 'required|date|before_or_equal:today',
             'payment_reference' => 'nullable|string|max:100',
-            'payment_notes'     => 'nullable|string|max:1000',
+            'payment_notes' => 'nullable|string|max:1000',
         ]);
 
         $payment = $this->payments->registerManual($invoice, [
-            'method'    => $data['payment_method'],
-            'paid_at'   => $data['paid_at'],
+            'method' => $data['payment_method'],
+            'paid_at' => $data['paid_at'],
             'reference' => $data['payment_reference'] ?? null,
-            'notes'     => $data['payment_notes'] ?? null,
+            'notes' => $data['payment_notes'] ?? null,
         ], $request->user());
 
         $message = 'Pago registrado.';
         if ($payment->isApplied() && $invoice->fresh()->associate?->plan_expires_at) {
             $message .= ' Vigencia extendida hasta el '
-                . $invoice->fresh()->associate->plan_expires_at->format('d/m/Y') . '.';
+                .$invoice->fresh()->associate->plan_expires_at->copy()->setTimezone('America/Bogota')->format('d/m/Y').'.';
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * 0.B — Registra una mensualidad en EFECTIVO (u otro canal manual) en un solo
+     * paso: genera la cuenta de cobro del periodo actual si no existe y la asienta
+     * como pagada. Así el admin no depende de que el asociado cree la factura.
+     */
+    public function registerPeriodPayment(Request $request, BillingService $billing)
+    {
+        $data = $request->validate([
+            'associate_id' => 'required|exists:associates,id',
+            'payment_method' => 'required|in:'.implode(',', array_keys(Payment::MANUAL_METHODS)),
+            'paid_at' => 'required|date|before_or_equal:today',
+            'payment_reference' => 'nullable|string|max:100',
+            'payment_notes' => 'nullable|string|max:1000',
+        ]);
+
+        // `exists:associates,id` ya garantiza la fila; find() da un tipo limpio.
+        $associate = Associate::find($data['associate_id']);
+
+        if (! $associate || ! $associate->plan_id) {
+            return back()->with('error', 'La empresa no tiene un plan asignado; usa el alta o el checkout.');
+        }
+
+        // Genera la cuenta de cobro del periodo actual si no existe; si ya existía
+        // (pendiente), la reutiliza (dedup por period_key dentro del servicio).
+        $periodKey = now()->format('Y-m');
+        $invoice = $billing->issuePeriodInvoice($associate, now(), $request->user()->id)
+            ?? Invoice::where('associate_id', $associate->id)
+                ->where('type', 'cuenta_cobro')
+                ->where('period_key', $periodKey)
+                ->latest()
+                ->first();
+
+        if (! $invoice) {
+            return back()->with('error', 'No se pudo generar la cuenta de cobro del periodo.');
+        }
+
+        if ($invoice->status === 'pagada') {
+            return back()->with('error', 'La mensualidad de este periodo ya está pagada.');
+        }
+
+        $payment = $this->payments->registerManual($invoice, [
+            'method' => $data['payment_method'],
+            'paid_at' => $data['paid_at'],
+            'reference' => $data['payment_reference'] ?? null,
+            'notes' => $data['payment_notes'] ?? null,
+        ], $request->user());
+
+        $message = 'Mensualidad registrada.';
+        $associate->refresh();
+        if ($payment->isApplied() && $associate->plan_expires_at) {
+            $message .= ' Vigencia hasta el '
+                .$associate->plan_expires_at->copy()->setTimezone('America/Bogota')->format('d/m/Y').'.';
         }
 
         return back()->with('success', $message);

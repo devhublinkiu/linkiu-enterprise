@@ -38,6 +38,7 @@ const payment = (over = {}) => ({
     method: 'transferencia',
     method_label: 'Transferencia bancaria',
     status: 'pendiente',
+    needs_review: false,
     amount: '250000',
     reference: null,
     proof_url: '/x',
@@ -52,7 +53,7 @@ const payment = (over = {}) => ({
     ...over,
 });
 
-const counts = { pendiente: 1, aprobado: 0, rechazado: 0 };
+const counts = { pendiente: 1, aprobado: 0, rechazado: 0, revision: 0 };
 
 describe('Admin/Payments Index', () => {
     it('lista los pagos en una tabla con acciones por fila', () => {
@@ -76,7 +77,12 @@ describe('Admin/Payments Index', () => {
         render(
             <PaymentsIndex
                 filter="pendiente"
-                counts={{ pendiente: 0, aprobado: 0, rechazado: 0 }}
+                counts={{
+                    pendiente: 0,
+                    aprobado: 0,
+                    rechazado: 0,
+                    revision: 0,
+                }}
                 payments={[]}
             />,
         );

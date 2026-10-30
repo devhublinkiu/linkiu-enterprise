@@ -58,6 +58,7 @@ interface PaymentRow {
     method: string;
     method_label: string;
     status: string;
+    needs_review: boolean;
     amount: string | null;
     reference: string | null;
     proof_url: string | null;
@@ -73,7 +74,12 @@ interface PaymentRow {
 
 interface Props {
     filter: string;
-    counts: { pendiente: number; aprobado: number; rechazado: number };
+    counts: {
+        pendiente: number;
+        aprobado: number;
+        rechazado: number;
+        revision: number;
+    };
     payments: PaymentRow[];
 }
 
@@ -90,6 +96,7 @@ const STATUS_VARIANT: Record<
 
 const FILTERS = [
     { key: 'pendiente', label: 'Por revisar' },
+    { key: 'revision', label: 'Requiere revisión' },
     { key: 'aprobado', label: 'Aprobados' },
     { key: 'rechazado', label: 'Rechazados' },
     { key: 'todos', label: 'Todos' },
@@ -256,6 +263,13 @@ export default function PaymentsIndex({ filter, counts, payments }: Props) {
                                     </TableCell>
                                     <TableCell className="font-medium tabular-nums text-foreground">
                                         {formatCurrency(p.amount)}
+                                        {p.method === 'transferencia' &&
+                                            p.status === 'pendiente' && (
+                                                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                                                    verifica que el comprobante
+                                                    cuadre
+                                                </span>
+                                            )}
                                     </TableCell>
                                     <TableCell>
                                         <Badge
@@ -266,6 +280,14 @@ export default function PaymentsIndex({ filter, counts, payments }: Props) {
                                         >
                                             {p.status}
                                         </Badge>
+                                        {p.needs_review && (
+                                            <Badge
+                                                variant="destructive"
+                                                className="mt-1 block w-fit"
+                                            >
+                                                Requiere revisión
+                                            </Badge>
+                                        )}
                                         {p.applied && (
                                             <span className="mt-1 block text-xs text-primary">
                                                 vigencia aplicada

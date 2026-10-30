@@ -13,32 +13,40 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Payment extends Model
 {
     /** Riel por el que entró el pago. */
-    public const METHOD_BOLD          = 'bold';
-    public const METHOD_TRANSFER      = 'transferencia';
-    public const METHOD_CASH          = 'efectivo';
-    public const METHOD_DEPOSIT       = 'consignacion';
-    public const METHOD_OTHER         = 'otro';
+    public const METHOD_BOLD = 'bold';
 
-    public const STATUS_PENDING   = 'pendiente';
-    public const STATUS_APPROVED  = 'aprobado';
-    public const STATUS_REJECTED  = 'rechazado';
-    public const STATUS_FAILED    = 'fallido';
+    public const METHOD_TRANSFER = 'transferencia';
+
+    public const METHOD_CASH = 'efectivo';
+
+    public const METHOD_DEPOSIT = 'consignacion';
+
+    public const METHOD_OTHER = 'otro';
+
+    public const STATUS_PENDING = 'pendiente';
+
+    public const STATUS_APPROVED = 'aprobado';
+
+    public const STATUS_REJECTED = 'rechazado';
+
+    public const STATUS_FAILED = 'fallido';
+
     public const STATUS_CANCELLED = 'cancelado';
 
     /** Medios que un administrador puede asentar a mano por el asociado. */
     public const MANUAL_METHODS = [
-        self::METHOD_CASH     => 'Efectivo',
+        self::METHOD_CASH => 'Efectivo',
         self::METHOD_TRANSFER => 'Transferencia bancaria',
-        self::METHOD_DEPOSIT  => 'Consignación',
-        self::METHOD_OTHER    => 'Otro',
+        self::METHOD_DEPOSIT => 'Consignación',
+        self::METHOD_OTHER => 'Otro',
     ];
 
     public const METHOD_LABELS = [
-        self::METHOD_BOLD     => 'Pago en línea (Bold)',
+        self::METHOD_BOLD => 'Pago en línea (Bold)',
         self::METHOD_TRANSFER => 'Transferencia bancaria',
-        self::METHOD_CASH     => 'Efectivo',
-        self::METHOD_DEPOSIT  => 'Consignación',
-        self::METHOD_OTHER    => 'Otro',
+        self::METHOD_CASH => 'Efectivo',
+        self::METHOD_DEPOSIT => 'Consignación',
+        self::METHOD_OTHER => 'Otro',
     ];
 
     protected $fillable = [
@@ -46,6 +54,7 @@ class Payment extends Model
         'associate_id',
         'method',
         'status',
+        'needs_review',
         'amount',
         'currency',
         'reference',
@@ -63,11 +72,12 @@ class Payment extends Model
     ];
 
     protected $casts = [
-        'amount'          => 'decimal:2',
+        'amount' => 'decimal:2',
+        'needs_review' => 'boolean',
         'gateway_payload' => 'array',
-        'paid_at'         => 'datetime',
-        'reviewed_at'     => 'datetime',
-        'applied_at'      => 'datetime',
+        'paid_at' => 'datetime',
+        'reviewed_at' => 'datetime',
+        'applied_at' => 'datetime',
     ];
 
     // ─── Relaciones ───────────────────────────────────────────────────────────
@@ -99,8 +109,15 @@ class Payment extends Model
 
     // ─── Estado ───────────────────────────────────────────────────────────────
 
-    public function isPending(): bool  { return $this->status === self::STATUS_PENDING; }
-    public function isApproved(): bool { return $this->status === self::STATUS_APPROVED; }
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
+    }
 
     /** ¿Este pago ya movió la vigencia? Es la guarda contra webhooks repetidos. */
     public function isApplied(): bool

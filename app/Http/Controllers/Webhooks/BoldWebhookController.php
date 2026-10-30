@@ -156,6 +156,7 @@ class BoldWebhookController extends Controller
 
         $payment->update([
             'gateway_payload' => $event['payload'],
+            'needs_review' => true,
             'admin_notes' => $payment->admin_notes
                 ? $payment->admin_notes.' | '.$nota
                 : $nota,
@@ -182,6 +183,7 @@ class BoldWebhookController extends Controller
             $payment->update([
                 'gateway_payload' => $event['payload'],
                 'gateway_payment_id' => $event['payment_id'],
+                'needs_review' => true,
                 'admin_notes' => "La pasarela reportó {$received} y se cobraron {$expected}. Requiere revisión.",
             ]);
 

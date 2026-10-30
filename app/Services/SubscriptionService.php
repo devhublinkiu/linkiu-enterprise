@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Associate;
+use App\Models\BillingSetting;
 use Illuminate\Support\Carbon;
 
 /**
@@ -22,10 +23,10 @@ class SubscriptionService
 {
     /** Meses que otorga cada ciclo de facturación. */
     public const CYCLE_MONTHS = [
-        'monthly'    => 1,
+        'monthly' => 1,
         'semiannual' => 6,
-        'annual'     => 12,
-        'signup'     => 1,   // inscripción: da un mes de vigencia
+        'annual' => 12,
+        'signup' => 1,   // inscripción: da un mes de vigencia
     ];
 
     public const DEFAULT_CYCLE = 'monthly';
@@ -55,10 +56,14 @@ class SubscriptionService
             ? $currentExpiration->copy()
             : $now;
 
+        // Se ancla al día de corte global (editable por el admin) y se extiende
+        // hasta el FIN de ese día: la vigencia cubre todo el día de corte, no se
+        // apaga a las 00:00 (antes `startOfDay` cortaba un día antes de lo que
+        // decía la factura).
         return $base
             ->addMonthsNoOverflow(self::monthsFor($cycle))
-            ->day(Associate::BILLING_DAY)
-            ->startOfDay();
+            ->day(BillingSetting::cutoffDay())
+            ->endOfDay();
     }
 
     /**
@@ -94,7 +99,7 @@ class SubscriptionService
 
         $newExpiration = self::nextExpiration($base, $cycle, $now);
 
-        $associate->plan_id         = $planId;
+        $associate->plan_id = $planId;
         $associate->plan_expires_at = $newExpiration;
         $associate->save();
 
@@ -127,7 +132,7 @@ class SubscriptionService
      */
     public static function statusOf(Associate $associate): string
     {
-        if (!$associate->plan_id || !$associate->plan_expires_at) {
+        if (! $associate->plan_id || ! $associate->plan_expires_at) {
             return 'none';
         }
 
@@ -137,7 +142,7 @@ class SubscriptionService
             return 'active';
         }
 
-        $graceDays = $associate->plan->grace_days ?? 0;
+        $graceDays = BillingSetting::graceDays();
 
         return $now->lessThanOrEqualTo($associate->plan_expires_at->copy()->addDays($graceDays))
             ? 'grace'

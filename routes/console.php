@@ -10,8 +10,10 @@ Artisan::command('inspire', function () {
 
 // Calendario de cobro — ver docs/adr/0002-interruptores-de-modulo-por-plan.md
 
-// Día 15: se emite la cuenta de cobro (vence el 19).
-Schedule::command('invoices:generate-monthly')->monthlyOn(15, '08:00');
+// Se emite la cuenta de cobro EL DÍA DE CORTE (global, editable por el admin).
+// Como el día es configurable, el comando corre a diario y él mismo decide si
+// hoy toca (compara con BillingSetting::cutoffDay()).
+Schedule::command('invoices:generate-monthly')->dailyAt('08:00');
 
 // Avisos escalonados: víspera del corte, primer día de mora y aviso final
 // antes de que se oculte el perfil.

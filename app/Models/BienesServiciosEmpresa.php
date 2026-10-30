@@ -57,12 +57,13 @@ class BienesServiciosEmpresa extends Model implements HasMedia
     /**
      * Setup Media Conversions
      */
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this->addMediaConversion('thumb')
             ->width(150)
             ->height(150)
             ->sharpen(10)
+            ->nonQueued()
             ->performOnCollections('logo');
     }
 

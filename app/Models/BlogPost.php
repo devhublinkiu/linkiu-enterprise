@@ -60,17 +60,19 @@ class BlogPost extends Model implements HasMedia
     /**
      * Spatie Media Conversions
      */
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this->addMediaConversion('thumb')
             ->width(368)
             ->height(232)
-            ->sharpen(10);
-            
+            ->sharpen(10)
+            ->nonQueued();
+
         $this->addMediaConversion('card')
             ->width(800)
             ->height(500)
-            ->sharpen(10);
+            ->sharpen(10)
+            ->nonQueued();
     }
 
     /**

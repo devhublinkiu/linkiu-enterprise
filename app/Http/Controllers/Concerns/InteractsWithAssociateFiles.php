@@ -14,13 +14,14 @@ trait InteractsWithAssociateFiles
 {
     protected function appendFileUrls(Associate $associate): void
     {
+        $disk = config('filesystems.default');
         $urls = [];
 
         if ($associate->logo_path) {
-            $urls['logo'] = Storage::url($associate->logo_path);
+            $urls['logo'] = Storage::disk($disk)->url($associate->logo_path);
         }
         if ($associate->cover_path) {
-            $urls['cover'] = Storage::url($associate->cover_path);
+            $urls['cover'] = Storage::disk($disk)->url($associate->cover_path);
         }
         if ($associate->files) {
             foreach ($associate->files as $key => $path) {
@@ -31,13 +32,13 @@ trait InteractsWithAssociateFiles
         $associate->document_urls = $urls;
 
         if ($associate->cover_path) {
-            $associate->cover_url = Storage::url($associate->cover_path);
+            $associate->cover_url = Storage::disk($disk)->url($associate->cover_path);
         }
 
         $gallery = [];
         if ($associate->gallery_paths) {
             foreach ($associate->gallery_paths as $path) {
-                $gallery[] = ['path' => $path, 'url' => Storage::url($path)];
+                $gallery[] = ['path' => $path, 'url' => Storage::disk($disk)->url($path)];
             }
         }
         $associate->gallery_urls = $gallery;

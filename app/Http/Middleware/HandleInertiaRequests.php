@@ -114,7 +114,7 @@ class HandleInertiaRequests extends Middleware
                     'is_public' => (bool) $user->associate->is_public,
                     'company_name' => $user->associate->company_name,
                     'logo_url' => $user->associate->logo_path
-                        ? Storage::url($user->associate->logo_path)
+                        ? Storage::disk(config('filesystems.default'))->url($user->associate->logo_path)
                         : null,
                     // Micrositio (plan 0021): dirección pública para el botón "Ver mi
                     // página" del topbar y estado de publicado (borrador = vista previa).
@@ -142,7 +142,7 @@ class HandleInertiaRequests extends Middleware
                 ->map(fn ($a) => [
                     'id' => $a->id,
                     'name' => $a->company_name,
-                    'logo' => $a->logo_path ? Storage::url($a->logo_path) : null,
+                    'logo' => $a->logo_path ? Storage::disk(config('filesystems.default'))->url($a->logo_path) : null,
                 ]),
             'tenant' => [
                 'id' => 'camep',

@@ -115,12 +115,14 @@ class Licitacion extends Model implements HasMedia
             ->width(300)
             ->height(200)
             ->sharpen(10)
+            ->nonQueued()
             ->performOnCollections('featured_image');
 
         $this->addMediaConversion('card')
             ->width(600)
             ->height(400)
             ->sharpen(10)
+            ->nonQueued()
             ->performOnCollections('featured_image');
     }
 

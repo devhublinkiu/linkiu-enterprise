@@ -75,18 +75,20 @@ class Announcement extends Model implements HasMedia
     /**
      * Setup Media Conversions
      */
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this->addMediaConversion('thumb')
             ->width(300)
             ->height(200)
             ->sharpen(10)
+            ->nonQueued()
             ->performOnCollections('cover');
 
         $this->addMediaConversion('card')
             ->width(600)
             ->height(400)
             ->sharpen(10)
+            ->nonQueued()
             ->performOnCollections('cover');
             
         // No conversions needed for 'documents'

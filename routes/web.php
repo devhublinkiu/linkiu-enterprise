@@ -3,6 +3,7 @@
 use App\Http\Controllers\Associate\AnnouncementController;
 use App\Http\Controllers\Associate\BienesServiciosController;
 use App\Http\Controllers\Associate\CheckoutController;
+use App\Http\Controllers\Associate\ConversationController;
 use App\Http\Controllers\Associate\InvoiceController;
 use App\Http\Controllers\Associate\InvoicePaymentController;
 use App\Http\Controllers\Associate\MicrositeController;
@@ -11,8 +12,8 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BillingDocumentController;
-use App\Http\Controllers\LicitacionDocumentController;
 use App\Http\Controllers\ForumController;
+use App\Http\Controllers\LicitacionDocumentController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicAnnouncementController;
@@ -215,6 +216,17 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['subscription.active', 'feature:anuncios'])->group(function () {
         Route::get('/my-announcements', [AnnouncementController::class, 'index'])->name('associate.announcements.index');
         Route::get('/my-announcements/{slug}', [AnnouncementController::class, 'show'])->name('associate.announcements.show');
+    });
+
+    // Bandeja interna de mensajeria (plan 0026). Canal abierto a cualquier asociado
+    // (incluido en revision o vencido): el aislamiento lo hace ConversationPolicy.
+    Route::prefix('mensajes')->name('associate.messages.')->group(function () {
+        Route::get('/', [ConversationController::class, 'index'])->name('index');
+        Route::post('/', [ConversationController::class, 'store'])->name('store');
+        Route::get('/adjuntos/{attachment}', [ConversationController::class, 'downloadAttachment'])->name('attachment');
+        Route::get('/{conversation}', [ConversationController::class, 'show'])->name('show');
+        Route::post('/{conversation}/responder', [ConversationController::class, 'reply'])->name('reply');
+        Route::post('/{conversation}/archivar', [ConversationController::class, 'archive'])->name('archive');
     });
 
     // Billing / Subscription (accessible even when expired)

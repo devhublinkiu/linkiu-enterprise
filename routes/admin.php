@@ -6,12 +6,14 @@ use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\BienesServiciosEmpresaController;
 use App\Http\Controllers\Admin\BlogController;
 use App\Http\Controllers\Admin\ContactController;
+use App\Http\Controllers\Admin\ConversationController;
 use App\Http\Controllers\Admin\DocumentRequirementController;
 use App\Http\Controllers\Admin\ForumCategoryController;
 use App\Http\Controllers\Admin\ForumReportController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LicitacionController;
+use App\Http\Controllers\Admin\MessageGroupController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\ServiceCategoryController;
@@ -43,6 +45,21 @@ Route::post('associates/{associate}/approve', [AssociateReviewController::class,
 Route::post('associates/{associate}/toggle-verified', [AssociateReviewController::class, 'toggleVerified'])->name('associates.toggle-verified');
 Route::post('associates/{associate}/deactivate', [AssociateReviewController::class, 'deactivate'])->name('associates.deactivate');
 Route::post('associates/{associate}/reactivate', [AssociateReviewController::class, 'reactivate'])->name('associates.reactivate');
+
+// Mensajeria (bandeja interna) — plan 0026
+Route::get('mensajes', [ConversationController::class, 'index'])->name('messages.index');
+Route::post('mensajes', [ConversationController::class, 'store'])->name('messages.store');
+Route::post('mensajes/difusion', [ConversationController::class, 'broadcast'])->name('messages.broadcast');
+Route::get('mensajes/adjuntos/{attachment}', [ConversationController::class, 'downloadAttachment'])->name('messages.attachment');
+Route::get('mensajes/{conversation}', [ConversationController::class, 'show'])->name('messages.show');
+Route::post('mensajes/{conversation}/responder', [ConversationController::class, 'reply'])->name('messages.reply');
+Route::post('mensajes/{conversation}/archivar', [ConversationController::class, 'archive'])->name('messages.archive');
+
+// Grupos de mensajeria
+Route::get('grupos-mensajes', [MessageGroupController::class, 'index'])->name('message-groups.index');
+Route::post('grupos-mensajes', [MessageGroupController::class, 'store'])->name('message-groups.store');
+Route::put('grupos-mensajes/{group}', [MessageGroupController::class, 'update'])->name('message-groups.update');
+Route::delete('grupos-mensajes/{group}', [MessageGroupController::class, 'destroy'])->name('message-groups.destroy');
 
 // Sliders
 Route::get('sliders', [SliderController::class, 'index'])->name('sliders.index');

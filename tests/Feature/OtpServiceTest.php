@@ -94,6 +94,48 @@ class OtpServiceTest extends TestCase
         $this->assertFalse($service->verify('c@example.com', 'registration', $code));
     }
 
+    public function test_consume_verified_works_after_code_ttl_within_grace(): void
+    {
+        // Regresión 2.A: el registro no debe caerse porque el código caducó
+        // mientras el usuario escribía nombre y contraseña.
+        Mail::fake();
+        $service = $this->service();
+        $service->request('grace@example.com', 'registration');
+
+        $code = null;
+        Mail::assertSent(OtpCode::class, function (OtpCode $mail) use (&$code) {
+            $code = $mail->code;
+
+            return true;
+        });
+
+        $this->assertTrue($service->verify('grace@example.com', 'registration', $code));
+
+        // El código en sí caduca (11 min), pero la verificación sigue valiendo
+        // dentro de la ventana post-verificación (30 min).
+        $this->travel(11)->minutes();
+        $this->assertTrue($service->consumeVerified('grace@example.com', 'registration'));
+    }
+
+    public function test_consume_verified_fails_after_grace_window(): void
+    {
+        Mail::fake();
+        $service = $this->service();
+        $service->request('late@example.com', 'registration');
+
+        $code = null;
+        Mail::assertSent(OtpCode::class, function (OtpCode $mail) use (&$code) {
+            $code = $mail->code;
+
+            return true;
+        });
+
+        $service->verify('late@example.com', 'registration', $code);
+
+        $this->travel(31)->minutes();
+        $this->assertFalse($service->consumeVerified('late@example.com', 'registration'));
+    }
+
     public function test_cooldown_after_max_resends(): void
     {
         Mail::fake();

@@ -106,14 +106,26 @@ class OtpService
     }
 
     /**
-     * Confirma que hay un código verificado y vigente y lo consume (uso único).
+     * Confirma que hay un código verificado dentro de la ventana post-verificación
+     * y lo consume (uso único).
+     *
+     * La vigencia aquí se mide desde `verified_at` (no desde `expires_at`): el
+     * código puede caducar mientras el usuario escribe nombre y contraseña, pero
+     * la verificación sigue valiendo durante `otp.verified_ttl_minutes`. Antes se
+     * exigía `expires_at` vigente y el registro se caía con "Debes verificar tu
+     * correo" aunque el usuario SÍ había verificado.
      */
     public function consumeVerified(string $email, string $purpose): bool
     {
         $email = mb_strtolower(trim($email));
         $otp = EmailOtp::where('email', $email)->where('purpose', $purpose)->first();
 
-        if (! $otp || ! $otp->verified_at || $otp->expires_at->isPast()) {
+        if (! $otp || ! $otp->verified_at) {
+            return false;
+        }
+
+        $graceMinutes = (int) config('otp.verified_ttl_minutes', 30);
+        if ($otp->verified_at->copy()->addMinutes($graceMinutes)->isPast()) {
             return false;
         }
 

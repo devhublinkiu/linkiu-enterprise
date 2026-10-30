@@ -18,6 +18,12 @@ return [
     // Vigencia del código desde que se envía.
     'ttl_minutes' => (int) env('OTP_TTL_MINUTES', 10),
 
+    // Ventana para COMPLETAR el registro después de verificar el código (p. ej.
+    // mientras el usuario escribe nombre y contraseña). Se mide desde que se
+    // verificó, no desde que se envió el código: así el registro no se cae porque
+    // el código caducó mientras llenaba el formulario.
+    'verified_ttl_minutes' => (int) env('OTP_VERIFIED_TTL_MINUTES', 30),
+
     // Envíos permitidos por ventana antes de entrar en cooldown.
     'max_resends' => (int) env('OTP_MAX_RESENDS', 5),
 

@@ -22,11 +22,15 @@ class MessageGroupController extends Controller
         $this->authorize('viewAny', MessageGroup::class);
 
         return Inertia::render('Admin/Mensajes/Grupos', [
-            'groups' => MessageGroup::withCount('associates')->latest()->get()
+            'groups' => MessageGroup::withCount('associates')
+                ->with('associates:id')
+                ->latest()
+                ->get()
                 ->map(fn ($g) => [
                     'id' => $g->id,
                     'name' => $g->name,
                     'count' => $g->associates_count,
+                    'associate_ids' => $g->associates->pluck('id')->values(),
                 ]),
             'associates' => Associate::orderBy('company_name')->get(['id', 'company_name'])
                 ->map(fn ($a) => ['id' => $a->id, 'name' => $a->company_name]),

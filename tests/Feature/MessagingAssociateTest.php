@@ -92,3 +92,26 @@ it('no puede ver un hilo de otro asociado', function () {
 
     $this->actingAs($userA)->get(route('associate.messages.show', $conversation))->assertForbidden();
 });
+
+it('un asociado marca como no leida su conversacion', function () {
+    [$associate, $user] = associateUser('MU SAS', '900333444-5');
+    $admin = User::factory()->create(['is_superadmin' => true]);
+    $conversation = Conversation::create(['associate_id' => $associate->id, 'created_by' => $admin->id, 'last_message_at' => now()]);
+    $conversation->messages()->create(['sender_id' => $admin->id, 'body' => 'hola de CAMEP']);
+    $conversation->markReadBy($user);
+    expect($conversation->unreadCountFor($user))->toBe(0);
+
+    $this->actingAs($user)->post(route('associate.messages.mark-unread', $conversation))
+        ->assertRedirect(route('associate.messages.index'));
+
+    expect($conversation->fresh()->unreadCountFor($user))->toBe(1);
+});
+
+it('un asociado no puede marcar no leida un hilo ajeno', function () {
+    [$assocA, $userA] = associateUser('IA SAS', '900555666-7');
+    [$assocB] = associateUser('IB SAS', '900777888-9');
+    $admin = User::factory()->create(['is_superadmin' => true]);
+    $other = Conversation::create(['associate_id' => $assocB->id, 'created_by' => $admin->id, 'last_message_at' => now()]);
+
+    $this->actingAs($userA)->post(route('associate.messages.mark-unread', $other))->assertForbidden();
+});

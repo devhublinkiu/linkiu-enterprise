@@ -30,6 +30,7 @@ import {
 } from '@/Components/base/Sidebar';
 import { TooltipProvider } from '@/Components/base/Tooltip';
 import NotificationToastStack from '@/Components/NotificationToastStack';
+import { useInboxBadge } from '@/hooks/useInboxBadge';
 import { useNotifications } from '@/hooks/useNotifications';
 import { PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
@@ -59,6 +60,9 @@ export default function AppLayout({
     const user = auth.user;
     const associate = auth.associate;
     const { notifications, dismiss } = useNotifications();
+
+    // Mantiene vivo el badge de "Mensajes" sin recargar la página (corte 7).
+    useInboxBadge();
 
     const isAdmin = user.is_superadmin || user.role === 'admin';
 

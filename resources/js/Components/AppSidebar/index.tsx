@@ -31,6 +31,7 @@ type SidebarProps = {
     subscription?: Subscription | null;
     pending_payment_requests?: number;
     unread_invoices?: number;
+    unread_messages?: number | null;
 };
 
 // Navegación del panel (admin y asociado) sobre base/Sidebar. Reemplaza al viejo
@@ -50,6 +51,7 @@ export default function AppSidebar() {
     };
     const pendingPayments: number = props.pending_payment_requests ?? 0;
     const unreadInvoices: number = props.unread_invoices ?? 0;
+    const unreadMessages: number = props.unread_messages ?? 0;
     const sub: Subscription | null = props.subscription ?? null;
     const associate = auth.associate;
 
@@ -73,13 +75,16 @@ export default function AppSidebar() {
         !isAdmin && !!associate?.is_public && !associate?.microsite_published;
 
     const items = isAdmin
-        ? buildAdminItems(counts, pendingPayments)
-        : buildAssociateItems({
-              isCompanyLocked,
-              isGeneralLocked,
-              isBillingLocked,
-              unreadInvoices,
-          });
+        ? buildAdminItems(counts, pendingPayments, unreadMessages)
+        : buildAssociateItems(
+              {
+                  isCompanyLocked,
+                  isGeneralLocked,
+                  isBillingLocked,
+                  unreadInvoices,
+              },
+              unreadMessages,
+          );
 
     return (
         <Sidebar collapsible="icon">

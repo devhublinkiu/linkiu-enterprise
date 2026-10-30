@@ -85,3 +85,33 @@ it('el admin crea un grupo seleccionando asociados', function () {
     expect(MessageGroup::count())->toBe(1);
     expect(MessageGroup::first()->associates()->count())->toBe(2);
 });
+
+it('el admin marca una conversacion como no leida', function () {
+    $a = company('G SAS', '900000007-7');
+    $admin = adminUser();
+    $conversation = Conversation::create(['associate_id' => $a->id, 'created_by' => $admin->id, 'last_message_at' => now()]);
+    $assocUser = User::factory()->create(['associate_id' => $a->id, 'role' => 'associate']);
+    $conversation->messages()->create(['sender_id' => $assocUser->id, 'body' => 'hola']);
+    $conversation->markReadBy($admin);
+    expect($conversation->unreadCountFor($admin))->toBe(0);
+
+    $this->actingAs($admin)->post(route('admin.messages.mark-unread', $conversation))
+        ->assertRedirect(route('admin.messages.index'));
+
+    expect($conversation->fresh()->unreadCountFor($admin))->toBe(1);
+});
+
+it('el admin cierra y reabre; cerrada bloquea responder', function () {
+    $a = company('H SAS', '900000008-8');
+    $admin = adminUser();
+    $conversation = Conversation::create(['associate_id' => $a->id, 'created_by' => $admin->id, 'last_message_at' => now()]);
+
+    $this->actingAs($admin)->post(route('admin.messages.close', $conversation))->assertRedirect();
+    expect($conversation->fresh()->status)->toBe('closed');
+
+    $this->actingAs($admin)->post(route('admin.messages.reply', $conversation), ['body' => 'no deberia entrar'])
+        ->assertForbidden();
+
+    $this->actingAs($admin)->post(route('admin.messages.close', $conversation))->assertRedirect();
+    expect($conversation->fresh()->status)->toBe('open');
+});

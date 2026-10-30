@@ -54,6 +54,8 @@ Route::get('mensajes/adjuntos/{attachment}', [ConversationController::class, 'do
 Route::get('mensajes/{conversation}', [ConversationController::class, 'show'])->name('messages.show');
 Route::post('mensajes/{conversation}/responder', [ConversationController::class, 'reply'])->name('messages.reply');
 Route::post('mensajes/{conversation}/archivar', [ConversationController::class, 'archive'])->name('messages.archive');
+Route::post('mensajes/{conversation}/no-leida', [ConversationController::class, 'markUnread'])->name('messages.mark-unread');
+Route::post('mensajes/{conversation}/cerrar', [ConversationController::class, 'close'])->name('messages.close');
 
 // Grupos de mensajeria
 Route::get('grupos-mensajes', [MessageGroupController::class, 'index'])->name('message-groups.index');

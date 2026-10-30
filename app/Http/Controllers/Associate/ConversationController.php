@@ -38,7 +38,7 @@ class ConversationController extends Controller
                 'subject' => $c->subject,
                 'status' => $c->status,
                 'last' => optional($c->messages->first())->body,
-                'last_at' => optional($c->last_message_at)?->toDateTimeString(),
+                'last_at' => optional($c->last_message_at)?->toIso8601String(),
                 'unread' => $c->unreadCountFor($user),
             ])->values();
 
@@ -67,7 +67,7 @@ class ConversationController extends Controller
                 'body' => $m->body,
                 'mine' => (int) $m->sender_id === (int) $request->user()->id,
                 'sender' => $m->sender?->name,
-                'at' => $m->created_at?->toDateTimeString(),
+                'at' => $m->created_at?->toIso8601String(),
                 'attachments' => $m->attachments->map(fn ($a) => [
                     'id' => $a->id,
                     'name' => $a->name,
@@ -134,6 +134,17 @@ class ConversationController extends Controller
         $conversation->setArchivedFor($user, $archived);
 
         return back()->with('success', $archived ? 'Conversación archivada.' : 'Conversación restaurada.');
+    }
+
+    public function markUnread(Conversation $conversation, Request $request)
+    {
+        $this->authorize('view', $conversation);
+
+        $conversation->markUnreadBy($request->user());
+
+        return redirect()
+            ->route('associate.messages.index')
+            ->with('success', 'Marcada como no leída.');
     }
 
     public function downloadAttachment(MessageAttachment $attachment, Request $request)

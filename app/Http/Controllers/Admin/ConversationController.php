@@ -9,6 +9,7 @@ use App\Http\Requests\AdminSendMessageRequest;
 use App\Http\Requests\BroadcastMessageRequest;
 use App\Http\Requests\ReplyMessageRequest;
 use App\Jobs\SendGroupMessage;
+use App\Models\Associate;
 use App\Models\Conversation;
 use App\Models\MessageAttachment;
 use App\Models\MessageGroup;
@@ -44,13 +45,19 @@ class ConversationController extends Controller
                 'status' => $c->status,
                 'associate' => $c->associate?->company_name,
                 'last' => optional($c->messages->first())->body,
-                'last_at' => optional($c->last_message_at)?->toDateTimeString(),
+                'last_at' => optional($c->last_message_at)?->toIso8601String(),
                 'unread' => $c->unreadCountFor($user),
             ])->values();
 
         return Inertia::render('Admin/Mensajes/Index', [
             'conversations' => $conversations,
             'archived' => $archived,
+            // Destinatarios para el compositor (ADR-0012: el admin inicia a un asociado
+            // o a un grupo). Los endpoints store/broadcast ya validan contra estos.
+            'associates' => Associate::orderBy('company_name')->get(['id', 'company_name'])
+                ->map(fn ($a) => ['id' => $a->id, 'name' => $a->company_name]),
+            'groups' => MessageGroup::withCount('associates')->orderBy('name')->get()
+                ->map(fn ($g) => ['id' => $g->id, 'name' => $g->name, 'count' => $g->associates_count]),
         ]);
     }
 
@@ -67,6 +74,7 @@ class ConversationController extends Controller
                 'subject' => $conversation->subject,
                 'status' => $conversation->status,
                 'associate' => $conversation->associate?->company_name,
+                'associate_id' => $conversation->associate_id,
                 'archived' => $conversation->isArchivedFor($request->user()),
             ],
             'messages' => $conversation->messages->map(fn ($m) => [
@@ -74,7 +82,7 @@ class ConversationController extends Controller
                 'body' => $m->body,
                 'mine' => (int) $m->sender_id === (int) $request->user()->id,
                 'sender' => $m->sender?->name,
-                'at' => $m->created_at?->toDateTimeString(),
+                'at' => $m->created_at?->toIso8601String(),
                 'attachments' => $m->attachments->map(fn ($a) => [
                     'id' => $a->id,
                     'name' => $a->name,
@@ -155,6 +163,27 @@ class ConversationController extends Controller
         $conversation->setArchivedFor($user, $archived);
 
         return back()->with('success', $archived ? 'Conversación archivada.' : 'Conversación restaurada.');
+    }
+
+    public function markUnread(Conversation $conversation, Request $request)
+    {
+        $this->authorize('view', $conversation);
+
+        $conversation->markUnreadBy($request->user());
+
+        return redirect()
+            ->route('admin.messages.index')
+            ->with('success', 'Marcada como no leída.');
+    }
+
+    public function close(Conversation $conversation, Request $request)
+    {
+        $this->authorize('close', $conversation);
+
+        $closed = $conversation->status !== 'closed';
+        $conversation->update(['status' => $closed ? 'closed' : 'open']);
+
+        return back()->with('success', $closed ? 'Conversación cerrada.' : 'Conversación reabierta.');
     }
 
     public function downloadAttachment(MessageAttachment $attachment)

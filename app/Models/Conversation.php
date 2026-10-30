@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Hilo de la bandeja interna (plan 0026 / ADR-0012). Pertenece a una empresa (asociado);
@@ -18,22 +21,22 @@ class Conversation extends Model
         'last_message_at' => 'datetime',
     ];
 
-    public function associate()
+    public function associate(): BelongsTo
     {
         return $this->belongsTo(Associate::class);
     }
 
-    public function messages()
+    public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
     }
 
-    public function creator()
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function participants()
+    public function participants(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'conversation_user')
             ->withPivot(['role', 'last_read_at', 'archived_at'])
@@ -49,6 +52,12 @@ class Conversation extends Model
     {
         $this->ensureParticipant($user);
         $this->participants()->updateExistingPivot($user->id, ['last_read_at' => now()]);
+    }
+
+    public function markUnreadBy(User $user): void
+    {
+        $this->ensureParticipant($user);
+        $this->participants()->updateExistingPivot($user->id, ['last_read_at' => null]);
     }
 
     public function setArchivedFor(User $user, bool $archived): void

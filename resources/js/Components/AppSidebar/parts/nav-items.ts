@@ -13,6 +13,7 @@ import {
     type LucideIcon,
     Mail,
     Megaphone,
+    MessageSquare,
     Network,
     Plug,
     Receipt,
@@ -60,9 +61,16 @@ export function buildAdminItems(
         total: number;
     },
     pendingPayments: number,
+    unreadMessages = 0,
 ): NavItem[] {
     return [
         { name: 'Dashboard', icon: LayoutDashboard, href: route('dashboard') },
+        {
+            name: 'Mensajes',
+            icon: MessageSquare,
+            href: route('admin.messages.index'),
+            count: unreadMessages || undefined,
+        },
         {
             name: 'Empresas',
             icon: Building2,
@@ -181,7 +189,10 @@ export function buildAdminItems(
     ];
 }
 
-export function buildAssociateItems(locks: AssociateLocks): NavItem[] {
+export function buildAssociateItems(
+    locks: AssociateLocks,
+    unreadMessages = 0,
+): NavItem[] {
     const {
         isCompanyLocked,
         isGeneralLocked,
@@ -191,6 +202,13 @@ export function buildAssociateItems(locks: AssociateLocks): NavItem[] {
 
     return [
         { name: 'Dashboard', icon: LayoutDashboard, href: route('dashboard') },
+        {
+            // Canal de soporte con CAMEP: siempre accesible (no se bloquea por plan).
+            name: 'Mensajes',
+            icon: MessageSquare,
+            href: route('associate.messages.index'),
+            count: unreadMessages || undefined,
+        },
         {
             name: 'Mi empresa',
             icon: Building,

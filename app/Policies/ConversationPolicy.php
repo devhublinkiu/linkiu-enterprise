@@ -31,6 +31,14 @@ class ConversationPolicy
         return $this->participatesIn($user, $conversation) && $conversation->status !== 'closed';
     }
 
+    /**
+     * Cerrar/reabrir un hilo es una acción de resolución del equipo CAMEP: solo admin.
+     */
+    public function close(User $user, Conversation $conversation): bool
+    {
+        return $user->isAdmin();
+    }
+
     private function participatesIn(User $user, Conversation $conversation): bool
     {
         if ($user->isAdmin()) {

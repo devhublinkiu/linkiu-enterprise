@@ -227,6 +227,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{conversation}', [ConversationController::class, 'show'])->name('show');
         Route::post('/{conversation}/responder', [ConversationController::class, 'reply'])->name('reply');
         Route::post('/{conversation}/archivar', [ConversationController::class, 'archive'])->name('archive');
+        Route::post('/{conversation}/no-leida', [ConversationController::class, 'markUnread'])->name('mark-unread');
     });
 
     // Billing / Subscription (accessible even when expired)

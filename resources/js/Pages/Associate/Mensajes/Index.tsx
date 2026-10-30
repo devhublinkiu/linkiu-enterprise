@@ -6,6 +6,8 @@ import { useMemo, useState } from 'react';
 import { Badge } from '@/Components/base/Badge';
 import { Button } from '@/Components/base/Button';
 import { Input } from '@/Components/base/Input';
+import ConversationActions from '@/Components/messaging/ConversationActions';
+import { useInboxUpdates } from '@/hooks/useInboxUpdates';
 import AppLayout from '@/Layouts/AppLayout';
 
 import ComposeDialog from './parts/ComposeDialog';
@@ -40,6 +42,9 @@ function formatWhen(value: string | null): string {
 export default function Index({ conversations, archived }: Props) {
     const [composeOpen, setComposeOpen] = useState(false);
     const [q, setQ] = useState('');
+
+    // Tiempo real: al llegar un mensaje, recarga la lista sin recargar la página.
+    useInboxUpdates(() => router.reload({ only: ['conversations'] }));
 
     const filtered = useMemo(() => {
         const needle = q.trim().toLowerCase();
@@ -126,7 +131,10 @@ export default function Index({ conversations, archived }: Props) {
             ) : (
                 <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
                     {filtered.map((c) => (
-                        <li key={c.id}>
+                        <li
+                            key={c.id}
+                            className="flex items-center gap-1 pr-2 transition-colors hover:bg-muted/50"
+                        >
                             <button
                                 type="button"
                                 onClick={() =>
@@ -134,7 +142,7 @@ export default function Index({ conversations, archived }: Props) {
                                         route('associate.messages.show', c.id),
                                     )
                                 }
-                                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50"
+                                className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 text-left"
                             >
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
@@ -152,6 +160,14 @@ export default function Index({ conversations, archived }: Props) {
                                                 {c.unread}
                                             </Badge>
                                         )}
+                                        {c.status === 'closed' && (
+                                            <Badge
+                                                variant="secondary"
+                                                className="shrink-0"
+                                            >
+                                                Cerrada
+                                            </Badge>
+                                        )}
                                     </div>
                                     {c.last && (
                                         <p className="truncate text-sm text-muted-foreground">
@@ -163,6 +179,11 @@ export default function Index({ conversations, archived }: Props) {
                                     {formatWhen(c.last_at)}
                                 </span>
                             </button>
+                            <ConversationActions
+                                id={c.id}
+                                prefix="associate.messages"
+                                archived={archived}
+                            />
                         </li>
                     ))}
                 </ul>

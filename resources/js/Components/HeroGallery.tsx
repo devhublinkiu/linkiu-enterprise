@@ -46,7 +46,7 @@ export default function HeroGallery({ items }: Props) {
     if (!items || items.length === 0) return null;
 
     return (
-        <div className="group relative aspect-[4/3] w-full max-w-full overflow-hidden bg-slate-900 sm:aspect-[16/6] xl:aspect-[1920/600]">
+        <div className="group relative aspect-[2/1] w-full max-w-full overflow-hidden bg-slate-900 sm:aspect-[16/6] xl:aspect-[1920/600]">
             <AnimatePresence initial={false} custom={direction}>
                 <motion.div
                     key={currentIndex}
@@ -83,7 +83,7 @@ export default function HeroGallery({ items }: Props) {
                     <img
                         src={getStorageUrl(items[currentIndex])}
                         alt={`Gallery Item ${currentIndex + 1}`}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover object-left sm:object-center"
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 </motion.div>

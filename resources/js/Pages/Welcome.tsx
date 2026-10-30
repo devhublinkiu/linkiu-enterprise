@@ -7,13 +7,11 @@ import {
     ShieldCheck,
     Zap,
     Globe,
-    Star,
     Layout,
     Users,
     Eye,
     BookOpen,
     Network,
-    Info,
     ChevronLeft,
     ChevronRight,
     Truck,
@@ -92,21 +90,27 @@ export default function Welcome({
     const carouselRef = useRef<HTMLDivElement>(null);
     const [slide, setSlide] = useState(0);
     const [cardWidth, setCardWidth] = useState(0);
+    // Tarjetas visibles según el ancho: 1 en móvil, 2 en tablet, 3 en escritorio.
+    // Antes era siempre 3 → en móvil salían apretadas.
+    const [perView, setPerView] = useState(3);
 
     useEffect(() => {
         const measure = () => {
-            if (carouselRef.current) {
-                const gap = 32; // gap-8 = 2rem
-                setCardWidth((carouselRef.current.offsetWidth - 2 * gap) / 3);
-            }
+            if (!carouselRef.current) return;
+            const gap = 32; // gap-8 = 2rem
+            const width = carouselRef.current.offsetWidth;
+            const pv = width < 640 ? 1 : width < 1024 ? 2 : 3;
+            setPerView(pv);
+            setCardWidth((width - (pv - 1) * gap) / pv);
+            setSlide((s) => Math.min(s, Math.max(0, all_associates.length - pv)));
         };
         measure();
         window.addEventListener('resize', measure);
         return () => window.removeEventListener('resize', measure);
-    }, []);
+    }, [all_associates.length]);
 
     const totalSlides = all_associates.length;
-    const maxSlide = Math.max(0, totalSlides - 3);
+    const maxSlide = Math.max(0, totalSlides - perView);
     const slideOffset = slide * (cardWidth + 32);
 
     return (
@@ -197,7 +201,7 @@ export default function Welcome({
                         </div>
 
                         {/* Controls */}
-                        {totalSlides > 3 && (
+                        {totalSlides > perView && (
                             <div className="flex items-center justify-center gap-4 mt-10">
                                 <button
                                     onClick={() => setSlide(s => Math.max(0, s - 1))}
@@ -241,9 +245,6 @@ export default function Welcome({
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                         <div className="max-w-2xl">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-50 text-orange-600 rounded-full mb-4 border border-orange-100/50">
-                                <span className="text-[10px] font-black uppercase tracking-widest">Nuestra Oferta</span>
-                            </div>
                             <h2 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight">
                                 Categorias de servicios: <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">que ofrece CAMEP</span>
@@ -329,10 +330,6 @@ export default function Welcome({
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
                         <div className="animate-in fade-in slide-in-from-left-8 duration-1000">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 rounded-full mb-8 border border-orange-100">
-                                <Star size={14} className="fill-orange-600" />
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Haz parte de la comunidad que crece contigo</span>
-                            </div>
                             <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 leading-[1.1] tracking-tight mb-4 md:mb-8">
                                 Fortalece tu negocio con el respaldo de una <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500">comunidad que crece contigo</span>
                             </h1>
@@ -453,10 +450,6 @@ export default function Welcome({
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
                             <div className="max-w-2xl">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-50 text-orange-600 rounded-full mb-4 border border-orange-100/50">
-                                    <Megaphone size={14} strokeWidth={2.5} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Información Oficial</span>
-                                </div>
                                 <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight uppercase">
                                     Anuncios <br />
                                     <span className="text-orange-500">y Licitaciones</span>
@@ -633,10 +626,6 @@ export default function Welcome({
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
                             <div className="max-w-2xl text-left">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white text-orange-600 rounded-full mb-4 border border-slate-200 shadow-sm">
-                                    <BookOpen size={14} strokeWidth={2.5} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Actualidad Gremial</span>
-                                </div>
                                 <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight uppercase">
                                     Últimas <br />
                                     <span className="text-orange-500">Noticias y Blog</span>

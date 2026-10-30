@@ -38,10 +38,6 @@ export default function Index({ announcements }: Props) {
             <div className="relative bg-slate-900 overflow-hidden py-16 md:py-24">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
                     <div className="max-w-3xl">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-500/10 text-orange-400 rounded-full mb-6 border border-orange-500/20">
-                            <Megaphone size={14} className="animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">Información Oficial</span>
-                        </div>
                         <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.1] mb-6 uppercase">
                             Anuncios, Noticias <br />
                             <span className="text-orange-500">y Licitaciones Públicas</span>

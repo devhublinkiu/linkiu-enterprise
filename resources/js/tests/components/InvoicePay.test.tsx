@@ -44,9 +44,12 @@ const invoice = (over = {}) => ({
 const bankAccounts = [
     {
         id: 1,
+        type: 'cuenta' as const,
         bank_name: 'Bancolombia',
         account_type: 'Ahorros',
         account_number: '123456',
+        payment_key: null,
+        qr_url: null,
         holder_name: 'CAMEP',
         holder_document: '900123456',
         holder_document_type: 'NIT',

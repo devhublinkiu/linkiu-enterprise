@@ -4,11 +4,9 @@ import {
     Building2,
     CheckCircle2,
     CreditCard,
-    Hash,
     Pencil,
     Plus,
     Trash2,
-    User,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -29,16 +27,25 @@ import AppLayout from '@/Layouts/AppLayout';
 
 interface BankAccount {
     id: number;
-    bank_name: string;
-    account_type: string;
-    account_number: string;
-    holder_name: string;
-    holder_document: string;
-    holder_document_type: string;
+    type: 'cuenta' | 'bre_b' | 'qr';
+    bank_name: string | null;
+    account_type: string | null;
+    account_number: string | null;
+    payment_key: string | null;
+    qr_url: string | null;
+    holder_name: string | null;
+    holder_document: string | null;
+    holder_document_type: string | null;
     color_hex: string;
     is_active: boolean;
     order: number;
 }
+
+const TYPE_LABELS: Record<string, string> = {
+    cuenta: 'Cuenta bancaria',
+    bre_b: 'Llave Bre-B',
+    qr: 'Código QR',
+};
 
 export default function BankAccountsIndex({
     accounts,
@@ -90,7 +97,7 @@ export default function BankAccountsIndex({
                     </div>
                     <Button asChild>
                         <Link href={route('admin.bank-accounts.create')}>
-                            <Plus className="size-4" /> Agregar cuenta
+                            <Plus className="size-4" /> Agregar método
                         </Link>
                     </Button>
                 </div>
@@ -111,7 +118,7 @@ export default function BankAccountsIndex({
                         <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
                             <CreditCard className="size-10 text-muted-foreground" />
                             <p className="font-medium text-foreground">
-                                No hay cuentas bancarias configuradas.
+                                No hay métodos de pago configurados.
                             </p>
                             <Button asChild className="mt-2">
                                 <Link
@@ -132,45 +139,59 @@ export default function BankAccountsIndex({
                                             <Building2 className="size-5" />
                                         </span>
 
-                                        <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-3">
-                                            <div>
-                                                <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                                                    Banco
-                                                </p>
-                                                <p className="font-medium text-foreground">
-                                                    {account.bank_name}
-                                                </p>
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="mt-1"
-                                                >
-                                                    {account.account_type}
-                                                </Badge>
-                                            </div>
-                                            <div>
-                                                <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
-                                                    <Hash className="size-3" />{' '}
-                                                    Cuenta
-                                                </p>
-                                                <p className="font-mono text-sm text-foreground">
-                                                    {account.account_number}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
-                                                    <User className="size-3" />{' '}
-                                                    Titular
-                                                </p>
-                                                <p className="text-sm text-foreground">
-                                                    {account.holder_name}
-                                                </p>
-                                                <p className="font-mono text-xs text-muted-foreground">
-                                                    {
-                                                        account.holder_document_type
-                                                    }
-                                                    : {account.holder_document}
-                                                </p>
-                                            </div>
+                                        <div className="flex-1 space-y-1">
+                                            <Badge variant="secondary">
+                                                {TYPE_LABELS[account.type] ??
+                                                    account.type}
+                                            </Badge>
+                                            {account.type === 'cuenta' && (
+                                                <>
+                                                    <p className="font-medium text-foreground">
+                                                        {account.bank_name} ·{' '}
+                                                        {account.account_type}
+                                                    </p>
+                                                    <p className="font-mono text-sm text-muted-foreground">
+                                                        {account.account_number}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {account.holder_name} (
+                                                        {
+                                                            account.holder_document_type
+                                                        }
+                                                        :{' '}
+                                                        {
+                                                            account.holder_document
+                                                        }
+                                                        )
+                                                    </p>
+                                                </>
+                                            )}
+                                            {account.type === 'bre_b' && (
+                                                <>
+                                                    <p className="font-mono text-sm text-foreground">
+                                                        {account.payment_key}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        A nombre de{' '}
+                                                        {account.holder_name}
+                                                    </p>
+                                                </>
+                                            )}
+                                            {account.type === 'qr' && (
+                                                <div className="flex items-center gap-3 pt-1">
+                                                    {account.qr_url && (
+                                                        <img
+                                                            src={account.qr_url}
+                                                            alt="QR"
+                                                            className="size-14 rounded border border-border object-contain"
+                                                        />
+                                                    )}
+                                                    <p className="text-sm text-foreground">
+                                                        {account.bank_name ||
+                                                            'Código QR'}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="flex shrink-0 items-center gap-2">
@@ -189,7 +210,7 @@ export default function BankAccountsIndex({
                                                 variant="ghost"
                                                 size="icon-sm"
                                                 asChild
-                                                aria-label={`Editar ${account.bank_name}`}
+                                                aria-label={`Editar ${TYPE_LABELS[account.type] ?? 'método'}`}
                                             >
                                                 <Link
                                                     href={route(
@@ -203,7 +224,7 @@ export default function BankAccountsIndex({
                                             <Button
                                                 variant="ghost"
                                                 size="icon-sm"
-                                                aria-label={`Eliminar ${account.bank_name}`}
+                                                aria-label={`Eliminar ${TYPE_LABELS[account.type] ?? 'método'}`}
                                                 className="text-muted-foreground hover:text-destructive"
                                                 onClick={() =>
                                                     setDeleting(account)
@@ -226,7 +247,7 @@ export default function BankAccountsIndex({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Eliminar cuenta bancaria</DialogTitle>
+                        <DialogTitle>Eliminar método de pago</DialogTitle>
                         <DialogDescription>
                             {deleting &&
                                 `¿Eliminar la cuenta de ${deleting.bank_name} (${deleting.account_number})? Esta acción no se puede deshacer.`}

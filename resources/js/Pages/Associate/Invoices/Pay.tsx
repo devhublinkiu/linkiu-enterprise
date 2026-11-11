@@ -5,15 +5,19 @@ import {
     ArrowRight,
     Building2,
     CheckCircle2,
+    Copy,
     CreditCard,
     FileText,
     Hash,
     Hourglass,
+    KeyRound,
+    QrCode,
     Upload,
     User,
     Zap,
 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { Alert, AlertDescription, AlertTitle } from '@/Components/base/Alert';
 import { Badge } from '@/Components/base/Badge';
@@ -31,12 +35,15 @@ import { cn } from '@/lib/utils';
 
 interface BankAccount {
     id: number;
-    bank_name: string;
-    account_type: string;
-    account_number: string;
-    holder_name: string;
-    holder_document: string;
-    holder_document_type: string;
+    type: 'cuenta' | 'bre_b' | 'qr';
+    bank_name: string | null;
+    account_type: string | null;
+    account_number: string | null;
+    payment_key: string | null;
+    qr_url: string | null;
+    holder_name: string | null;
+    holder_document: string | null;
+    holder_document_type: string | null;
     color_hex: string;
 }
 
@@ -309,54 +316,124 @@ export default function Pay({
                             {bankAccounts.map((account) => (
                                 <Card key={account.id}>
                                     <CardContent>
-                                        <div className="flex items-start gap-4">
-                                            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                                                <Building2 className="size-5" />
-                                            </span>
-                                            <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-3">
-                                                <div>
+                                        {account.type === 'bre_b' ? (
+                                            <div className="flex items-start gap-4">
+                                                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                                    <KeyRound className="size-5" />
+                                                </span>
+                                                <div className="min-w-0 flex-1">
                                                     <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                                                        Banco
+                                                        Llave Bre-B
                                                     </p>
-                                                    <p className="font-medium text-foreground">
-                                                        {account.bank_name}
-                                                    </p>
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="mt-1"
-                                                    >
-                                                        {account.account_type}
-                                                    </Badge>
-                                                </div>
-                                                <div>
-                                                    <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
-                                                        <Hash className="size-3" />{' '}
-                                                        Cuenta
-                                                    </p>
-                                                    <p className="select-all font-mono text-sm text-foreground">
-                                                        {account.account_number}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
-                                                        <User className="size-3" />{' '}
-                                                        Titular
-                                                    </p>
-                                                    <p className="text-sm text-foreground">
-                                                        {account.holder_name}
-                                                    </p>
-                                                    <p className="font-mono text-xs text-muted-foreground">
-                                                        {
-                                                            account.holder_document_type
-                                                        }
-                                                        :{' '}
-                                                        {
-                                                            account.holder_document
-                                                        }
-                                                    </p>
+                                                    <div className="mt-1 flex items-center gap-2">
+                                                        <span className="select-all break-all font-mono text-sm text-foreground">
+                                                            {
+                                                                account.payment_key
+                                                            }
+                                                        </span>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                navigator.clipboard?.writeText(
+                                                                    account.payment_key ??
+                                                                        '',
+                                                                );
+                                                                toast.success(
+                                                                    'Llave copiada',
+                                                                );
+                                                            }}
+                                                        >
+                                                            <Copy className="size-4" />
+                                                            Copiar
+                                                        </Button>
+                                                    </div>
+                                                    {account.holder_name && (
+                                                        <p className="mt-2 text-xs text-muted-foreground">
+                                                            A nombre de{' '}
+                                                            {
+                                                                account.holder_name
+                                                            }
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
-                                        </div>
+                                        ) : account.type === 'qr' ? (
+                                            <div className="flex flex-col items-center gap-3 text-center">
+                                                <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+                                                    <QrCode className="size-3.5" />{' '}
+                                                    {account.bank_name ||
+                                                        'Paga con QR'}
+                                                </p>
+                                                {account.qr_url && (
+                                                    <img
+                                                        src={account.qr_url}
+                                                        alt="Código QR para pagar"
+                                                        className="size-52 rounded-lg border border-border object-contain p-2"
+                                                    />
+                                                )}
+                                                <p className="text-xs text-muted-foreground">
+                                                    Escanea el código desde tu
+                                                    app para pagar.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-start gap-4">
+                                                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                                    <Building2 className="size-5" />
+                                                </span>
+                                                <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-3">
+                                                    <div>
+                                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                            Banco
+                                                        </p>
+                                                        <p className="font-medium text-foreground">
+                                                            {account.bank_name}
+                                                        </p>
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="mt-1"
+                                                        >
+                                                            {
+                                                                account.account_type
+                                                            }
+                                                        </Badge>
+                                                    </div>
+                                                    <div>
+                                                        <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+                                                            <Hash className="size-3" />{' '}
+                                                            Cuenta
+                                                        </p>
+                                                        <p className="select-all font-mono text-sm text-foreground">
+                                                            {
+                                                                account.account_number
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+                                                            <User className="size-3" />{' '}
+                                                            Titular
+                                                        </p>
+                                                        <p className="text-sm text-foreground">
+                                                            {
+                                                                account.holder_name
+                                                            }
+                                                        </p>
+                                                        <p className="font-mono text-xs text-muted-foreground">
+                                                            {
+                                                                account.holder_document_type
+                                                            }
+                                                            :{' '}
+                                                            {
+                                                                account.holder_document
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
                             ))}

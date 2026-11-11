@@ -46,6 +46,8 @@ Route::post('associates/{associate}/approve', [AssociateReviewController::class,
 Route::post('associates/{associate}/toggle-verified', [AssociateReviewController::class, 'toggleVerified'])->name('associates.toggle-verified');
 Route::post('associates/{associate}/deactivate', [AssociateReviewController::class, 'deactivate'])->name('associates.deactivate');
 Route::post('associates/{associate}/reactivate', [AssociateReviewController::class, 'reactivate'])->name('associates.reactivate');
+// Borrado permanente (irreversible): exige confirmar el NIT.
+Route::delete('associates/{associate}', [AssociateReviewController::class, 'destroy'])->name('associates.destroy');
 
 // Mensajeria (bandeja interna) — plan 0026
 Route::get('mensajes', [ConversationController::class, 'index'])->name('messages.index');

@@ -90,12 +90,17 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
+            // Contadores por estado DERIVADO del ciclo de vida (ADR-0007), para
+            // los filtros del sidebar. Misma lógica que el filtro de la lista.
             'associate_counts' => $user && ($user->is_superadmin || $user->role === 'admin')
             ? [
-                'approved' => Associate::where('status', 'approved')->count(),
-                'pending' => Associate::where('status', 'pending')->count(),
-                'inactive' => Associate::where('status', 'inactive')->count(),
                 'total' => Associate::count(),
+                'pendiente' => Associate::state('pendiente')->count(),
+                'admitida' => Associate::state('admitida')->count(),
+                'activa' => Associate::state('activa')->count(),
+                'en_gracia' => Associate::state('en_gracia')->count(),
+                'vencida' => Associate::state('vencida')->count(),
+                'desactivada' => Associate::state('desactivada')->count(),
             ]
             : null,
             // Comprobantes esperando revisión: los del motor nuevo más los que

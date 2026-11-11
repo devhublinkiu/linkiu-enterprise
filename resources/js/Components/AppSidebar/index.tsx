@@ -23,10 +23,13 @@ type SidebarProps = {
         } | null;
     };
     associate_counts?: {
-        approved: number;
-        pending: number;
-        inactive: number;
         total: number;
+        pendiente: number;
+        admitida: number;
+        activa: number;
+        en_gracia: number;
+        vencida: number;
+        desactivada: number;
     };
     subscription?: Subscription | null;
     pending_payment_requests?: number;
@@ -44,10 +47,13 @@ export default function AppSidebar() {
     const isAdmin = auth.user.is_superadmin || auth.user.role === 'admin';
 
     const counts = props.associate_counts || {
-        approved: 0,
-        pending: 0,
-        inactive: 0,
         total: 0,
+        pendiente: 0,
+        admitida: 0,
+        activa: 0,
+        en_gracia: 0,
+        vencida: 0,
+        desactivada: 0,
     };
     const pendingPayments: number = props.pending_payment_requests ?? 0;
     const unreadInvoices: number = props.unread_invoices ?? 0;

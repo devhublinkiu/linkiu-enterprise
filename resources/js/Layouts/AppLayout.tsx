@@ -68,7 +68,18 @@ export default function AppLayout({
 
     // Migas: "Inicio" + el tramo de sección derivado de la navegación del sidebar.
     const navItems = isAdmin
-        ? buildAdminItems({ approved: 0, pending: 0, inactive: 0, total: 0 }, 0)
+        ? buildAdminItems(
+              {
+                  total: 0,
+                  pendiente: 0,
+                  admitida: 0,
+                  activa: 0,
+                  en_gracia: 0,
+                  vencida: 0,
+                  desactivada: 0,
+              },
+              0,
+          )
         : buildAssociateItems({
               isCompanyLocked: false,
               isGeneralLocked: false,

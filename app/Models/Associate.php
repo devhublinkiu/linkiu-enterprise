@@ -236,4 +236,38 @@ class Associate extends Model
 
         return now()->lessThanOrEqualTo($this->plan_expires_at->copy()->addDays($graceDays));
     }
+
+    /**
+     * Filtra por estado del ciclo de vida DERIVADO (ADR-0007), calcado de
+     * adminState()/statusOf pero en SQL para la lista y los contadores. Usa la
+     * prórroga GLOBAL. Comparaciones columna-vs-constante (sirven en MySQL y
+     * SQLite): activa = vigente hoy; en_gracia = vencida pero dentro de la
+     * prórroga; vencida = pasada la prórroga o sin plan. `desactivada` manda
+     * sobre el resto (igual que adminState, que la revisa primero).
+     *
+     * Estados: todas | pendiente | admitida | activa | en_gracia | vencida | desactivada
+     */
+    public function scopeState($query, string $state)
+    {
+        $now = now();
+        $graceStart = now()->subDays(BillingSetting::graceDays());
+
+        return match ($state) {
+            'pendiente' => $query->whereNull('deactivated_at')
+                ->whereIn('status', ['draft', 'pending', 'rejected']),
+            'admitida' => $query->whereNull('deactivated_at')->where('status', 'verified'),
+            'activa' => $query->whereNull('deactivated_at')->where('status', 'approved')
+                ->whereNotNull('plan_expires_at')->where('plan_expires_at', '>=', $now),
+            'en_gracia' => $query->whereNull('deactivated_at')->where('status', 'approved')
+                ->whereNotNull('plan_expires_at')
+                ->where('plan_expires_at', '<', $now)
+                ->where('plan_expires_at', '>=', $graceStart),
+            'vencida' => $query->whereNull('deactivated_at')->where('status', 'approved')
+                ->where(fn ($w) => $w->whereNull('plan_id')
+                    ->orWhereNull('plan_expires_at')
+                    ->orWhere('plan_expires_at', '<', $graceStart)),
+            'desactivada' => $query->whereNotNull('deactivated_at'),
+            default => $query, // 'todas' o desconocido
+        };
+    }
 }

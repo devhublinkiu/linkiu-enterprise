@@ -27,6 +27,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/Components/base/DropdownMenu';
+import { Input } from '@/Components/base/Input';
 import {
     InputGroup,
     InputGroupAddon,
@@ -113,6 +114,8 @@ export default function Index({ associates, filters }: Props) {
 
     const [search, setSearch] = useState(filters.q ?? '');
     const [target, setTarget] = useState<AssociateRow | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<AssociateRow | null>(null);
+    const [nitInput, setNitInput] = useState('');
     const [notice, setNotice] = useState<{
         variant: 'success' | 'destructive';
         msg: string;
@@ -156,6 +159,20 @@ export default function Index({ associates, filters }: Props) {
             {},
             { preserveScroll: true, onFinish: () => setTarget(null) },
         );
+    };
+
+    const closeDelete = () => {
+        setDeleteTarget(null);
+        setNitInput('');
+    };
+
+    const confirmDelete = () => {
+        if (!deleteTarget) return;
+        router.delete(route('admin.associates.destroy', deleteTarget.id), {
+            data: { nit_confirmation: nitInput },
+            preserveScroll: true,
+            onFinish: closeDelete,
+        });
     };
 
     const rows = associates.data;
@@ -223,7 +240,11 @@ export default function Index({ associates, filters }: Props) {
                             </SelectItem>
                             <SelectItem value="admitida">Admitidas</SelectItem>
                             <SelectItem value="activa">Activas</SelectItem>
-                            <SelectItem value="inactiva">Inactivas</SelectItem>
+                            <SelectItem value="en_gracia">En gracia</SelectItem>
+                            <SelectItem value="vencida">Vencidas</SelectItem>
+                            <SelectItem value="desactivada">
+                                Desactivadas
+                            </SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -336,6 +357,18 @@ export default function Index({ associates, filters }: Props) {
                                                             Desactivar empresa
                                                         </DropdownMenuItem>
                                                     )}
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        variant="destructive"
+                                                        onSelect={() => {
+                                                            setDeleteTarget(
+                                                                row,
+                                                            );
+                                                            setNitInput('');
+                                                        }}
+                                                    >
+                                                        Eliminar definitivamente
+                                                    </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
@@ -386,6 +419,57 @@ export default function Index({ associates, filters }: Props) {
                             {target?.estado === 'desactivada'
                                 ? 'Reactivar'
                                 : 'Desactivar'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={!!deleteTarget}
+                onOpenChange={(o) => !o && closeDelete()}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            Eliminar «{deleteTarget?.company_name}»
+                        </DialogTitle>
+                        <DialogDescription>
+                            Esta acción NO se puede deshacer. Se borran para
+                            siempre el perfil, los usuarios, las facturas, los
+                            pagos, los mensajes y los archivos de la empresa.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                        <label
+                            htmlFor="nit_confirmation"
+                            className="text-sm text-foreground"
+                        >
+                            Escribe el NIT para confirmar:{' '}
+                            <span className="font-mono font-medium">
+                                {deleteTarget?.nit}
+                            </span>
+                        </label>
+                        <Input
+                            id="nit_confirmation"
+                            value={nitInput}
+                            onChange={(e) => setNitInput(e.target.value)}
+                            placeholder="NIT"
+                            className="font-mono"
+                            autoFocus
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={closeDelete}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmDelete}
+                            disabled={
+                                nitInput.trim() !== (deleteTarget?.nit ?? '')
+                            }
+                        >
+                            Eliminar definitivamente
                         </Button>
                     </DialogFooter>
                 </DialogContent>

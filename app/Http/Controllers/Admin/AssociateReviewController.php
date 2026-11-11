@@ -8,6 +8,7 @@ use App\Mail\AssociateApproved;
 use App\Mail\AssociateAuditRejected;
 use App\Mail\SectionAuditApproved;
 use App\Models\Associate;
+use App\Services\AssociatePurgeService;
 use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -37,7 +38,7 @@ class AssociateReviewController extends Controller
             ->when($q, fn ($query) => $query->where(fn ($w) => $w
                 ->where('company_name', 'like', "%{$q}%")
                 ->orWhere('nit', 'like', "%{$q}%")))
-            ->when($estado, fn ($query) => $this->filterByEstado($query, $estado))
+            ->when($estado, fn ($query) => $query->state($estado))
             ->latest()
             ->paginate(15)
             ->withQueryString()
@@ -64,23 +65,6 @@ class AssociateReviewController extends Controller
      * Filtro coarse por estado derivado. El límite de "gracia" se aproxima por fecha
      * (plan_expires_at); el badge de la fila muestra el estado fino y preciso.
      */
-    private function filterByEstado($query, string $estado)
-    {
-        return match ($estado) {
-            'pendiente' => $query->whereNull('deactivated_at')
-                ->whereIn('status', ['draft', 'pending', 'rejected']),
-            'admitida' => $query->whereNull('deactivated_at')->where('status', 'verified'),
-            'activa' => $query->whereNull('deactivated_at')->where('status', 'approved')
-                ->whereNotNull('plan_expires_at')->where('plan_expires_at', '>=', now()),
-            'inactiva' => $query->where(fn ($w) => $w
-                ->whereNotNull('deactivated_at')
-                ->orWhere(fn ($x) => $x->where('status', 'approved')
-                    ->where(fn ($y) => $y->whereNull('plan_expires_at')
-                        ->orWhere('plan_expires_at', '<', now())))),
-            default => $query,
-        };
-    }
-
     public function show(Associate $associate)
     {
         $associate->load(['contacts', 'references', 'users', 'services.category']);
@@ -188,5 +172,26 @@ class AssociateReviewController extends Controller
         app(SubscriptionService::class)->republishIfDue($associate);
 
         return back()->with('success', 'Empresa reactivada.');
+    }
+
+    /**
+     * Elimina la empresa y TODO lo suyo, para siempre (IRREVERSIBLE). Doble
+     * barrera: ruta admin + hay que escribir el NIT exacto (verificado aquí, no
+     * solo en el cliente). Ver App\Services\AssociatePurgeService.
+     */
+    public function destroy(Request $request, Associate $associate, AssociatePurgeService $purger)
+    {
+        $request->validate(['nit_confirmation' => 'required|string']);
+
+        if ((string) $request->input('nit_confirmation') !== (string) $associate->nit) {
+            return back()->withErrors([
+                'nit_confirmation' => 'El NIT no coincide. No se eliminó nada.',
+            ]);
+        }
+
+        $purger->purge($associate);
+
+        return redirect()->route('admin.associates.index')
+            ->with('success', 'Empresa eliminada definitivamente.');
     }
 }

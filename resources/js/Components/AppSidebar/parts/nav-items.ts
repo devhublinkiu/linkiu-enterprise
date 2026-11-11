@@ -55,10 +55,13 @@ export type AssociateLocks = {
 
 export function buildAdminItems(
     counts: {
-        approved: number;
-        pending: number;
-        inactive: number;
         total: number;
+        pendiente: number;
+        admitida: number;
+        activa: number;
+        en_gracia: number;
+        vencida: number;
+        desactivada: number;
     },
     pendingPayments: number,
     unreadMessages = 0,
@@ -77,31 +80,48 @@ export function buildAdminItems(
             children: [
                 {
                     name: 'Todas',
-                    href: route('admin.associates.index', {
-                        estado: 'todas',
-                    }),
+                    href: route('admin.associates.index', { estado: 'todas' }),
                     count: counts.total,
-                },
-                {
-                    name: 'Activas',
-                    href: route('admin.associates.index', {
-                        estado: 'activa',
-                    }),
-                    count: counts.approved,
                 },
                 {
                     name: 'Pendientes',
                     href: route('admin.associates.index', {
                         estado: 'pendiente',
                     }),
-                    count: counts.pending,
+                    count: counts.pendiente,
                 },
                 {
-                    name: 'Inactivas',
+                    name: 'Admitidas',
                     href: route('admin.associates.index', {
-                        estado: 'inactiva',
+                        estado: 'admitida',
                     }),
-                    count: counts.inactive,
+                    count: counts.admitida,
+                },
+                {
+                    name: 'Activas',
+                    href: route('admin.associates.index', { estado: 'activa' }),
+                    count: counts.activa,
+                },
+                {
+                    name: 'En gracia',
+                    href: route('admin.associates.index', {
+                        estado: 'en_gracia',
+                    }),
+                    count: counts.en_gracia,
+                },
+                {
+                    name: 'Vencidas',
+                    href: route('admin.associates.index', {
+                        estado: 'vencida',
+                    }),
+                    count: counts.vencida,
+                },
+                {
+                    name: 'Desactivadas',
+                    href: route('admin.associates.index', {
+                        estado: 'desactivada',
+                    }),
+                    count: counts.desactivada,
                 },
             ],
         },

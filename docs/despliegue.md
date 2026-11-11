@@ -62,6 +62,47 @@ Corre en este orden:
 
 ---
 
+## 3b. Correo saliente (Resend) — entregabilidad / anti-spam
+
+> **Ojo con los dominios:** el **sitio** es `camepg.org`, pero el **correo** sale desde **`camepg.com`**.
+> Todos los Mailables usan el `From` global (`config('mail.from')`), así que basta **alinear el From
+> con el dominio verificado** una sola vez. Ver [ADR-0004](adr/0004-plantillas-correo-react.md) y
+> plan 0004 §10.
+>
+> **Estado DNS de `camepg.com` (verificado el 2026-11-11 — Resend ya está OK):**
+> - DKIM `resend._domainkey.camepg.com`: **presente** (`p=MIGf…`). ✅
+> - Envío: CNAME `send.camepg.com` → `send.forge.rmta.net` y `rsend.camepg.com` →
+>   `rsend-sae1.forge.rmta.net` (infra de Resend). ✅
+> - Recepción: MX `@` → `inbound-smtp.sa-east-1.amazonaws.com` (SES). ✅
+> - DMARC `_dmarc.camepg.com`: `v=DMARC1; p=none;` (mínimo, sin reportes).
+> - Sin SPF en la raíz, pero Resend alinea por el Return-Path del subdominio `send.` (ok).
+
+El dominio de Resend ya está bien. La causa más probable del spam es el **remitente desalineado**:
+
+- [ ] 🙋 **From = `@camepg.com`** (el dominio verificado), **no `@camepg.org`**. En el `.env` de
+      producción: `MAIL_FROM_ADDRESS="no-reply@camepg.com"` (o `notificaciones@camepg.com`) y
+      `MAIL_FROM_NAME="CAMEP"`. Si hoy envía desde `@camepg.org` u otro, **ese es el problema**: DKIM
+      firma para `camepg.com` y no alinea. Tras cambiarlo: `php artisan config:cache`.
+- [ ] 🙋 **DMARC** — mejorar `_dmarc.camepg.com` para reportes y, tras validar, endurecer:
+      ```
+      v=DMARC1; p=none; rua=mailto:dmarc@camepg.com; fo=1; adkim=s; aspf=s
+      ```
+      Mantener `p=none` ~1 semana (monitoreo); cuando DKIM+SPF pasen estables, subir a
+      `p=quarantine`.
+- [ ] 🙋 **Verificar.** Enviar un correo de prueba y, en Gmail → *Mostrar original*, confirmar
+      **DKIM=PASS, SPF=PASS, DMARC=PASS** y que `d=camepg.com`. Opcional: mail-tester.com (9–10/10).
+- [ ] ℹ️ No usar el dominio de pruebas de Resend (`onboarding@resend.dev`) para correo real. Si el
+      volumen sube mucho, calentar el dominio (plan 0004 §10).
+- [ ] ℹ️ **Outlook/Microsoft es aparte y más estricto.** Verificado 2026-11-11: con auth perfecta
+      (DKIM/SPF/DMARC = PASS, `d=camepg.com`), Gmail (Workspace y personal) llega a **inbox**. Si
+      Outlook/Hotmail/Office365 sigue cayendo en spam, es reputación en la red de Microsoft, no la
+      config. Palancas: (a) **SPF en la raíz** de `camepg.com` → `v=spf1 include:amazonses.com ~all`
+      (hoy no hay ninguno; no choca y Outlook sí mira el SPF del From); (b) registrarse en **SNDS** y
+      **JMRP** de Microsoft; (c) calentar (Outlook confía más lento que Gmail). Opcional: alinear el
+      `Reply-To` (hoy `@camepg.org`) a `@camepg.com` para no mezclar dominios.
+
+---
+
 ## 4. Bold — panel y sandbox (tuyo)
 
 - [ ] 🙋 Crear/obtener las llaves de **sandbox** y de **producción** en el panel de Bold.

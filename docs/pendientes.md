@@ -45,8 +45,10 @@ Prioridad: **P0** bloquea / urgente · **P1** importante · **P2** conviene · *
       (firma HMAC, idempotencia por `payment_id`).
 - [ ] **P2 · ADRs faltantes:** section reviews (decisión ya tomada, solo en memoria), notificaciones
       unificadas, Vitrina/subdominios (stancl/tenancy ya es dependencia), roles y autorización.
-- [ ] **P2 · Entregabilidad de correo (infra, plan 0004 §10):** dominio remitente `camepg.org`,
-      DKIM completo, DMARC `p=quarantine`, calentamiento.
+- [ ] **P2 · Entregabilidad de correo (correos a spam).** El correo sale desde **`camepg.com`** (no
+      `camepg.org`, que es el sitio). `camepg.com` **ya está verificado en Resend** (DKIM + CNAME de
+      envío + MX). Causa probable: el **From** no está alineado — `MAIL_FROM_ADDRESS` debe ser
+      `@camepg.com`. Falta además endurecer DMARC. Checklist en [`despliegue.md`](despliegue.md) §3b.
 - [ ] **P2 · Mensajería: correo `NewMessageMail` en Blade a mano.** Contradice
       [ADR-0004](adr/0004-plantillas-correo-react.md) (plantillas en react-email compiladas a Blade).
       Migrar `resources/views/emails/messaging/new-message.blade.php` a `resources/js/emails/` +

@@ -65,16 +65,18 @@ const company = (over: Partial<Company> = {}): Company => ({
     ...over,
 });
 
+// El Topbar del micrositio tiene dos navs (desktop `md:flex` y móvil `md:hidden`),
+// así que cada entrada del menú aparece dos veces en el DOM. jsdom no aplica el CSS
+// de Tailwind que oculta una, por lo que basta con comprobar que exista al menos una.
+const expectMenu = (name: string) =>
+    expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
+
 describe('Public/Companies/Show (micrositio)', () => {
     it('oculta las secciones vacías del menú y muestra Quiénes somos y Contacto', () => {
         render(<Show company={company()} />);
 
-        expect(
-            screen.getByRole('button', { name: 'Quiénes somos' }),
-        ).toBeInTheDocument();
-        expect(
-            screen.getByRole('button', { name: 'Contacto' }),
-        ).toBeInTheDocument();
+        expectMenu('Quiénes somos');
+        expectMenu('Contacto');
         // Vacías → no aparecen en el menú.
         expect(screen.queryByRole('button', { name: 'Servicios' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Proyectos' })).toBeNull();
@@ -111,14 +113,8 @@ describe('Public/Companies/Show (micrositio)', () => {
             />,
         );
 
-        expect(
-            screen.getByRole('button', { name: 'Servicios' }),
-        ).toBeInTheDocument();
-        expect(
-            screen.getByRole('button', { name: 'Proyectos' }),
-        ).toBeInTheDocument();
-        expect(
-            screen.getByRole('button', { name: 'Galería' }),
-        ).toBeInTheDocument();
+        expectMenu('Servicios');
+        expectMenu('Proyectos');
+        expectMenu('Galería');
     });
 });

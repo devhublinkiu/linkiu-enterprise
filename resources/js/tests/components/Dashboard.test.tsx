@@ -14,6 +14,19 @@ vi.mock('@inertiajs/react', () => ({
         <a {...rest}>{children}</a>
     ),
     usePage: () => ({ props }),
+    useForm: (initial: Record<string, unknown> = {}) => ({
+        data: initial,
+        setData: () => {},
+        post: () => {},
+        put: () => {},
+        patch: () => {},
+        delete: () => {},
+        reset: () => {},
+        transform: () => {},
+        processing: false,
+        errors: {},
+        recentlySuccessful: false,
+    }),
 }));
 
 import Dashboard from '@/Pages/Dashboard';

@@ -57,7 +57,7 @@
                             </div>
                             <h1
                               style="color:#151515;margin:0;font-size:24px;font-weight:bold">
-                              Acción Requerida en su Perfil
+                              Acción requerida en tu perfil
                             </h1>
                           </td>
                         </tr>
@@ -75,13 +75,13 @@
                           <td>
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Estimado equipo de
+                              Hola, equipo de
                               <strong>{{ $associate->company_name }}</strong>,
                             </p>
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Durante la auditoría de su perfil en CAMEP, hemos
-                              detectado información que requiere su atención:
+                              Durante la revisión de tu perfil en CAMEP
+                              encontramos información que necesita tu atención:
                             </p>
                             <table
                               align="center"
@@ -96,7 +96,7 @@
                                   <td>
                                     <p
                                       style="font-size:14px;line-height:24px;margin:4px 0;margin-top:4px;margin-right:0;margin-bottom:4px;margin-left:0">
-                                      <strong>Campo:</strong>
+                                      <strong>Sección:</strong>
                                       {{ $fieldName }}
                                     </p>
                                     <p
@@ -110,9 +110,8 @@
                             </table>
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Por favor, ingrese a su panel para realizar las
-                              correcciones necesarias y volver a enviar su
-                              perfil a revisión.
+                              Ingresa a tu panel, haz las correcciones y vuelve
+                              a enviar la sección a revisión.
                             </p>
                             <table
                               align="center"
@@ -126,14 +125,14 @@
                                 <tr>
                                   <td>
                                     <a
-                                      href="{{ route('associate.company.basic') }}"
+                                      href="{{ $sectionUrl }}"
                                       style="line-height:100%;text-decoration:none;display:inline-block;max-width:100%;mso-padding-alt:0px;background-color:#151515;color:#ffffff;padding:12px 25px;border-radius:100px;font-weight:500;margin-top:20px;padding-top:12px;padding-right:25px;padding-bottom:12px;padding-left:25px"
                                       target="_blank"
                                       ><span
                                         ><!--[if mso]><i style="mso-font-width:416.6666666666667%;mso-text-raise:18" hidden>&#8202;&#8202;&#8202;</i><![endif]--></span
                                       ><span
                                         style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:9px"
-                                        >Corregir Información</span
+                                        >Corregir la sección</span
                                       ><span
                                         ><!--[if mso]><i style="mso-font-width:416.6666666666667%" hidden>&#8202;&#8202;&#8202;&#8203;</i><![endif]--></span
                                       ></a

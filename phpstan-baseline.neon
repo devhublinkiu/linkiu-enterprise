@@ -609,7 +609,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
 			identifier: property.notFound
-			count: 3
+			count: 5
 			path: app/Http/Controllers/AssociateController.php
 
 		-
@@ -645,7 +645,7 @@ parameters:
 		-
 			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
 			identifier: larastan.relationExistence
-			count: 2
+			count: 3
 			path: app/Http/Controllers/AssociateController.php
 
 		-

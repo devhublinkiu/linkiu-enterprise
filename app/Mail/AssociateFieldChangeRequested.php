@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Associate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,28 +14,22 @@ class AssociateFieldChangeRequested extends Mailable
     use Queueable, SerializesModels;
 
     public $associate;
-    public $fieldName;
-    public $reason;
 
-    private const SECTION_LABELS = [
-        'basicinfo'        => 'Información Básica',
-        'characterization' => 'Caracterización',
-        'contacts'         => 'Contactos',
-        'documentation'    => 'Documentación',
-        'services'         => 'Servicios',
-    ];
+    public $fieldName;
+
+    public $reason;
 
     public function __construct($associate, $fieldName, $reason)
     {
-        $this->associate  = $associate;
-        $this->fieldName  = self::SECTION_LABELS[$fieldName] ?? $fieldName;
-        $this->reason     = $reason;
+        $this->associate = $associate;
+        $this->fieldName = Associate::sectionLabel($fieldName);
+        $this->reason = $reason;
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Solicitud de cambio de sección: ' . $this->associate->company_name . ' — ' . $this->fieldName,
+            subject: 'Solicitud de cambio de sección: '.$this->associate->company_name.' — '.$this->fieldName,
         );
     }
 

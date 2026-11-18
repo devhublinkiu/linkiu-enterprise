@@ -19,21 +19,21 @@ const row = { margin: '4px 0' };
 export default function AuditRejected(): React.ReactElement {
     return (
         <EmailLayout
-            title="Acción Requerida en su Perfil"
+            title="Acción requerida en tu perfil"
             preview="Hay información de tu perfil que requiere corrección."
         >
             <Text>
-                Estimado equipo de{' '}
+                Hola, equipo de{' '}
                 <strong>{blade('$associate->company_name')}</strong>,
             </Text>
             <Text>
-                Durante la auditoría de su perfil en CAMEP, hemos detectado
-                información que requiere su atención:
+                Durante la revisión de tu perfil en CAMEP encontramos
+                información que necesita tu atención:
             </Text>
 
             <EmailInfoBox background="#fff5f5" border="#feb2b2">
                 <Text style={row}>
-                    <strong>Campo:</strong> {blade('$fieldName')}
+                    <strong>Sección:</strong> {blade('$fieldName')}
                 </Text>
                 <Text style={row}>
                     <strong>Observación:</strong> {blade('$reason')}
@@ -41,13 +41,13 @@ export default function AuditRejected(): React.ReactElement {
             </EmailInfoBox>
 
             <Text>
-                Por favor, ingrese a su panel para realizar las correcciones
-                necesarias y volver a enviar su perfil a revisión.
+                Ingresa a tu panel, haz las correcciones y vuelve a enviar la
+                sección a revisión.
             </Text>
 
             <Section style={{ textAlign: 'center' }}>
-                <EmailButton href={blade("route('associate.company.basic')")}>
-                    Corregir Información
+                <EmailButton href={blade('$sectionUrl')}>
+                    Corregir la sección
                 </EmailButton>
             </Section>
         </EmailLayout>

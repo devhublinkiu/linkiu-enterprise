@@ -75,7 +75,7 @@
                           <td>
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Estimado equipo de
+                              Hola, equipo de
                               <strong>{{ $associate->company_name }}</strong>,
                             </p>
                             
@@ -83,10 +83,9 @@
 
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Su solicitud de modificación de la sección
-                              <strong>{{ $sectionName }}</strong> ha sido aprobada. Ya
-                              puede ingresar a su panel y realizar los cambios
-                              necesarios.
+                              Tu solicitud de modificación de la sección
+                              <strong>{{ $sectionName }}</strong> fue aprobada. Ya puedes
+                              ingresar a tu panel y hacer los cambios.
                             </p>
                             
 @endif
@@ -95,9 +94,8 @@
 
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Nos complace informarle que la sección
-                              <strong>{{ $sectionName }}</strong> de su perfil ha sido
-                              revisada y aprobada por nuestro equipo.
+                              La sección <strong>{{ $sectionName }}</strong> de tu perfil
+                              fue revisada y aprobada por nuestro equipo.
                             </p>
                             
 @endif
@@ -122,12 +120,17 @@
                                 </tr>
                               </tbody>
                             </table>
+                            
+@if (! $isChangeRequest)
+
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Continúe completando las demás secciones de su
-                              perfil para avanzar en el proceso de afiliación a
-                              CAMEP.
+                              Continúa completando las demás secciones de tu
+                              perfil para avanzar en tu afiliación a CAMEP.
                             </p>
+                            
+@endif
+
                             <table
                               align="center"
                               width="100%"
@@ -140,7 +143,7 @@
                                 <tr>
                                   <td>
                                     <a
-                                      href="{{ url('/my-company/basic-info') }}"
+                                      href="{{ $sectionUrl }}"
                                       style="line-height:100%;text-decoration:none;display:inline-block;max-width:100%;mso-padding-alt:0px;background-color:#151515;color:#ffffff;padding:12px 25px;border-radius:100px;font-weight:500;margin-top:20px;padding-top:12px;padding-right:25px;padding-bottom:12px;padding-left:25px"
                                       target="_blank"
                                       ><span

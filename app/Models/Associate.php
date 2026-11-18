@@ -31,6 +31,36 @@ class Associate extends Model
 
     const SEC_REJECTED = 'rejected';
 
+    /** Nombre de cara al asociado de cada sección revisable. */
+    const SECTION_LABELS = [
+        'basicinfo' => 'Información Básica',
+        'characterization' => 'Caracterización',
+        'contacts' => 'Contactos',
+        'documentation' => 'Documentación',
+        'services' => 'Servicios',
+    ];
+
+    /** Ruta del panel donde el asociado edita cada sección. */
+    const SECTION_ROUTES = [
+        'basicinfo' => 'associate.company.basic',
+        'characterization' => 'associate.company.characterization',
+        'contacts' => 'associate.company.contacts',
+        'documentation' => 'associate.company.documentation',
+        'services' => 'associate.company.services',
+    ];
+
+    /** Etiqueta visible de una sección (fallback: la propia clave). */
+    public static function sectionLabel(string $key): string
+    {
+        return self::SECTION_LABELS[$key] ?? $key;
+    }
+
+    /** URL de edición de una sección (fallback: Información Básica). */
+    public static function sectionUrl(string $key): string
+    {
+        return route(self::SECTION_ROUTES[$key] ?? 'associate.company.basic');
+    }
+
     protected $fillable = [
         'company_name', 'initials', 'description', 'legal_status', 'constitution_date',
         'country_origin', 'nit', 'address', 'department', 'department_id', 'city', 'city_id', 'phone',

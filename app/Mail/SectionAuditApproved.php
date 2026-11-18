@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Associate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,21 +14,18 @@ class SectionAuditApproved extends Mailable
     use Queueable, SerializesModels;
 
     public $associate;
+
     public $sectionName;
+
     public $isChangeRequest;
 
-    private const SECTION_LABELS = [
-        'basicinfo'        => 'Información Básica',
-        'characterization' => 'Caracterización',
-        'contacts'         => 'Contactos',
-        'documentation'    => 'Documentación',
-        'services'         => 'Servicios',
-    ];
+    public $sectionUrl;
 
     public function __construct($associate, $sectionName, bool $isChangeRequest = false)
     {
-        $this->associate       = $associate;
-        $this->sectionName     = self::SECTION_LABELS[$sectionName] ?? $sectionName;
+        $this->associate = $associate;
+        $this->sectionUrl = Associate::sectionUrl($sectionName);
+        $this->sectionName = Associate::sectionLabel($sectionName);
         $this->isChangeRequest = $isChangeRequest;
     }
 

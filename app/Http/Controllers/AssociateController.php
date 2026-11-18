@@ -96,9 +96,10 @@ class AssociateController extends Controller
 
         $associate->fill($data);
 
-        // Sección: mantener status actual o iniciar en draft
+        // Mantener el status actual o iniciar en draft. No se pisa "rechazada":
+        // así el asociado sigue viendo el motivo mientras corrige por partes.
         $sectionStatus = $associate->getSectionStatus('basicinfo');
-        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED])) {
+        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_REJECTED])) {
             $associate->setSectionStatus('basicinfo', Associate::SEC_DRAFT);
         }
 
@@ -249,7 +250,10 @@ class AssociateController extends Controller
         // employees_direct_count es derivado y los condicionales se limpian al negativo (ADR-0005-b).
         $data = $this->normalizeCharacterization($data);
         $associate->fill($data);
-        $associate->setSectionStatus('characterization', Associate::SEC_DRAFT);
+        // No pisar "rechazada" al guardar borrador (conserva el motivo visible).
+        if ($associate->getSectionStatus('characterization') !== Associate::SEC_REJECTED) {
+            $associate->setSectionStatus('characterization', Associate::SEC_DRAFT);
+        }
         $associate->save();
 
         return back()->with('draft_saved', $this->localTimestamp());
@@ -445,7 +449,10 @@ class AssociateController extends Controller
         $data = $this->normalizeContacts($data);
 
         $associate->fill(array_diff_key($data, array_flip(['contacts', 'references'])));
-        $associate->setSectionStatus('contacts', Associate::SEC_DRAFT);
+        // No pisar "rechazada" al guardar borrador (conserva el motivo visible).
+        if ($associate->getSectionStatus('contacts') !== Associate::SEC_REJECTED) {
+            $associate->setSectionStatus('contacts', Associate::SEC_DRAFT);
+        }
         $associate->save();
 
         if (array_key_exists('contacts', $data)) {
@@ -724,8 +731,9 @@ class AssociateController extends Controller
             $this->storeAssociateDocument($associate, $key, $file, $storedFiles);
         }
 
+        // No pisar "rechazada" al guardar borrador (conserva el motivo visible).
         $sectionStatus = $associate->getSectionStatus('documentation');
-        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED])) {
+        if (! in_array($sectionStatus, [Associate::SEC_PENDING, Associate::SEC_APPROVED, Associate::SEC_REJECTED])) {
             $associate->setSectionStatus('documentation', Associate::SEC_DRAFT);
         }
 
@@ -899,7 +907,7 @@ class AssociateController extends Controller
     public function editServices()
     {
         $user = auth()->user();
-        $associate = Associate::where('id', $user->associate_id)->with('services')->first();
+        $associate = Associate::where('id', $user->associate_id)->with('services', 'plan')->first();
 
         if ($associate) {
             $this->appendFileUrls($associate);
@@ -912,6 +920,8 @@ class AssociateController extends Controller
             'initialAssociate' => $associate,
             'availableServices' => $availableServices,
             'serviceCategories' => $serviceCategories,
+            // Límite efectivo del plan (misma fuente que valida el envío; null = ilimitado).
+            'serviceLimit' => $associate?->plan?->limitFor('servicios'),
         ]);
     }
 
@@ -931,14 +941,26 @@ class AssociateController extends Controller
             return back()->with('error', 'Esta sección no puede editarse en su estado actual.');
         }
 
+        // Mismo tope que el envío: el borrador tampoco guarda de más (ADR-0002).
+        $plan = $associate->plan;
+        $limit = $plan?->limitFor('servicios');
+        $selected = $data['service_ids'] ?? [];
+        if ($limit !== null && count($selected) > $limit) {
+            return back()->with('error', "Tu plan ({$plan->name}) solo permite hasta {$limit} servicios.");
+        }
+
         if (array_key_exists('description', $data)) {
             $associate->description = $data['description'];
         }
-        $associate->setSectionStatus('services', Associate::SEC_DRAFT);
+        // No pisar el estado "rechazada": así el asociado sigue viendo el motivo
+        // mientras corrige por partes. Solo se reenvía con "Enviar a revisión".
+        if ($associate->getSectionStatus('services') !== Associate::SEC_REJECTED) {
+            $associate->setSectionStatus('services', Associate::SEC_DRAFT);
+        }
         $associate->save();
 
         if (array_key_exists('service_ids', $data)) {
-            $associate->services()->sync($data['service_ids'] ?? []);
+            $associate->services()->sync($selected);
         }
 
         return back()->with('draft_saved', $this->localTimestamp());

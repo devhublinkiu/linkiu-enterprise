@@ -29,7 +29,6 @@ import { CategoryItem, ServiceItem, ServicesForm } from './types';
 type InitialAssociate = {
     description?: string;
     services?: ServiceItem[];
-    plan?: { limit_services?: number } | null;
     section_reviews?: Record<
         string,
         { status: SectionStatus; rejected_reason?: string }
@@ -40,6 +39,8 @@ interface Props {
     initialAssociate?: InitialAssociate;
     availableServices?: ServiceItem[];
     serviceCategories?: CategoryItem[];
+    // Límite de servicios del plan (misma fuente que valida el servidor; null = ilimitado).
+    serviceLimit?: number | null;
     flash?: { success?: string; error?: string; draft_saved?: string };
 }
 
@@ -47,6 +48,7 @@ export default function Services({
     initialAssociate,
     availableServices = [],
     serviceCategories = [],
+    serviceLimit = null,
     flash,
 }: Props) {
     const review = initialAssociate?.section_reviews?.services ?? {
@@ -54,7 +56,7 @@ export default function Services({
     };
     const status = review.status;
     const canEdit = status === 'draft' || status === 'rejected';
-    const limit = initialAssociate?.plan?.limit_services || 0; // 0 = ilimitado
+    const limit = serviceLimit ?? 0; // 0/null = ilimitado
 
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm<ServicesForm>({

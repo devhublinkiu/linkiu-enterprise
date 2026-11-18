@@ -23,23 +23,21 @@ export default function AuditApproved(): React.ReactElement {
             preview="Una sección de tu perfil fue aprobada."
         >
             <Text>
-                Estimado equipo de{' '}
+                Hola, equipo de{' '}
                 <strong>{blade('$associate->company_name')}</strong>,
             </Text>
 
             <Blade if="$isChangeRequest">
                 <Text>
-                    Su solicitud de modificación de la sección{' '}
-                    <strong>{blade('$sectionName')}</strong> ha sido aprobada.
-                    Ya puede ingresar a su panel y realizar los cambios
-                    necesarios.
+                    Tu solicitud de modificación de la sección{' '}
+                    <strong>{blade('$sectionName')}</strong> fue aprobada. Ya
+                    puedes ingresar a tu panel y hacer los cambios.
                 </Text>
             </Blade>
             <Blade if="! $isChangeRequest">
                 <Text>
-                    Nos complace informarle que la sección{' '}
-                    <strong>{blade('$sectionName')}</strong> de su perfil ha
-                    sido revisada y aprobada por nuestro equipo.
+                    La sección <strong>{blade('$sectionName')}</strong> de tu
+                    perfil fue revisada y aprobada por nuestro equipo.
                 </Text>
             </Blade>
 
@@ -51,13 +49,15 @@ export default function AuditApproved(): React.ReactElement {
                 </Text>
             </EmailInfoBox>
 
-            <Text>
-                Continúe completando las demás secciones de su perfil para
-                avanzar en el proceso de afiliación a CAMEP.
-            </Text>
+            <Blade if="! $isChangeRequest">
+                <Text>
+                    Continúa completando las demás secciones de tu perfil para
+                    avanzar en tu afiliación a CAMEP.
+                </Text>
+            </Blade>
 
             <Section style={{ textAlign: 'center' }}>
-                <EmailButton href={blade("url('/my-company/basic-info')")}>
+                <EmailButton href={blade('$sectionUrl')}>
                     Ver mi perfil
                 </EmailButton>
             </Section>

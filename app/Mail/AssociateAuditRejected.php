@@ -2,8 +2,8 @@
 
 namespace App\Mail;
 
+use App\Models\Associate;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
@@ -15,8 +15,12 @@ class AssociateAuditRejected extends Mailable
     use Queueable, SerializesModels;
 
     public $associate;
+
     public $fieldName;
+
     public $reason;
+
+    public $sectionUrl;
 
     /**
      * Create a new message instance.
@@ -24,7 +28,8 @@ class AssociateAuditRejected extends Mailable
     public function __construct($associate, $fieldName, $reason)
     {
         $this->associate = $associate;
-        $this->fieldName = $fieldName;
+        $this->sectionUrl = Associate::sectionUrl($fieldName);
+        $this->fieldName = Associate::sectionLabel($fieldName);
         $this->reason = $reason;
     }
 
@@ -34,7 +39,7 @@ class AssociateAuditRejected extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Acción requerida: Revisión de perfil CAMEP - ' . $this->fieldName,
+            subject: 'Acción requerida: revisión de perfil CAMEP - '.$this->fieldName,
         );
     }
 

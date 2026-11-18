@@ -2,6 +2,25 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\AssociateApproved;
+use App\Mail\AssociateAuditRejected;
+use App\Mail\AssociateDocsSubmitted;
+use App\Mail\AssociateFieldChangeRequested;
+use App\Mail\ContactConfirmationToUser;
+use App\Mail\ContactReceivedToAdmin;
+use App\Mail\ForumReportAlert;
+use App\Mail\NewForumReply;
+use App\Mail\NewForumTopicAlert;
+use App\Mail\NewInvoiceGenerated;
+use App\Mail\NewTenderPublished;
+use App\Mail\PaymentApproved;
+use App\Mail\PaymentProofSubmitted;
+use App\Mail\PaymentRejected;
+use App\Mail\SectionAuditApproved;
+use App\Mail\SubscriptionExpired;
+use App\Mail\SubscriptionExpiringSoon;
+use App\Mail\TenderUpdatedAlert;
+use App\Mail\WelcomeUser;
 use App\Models\Associate;
 use App\Models\ContactSubmission;
 use App\Models\ForumReply;
@@ -9,6 +28,7 @@ use App\Models\ForumReport;
 use App\Models\ForumTopic;
 use App\Models\Invoice;
 use App\Models\Licitacion;
+use App\Models\Payment;
 use App\Models\PaymentRequest;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -27,50 +47,54 @@ class SendTestMail extends Command
      * Mapa: alias → [MailableClass, resolverMethod]
      */
     private array $templates = [
-        'welcome'                => [\App\Mail\WelcomeUser::class,                'resolveUser'],
-        'approved'               => [\App\Mail\AssociateApproved::class,          'resolveAssociate'],
-        'audit-rejected'         => [\App\Mail\AssociateAuditRejected::class,     'resolveAuditRejected'],
-        'audit-approved'         => [\App\Mail\SectionAuditApproved::class,       'resolveAuditApproved'],
-        'field-change-requested' => [\App\Mail\AssociateFieldChangeRequested::class, 'resolveAuditRejected'],
-        'docs-submitted'         => [\App\Mail\AssociateDocsSubmitted::class,     'resolveAssociate'],
-        'new-invoice'            => [\App\Mail\NewInvoiceGenerated::class,        'resolveInvoice'],
-        'payment-approved'       => [\App\Mail\PaymentApproved::class,            'resolvePaymentRequest'],
-        'payment-rejected'       => [\App\Mail\PaymentRejected::class,            'resolvePaymentRequest'],
-        'payment-proof'          => [\App\Mail\PaymentProofSubmitted::class,      'resolvePaymentRequest'],
-        'subscription-expiring'  => [\App\Mail\SubscriptionExpiringSoon::class,   'resolveAssociateWithDays'],
-        'subscription-expired'   => [\App\Mail\SubscriptionExpired::class,        'resolveAssociate'],
-        'new-tender'             => [\App\Mail\NewTenderPublished::class,         'resolveTender'],
-        'tender-updated'         => [\App\Mail\TenderUpdatedAlert::class,         'resolveTender'],
-        'forum-reply'            => [\App\Mail\NewForumReply::class,              'resolveForumReply'],
-        'forum-new-topic'        => [\App\Mail\NewForumTopicAlert::class,         'resolveForumTopic'],
-        'forum-report'           => [\App\Mail\ForumReportAlert::class,           'resolveForumReport'],
-        'contact-admin'          => [\App\Mail\ContactReceivedToAdmin::class,     'resolveContact'],
-        'contact-user'           => [\App\Mail\ContactConfirmationToUser::class,  'resolveContact'],
+        'welcome' => [WelcomeUser::class,                'resolveUser'],
+        'approved' => [AssociateApproved::class,          'resolveAssociate'],
+        'audit-rejected' => [AssociateAuditRejected::class,     'resolveAuditRejected'],
+        'audit-approved' => [SectionAuditApproved::class,       'resolveAuditApproved'],
+        'field-change-requested' => [AssociateFieldChangeRequested::class, 'resolveAuditRejected'],
+        'docs-submitted' => [AssociateDocsSubmitted::class,     'resolveAssociate'],
+        'new-invoice' => [NewInvoiceGenerated::class,        'resolveInvoice'],
+        'payment-approved' => [PaymentApproved::class,            'resolvePaymentRequest'],
+        'payment-rejected' => [PaymentRejected::class,            'resolvePayment'],
+        'payment-proof' => [PaymentProofSubmitted::class,      'resolvePaymentRequest'],
+        'subscription-expiring' => [SubscriptionExpiringSoon::class,   'resolveAssociateWithDays'],
+        'subscription-expired' => [SubscriptionExpired::class,        'resolveAssociate'],
+        'new-tender' => [NewTenderPublished::class,         'resolveTender'],
+        'tender-updated' => [TenderUpdatedAlert::class,         'resolveTender'],
+        'forum-reply' => [NewForumReply::class,              'resolveForumReply'],
+        'forum-new-topic' => [NewForumTopicAlert::class,         'resolveForumTopic'],
+        'forum-report' => [ForumReportAlert::class,           'resolveForumReport'],
+        'contact-admin' => [ContactReceivedToAdmin::class,     'resolveContact'],
+        'contact-user' => [ContactConfirmationToUser::class,  'resolveContact'],
     ];
 
     public function handle(): int
     {
         $template = $this->argument('template');
-        $to       = $this->argument('to');
+        $to = $this->argument('to');
 
-        if (!$template) {
+        if (! $template) {
             $this->showList();
+
             return self::SUCCESS;
         }
 
-        if (!isset($this->templates[$template])) {
+        if (! isset($this->templates[$template])) {
             $this->error("Plantilla desconocida: {$template}");
             $this->showList();
+
             return self::FAILURE;
         }
 
-        if (!$to) {
+        if (! $to) {
             $this->error('Debes indicar el email destinatario. Ej: php artisan mail:test welcome you@example.com');
+
             return self::FAILURE;
         }
 
-        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($to, FILTER_VALIDATE_EMAIL)) {
             $this->error("Email inválido: {$to}");
+
             return self::FAILURE;
         }
 
@@ -79,20 +103,23 @@ class SendTestMail extends Command
         try {
             $args = $this->{$resolver}();
         } catch (\Throwable $e) {
-            $this->error("No se pudo construir el mailable: " . $e->getMessage());
+            $this->error('No se pudo construir el mailable: '.$e->getMessage());
+
             return self::FAILURE;
         }
 
-        $this->info("Enviando '{$template}' (" . class_basename($class) . ") a {$to}…");
+        $this->info("Enviando '{$template}' (".class_basename($class).") a {$to}…");
 
         try {
             Mail::to($to)->send(new $class(...$args));
         } catch (\Throwable $e) {
-            $this->error('Error al enviar: ' . $e->getMessage());
+            $this->error('Error al enviar: '.$e->getMessage());
+
             return self::FAILURE;
         }
 
         $this->info('Listo. Revisa el buzón (y la carpeta de spam).');
+
         return self::SUCCESS;
     }
 
@@ -100,7 +127,7 @@ class SendTestMail extends Command
     {
         $this->line('Plantillas disponibles:');
         foreach (array_keys($this->templates) as $alias) {
-            $this->line('  • ' . $alias);
+            $this->line('  • '.$alias);
         }
         $this->newLine();
         $this->line('Uso:  php artisan mail:test <plantilla> <email> [--id=N]');
@@ -111,12 +138,14 @@ class SendTestMail extends Command
     private function resolveUser(): array
     {
         $user = $this->findOrLatest(User::class);
+
         return [$user];
     }
 
     private function resolveAssociate(): array
     {
         $associate = $this->findOrLatest(Associate::class);
+
         return [$associate];
     }
 
@@ -147,6 +176,11 @@ class SendTestMail extends Command
     private function resolvePaymentRequest(): array
     {
         return [$this->findOrLatest(PaymentRequest::class)->load('plan', 'associate')];
+    }
+
+    private function resolvePayment(): array
+    {
+        return [$this->findOrLatest(Payment::class)->load('invoice', 'associate')];
     }
 
     private function resolveTender(): array
@@ -182,9 +216,9 @@ class SendTestMail extends Command
             ? $modelClass::find($id)
             : $modelClass::latest('id')->first();
 
-        if (!$model) {
-            $hint = $id ? "con id={$id}" : "(no hay registros en la tabla)";
-            throw new \RuntimeException("No se encontró ningún " . class_basename($modelClass) . " {$hint}");
+        if (! $model) {
+            $hint = $id ? "con id={$id}" : '(no hay registros en la tabla)';
+            throw new \RuntimeException('No se encontró ningún '.class_basename($modelClass)." {$hint}");
         }
 
         return $model;

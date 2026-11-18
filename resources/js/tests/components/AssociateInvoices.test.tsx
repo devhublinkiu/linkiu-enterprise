@@ -8,49 +8,61 @@ vi.mock('@/Layouts/AppLayout', () => ({
 
 vi.mock('@inertiajs/react', () => ({
     Head: () => null,
-    Link: ({ children, ...props }: { children: ReactNode }) => (
-        <a {...props}>{children}</a>
+    Link: ({ children, ...rest }: { children: ReactNode }) => (
+        <a {...rest}>{children}</a>
     ),
 }));
 
 import AssociateInvoicesIndex from '@/Pages/Associate/Invoices/Index';
 
 beforeEach(() => {
-    vi.stubGlobal('route', () => '/x');
+    vi.stubGlobal(
+        'route',
+        (name: string, id?: number) => `/${name}/${id ?? ''}`,
+    );
 });
 
-const invoice = (over = {}) => ({
+const invoice = (over: Record<string, unknown> = {}) => ({
     id: 1,
     type: 'cuenta_cobro',
-    period: 'Cuota inicial - Oro',
-    amount: 250000,
+    invoice_number: 'CC-2026-0007',
+    period: 'Mensualidad noviembre 2026',
+    amount: 150000,
     status: 'pendiente',
+    display_status: 'vencida',
     external_link: null,
     notes: null,
     document_url: null,
-    created_at: '14/09/2026',
-    is_unread: true,
+    due_date: '19/11/2026',
+    is_overdue: true,
+    created_at: '01/11/2026',
+    is_unread: false,
     ...over,
 });
 
-describe('Associate/Invoices Index', () => {
-    it('lista las facturas con acción de pago para las pendientes', () => {
+describe('Associate/Invoices/Index (Mis Facturas)', () => {
+    it('muestra el estado derivado, el vencimiento y el número', () => {
+        render(<AssociateInvoicesIndex invoices={[invoice()]} />);
+
+        expect(screen.getByText('Vencida')).toBeInTheDocument();
+        expect(screen.getByText(/Venció el 19\/11\/2026/)).toBeInTheDocument();
+        expect(screen.getByText(/N\.º CC-2026-0007/)).toBeInTheDocument();
+    });
+
+    it('una factura pagada no ofrece el botón de pagar', () => {
         render(
             <AssociateInvoicesIndex
                 invoices={[
-                    invoice(),
-                    invoice({ id: 2, status: 'pagada', is_unread: false }),
+                    invoice({
+                        display_status: 'pagada',
+                        status: 'pagada',
+                        is_overdue: false,
+                    }),
                 ]}
             />,
         );
 
-        expect(screen.getAllByText('Cuota inicial - Oro').length).toBe(2);
-        // Solo la pendiente ofrece pagar.
-        expect(screen.getAllByRole('link', { name: /pagar/i })).toHaveLength(1);
-    });
-
-    it('muestra el estado vacío sin facturas', () => {
-        render(<AssociateInvoicesIndex invoices={[]} />);
-        expect(screen.getByText(/sin facturas por ahora/i)).toBeInTheDocument();
+        expect(screen.getByText('Pagada')).toBeInTheDocument();
+        expect(screen.queryByText('Pagar')).toBeNull();
     });
 });

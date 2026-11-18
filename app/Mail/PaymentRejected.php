@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
@@ -14,14 +13,14 @@ class PaymentRejected extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $paymentRequest;
+    public $payment;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($paymentRequest)
+    public function __construct($payment)
     {
-        $this->paymentRequest = $paymentRequest;
+        $this->payment = $payment;
     }
 
     /**

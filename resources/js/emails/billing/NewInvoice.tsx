@@ -23,18 +23,18 @@ export default function NewInvoice(): React.ReactElement {
             preview="Se generó un nuevo compromiso de pago de tu afiliación."
         >
             <Text>
-                Estimado equipo de{' '}
+                Hola, equipo de{' '}
                 <strong>{blade('$invoice->associate->company_name')}</strong>,
             </Text>
             <Text>
-                Se ha generado un nuevo compromiso de pago correspondiente a su
+                Se generó un nuevo compromiso de pago correspondiente a tu
                 afiliación en <strong>CAMEP</strong>.
             </Text>
 
             <EmailInfoBox background="#f8f9fa" border="#dee2e6">
                 <Text style={row}>
-                    <strong>Monto a Pagar:</strong> $
-                    {blade('number_format($invoice->amount, 2)')}
+                    <strong>Monto a pagar:</strong> $
+                    {blade("number_format($invoice->amount, 0, ',', '.')")}
                 </Text>
                 <Text style={row}>
                     <strong>Número:</strong> {blade('$invoice->invoice_number')}
@@ -46,8 +46,7 @@ export default function NewInvoice(): React.ReactElement {
             </EmailInfoBox>
 
             <Text>
-                Puede descargar el documento completo y realizar el pago desde
-                su panel administrativo.
+                Puedes descargar el documento completo y pagar desde tu panel.
             </Text>
 
             <Section style={{ textAlign: 'center' }}>

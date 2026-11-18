@@ -75,13 +75,13 @@
                           <td>
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Estimado equipo de
+                              Hola, equipo de
                               <strong>{{ $invoice->associate->company_name }}</strong>,
                             </p>
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Se ha generado un nuevo compromiso de pago
-                              correspondiente a su afiliación en
+                              Se generó un nuevo compromiso de pago
+                              correspondiente a tu afiliación en
                               <strong>CAMEP</strong>.
                             </p>
                             <table
@@ -97,8 +97,8 @@
                                   <td>
                                     <p
                                       style="font-size:14px;line-height:24px;margin:4px 0;margin-top:4px;margin-right:0;margin-bottom:4px;margin-left:0">
-                                      <strong>Monto a Pagar:</strong>
-                                      ${{ number_format($invoice->amount, 2) }}
+                                      <strong>Monto a pagar:</strong>
+                                      ${{ number_format($invoice->amount, 0, ',', '.') }}
                                     </p>
                                     <p
                                       style="font-size:14px;line-height:24px;margin:4px 0;margin-top:4px;margin-right:0;margin-bottom:4px;margin-left:0">
@@ -116,8 +116,8 @@
                             </table>
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Puede descargar el documento completo y realizar
-                              el pago desde su panel administrativo.
+                              Puedes descargar el documento completo y pagar
+                              desde tu panel.
                             </p>
                             <table
                               align="center"

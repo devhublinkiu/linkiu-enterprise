@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class Invoice extends Model
 {
@@ -13,6 +15,7 @@ class Invoice extends Model
         'created_by',
         'plan_id',
         'type',
+        'invoice_number',
         'period',
         'period_key',
         'cycle',
@@ -36,6 +39,40 @@ class Invoice extends Model
         'paid_at' => 'datetime',
         'read_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        // Asigna el consecutivo en el único punto que todos comparten, para que
+        // los 4 sitios que crean facturas lo obtengan sin tocarlos.
+        static::creating(function (Invoice $invoice) {
+            if (empty($invoice->invoice_number)) {
+                $invoice->invoice_number = static::nextNumber($invoice->type);
+            }
+        });
+    }
+
+    /**
+     * Siguiente consecutivo para el tipo dado, serie por tipo y año
+     * (FC-2026-0001 para factura, CC-2026-0001 para cuenta de cobro). El bloqueo
+     * de fila evita que dos facturas simultáneas tomen el mismo número.
+     */
+    public static function nextNumber(?string $type, ?Carbon $date = null): string
+    {
+        $prefix = $type === 'cuenta_cobro' ? 'CC' : 'FC';
+        $year = ($date ?? now())->year;
+        $serie = "{$prefix}-{$year}";
+
+        return DB::transaction(function () use ($serie) {
+            $last = static::where('invoice_number', 'like', "{$serie}-%")
+                ->lockForUpdate()
+                ->orderByDesc('invoice_number')
+                ->value('invoice_number');
+
+            $seq = $last ? ((int) substr($last, -4)) + 1 : 1;
+
+            return sprintf('%s-%04d', $serie, $seq);
+        });
+    }
 
     public function associate(): BelongsTo
     {

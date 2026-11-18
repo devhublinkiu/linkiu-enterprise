@@ -17,12 +17,16 @@ import { cn } from '@/lib/utils';
 interface InvoiceItem {
     id: number;
     type: string;
+    invoice_number: string | null;
     period: string;
     amount: number | null;
     status: string;
+    display_status: string;
     external_link: string | null;
     notes: string | null;
     document_url: string | null;
+    due_date: string | null;
+    is_overdue: boolean;
     created_at: string;
     is_unread: boolean;
 }
@@ -34,6 +38,16 @@ interface Props {
 const TYPE_LABELS: Record<string, string> = {
     factura: 'Factura',
     cuenta_cobro: 'Cuenta de cobro',
+};
+
+type BadgeVariant = 'secondary' | 'outline' | 'destructive';
+
+const STATUS_META: Record<string, { label: string; variant: BadgeVariant }> = {
+    pagada: { label: 'Pagada', variant: 'secondary' },
+    en_revision: { label: 'En revisión', variant: 'outline' },
+    rechazada: { label: 'Rechazada', variant: 'destructive' },
+    vencida: { label: 'Vencida', variant: 'destructive' },
+    pendiente: { label: 'Pendiente', variant: 'outline' },
 };
 
 const formatCurrency = (v: number | null) =>
@@ -84,7 +98,10 @@ export default function AssociateInvoicesIndex({ invoices }: Props) {
                 ) : (
                     <div className="space-y-3">
                         {invoices.map((inv) => {
-                            const isPaid = inv.status === 'pagada';
+                            const isPaid = inv.display_status === 'pagada';
+                            const statusMeta =
+                                STATUS_META[inv.display_status] ??
+                                STATUS_META.pendiente;
                             return (
                                 <Card
                                     key={inv.id}
@@ -112,13 +129,9 @@ export default function AssociateInvoicesIndex({ invoices }: Props) {
                                                     <Badge>Nueva</Badge>
                                                 )}
                                                 <Badge
-                                                    variant={
-                                                        isPaid
-                                                            ? 'secondary'
-                                                            : 'outline'
-                                                    }
+                                                    variant={statusMeta.variant}
                                                 >
-                                                    {inv.status}
+                                                    {statusMeta.label}
                                                 </Badge>
                                             </div>
                                             <p className="mt-1 font-medium text-foreground">
@@ -129,6 +142,21 @@ export default function AssociateInvoicesIndex({ invoices }: Props) {
                                                     {formatCurrency(inv.amount)}
                                                 </p>
                                             )}
+                                            {inv.due_date && !isPaid && (
+                                                <p
+                                                    className={cn(
+                                                        'mt-1 text-xs',
+                                                        inv.is_overdue
+                                                            ? 'text-destructive'
+                                                            : 'text-muted-foreground',
+                                                    )}
+                                                >
+                                                    {inv.is_overdue
+                                                        ? 'Venció el'
+                                                        : 'Vence el'}{' '}
+                                                    {inv.due_date}
+                                                </p>
+                                            )}
                                             {inv.notes && (
                                                 <p className="mt-1 text-xs text-muted-foreground">
                                                     {inv.notes}
@@ -136,6 +164,8 @@ export default function AssociateInvoicesIndex({ invoices }: Props) {
                                             )}
                                             <p className="mt-1 text-xs text-muted-foreground">
                                                 Emitida el {inv.created_at}
+                                                {inv.invoice_number &&
+                                                    ` · N.º ${inv.invoice_number}`}
                                             </p>
                                         </div>
 

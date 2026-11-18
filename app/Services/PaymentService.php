@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Http\Controllers\BillingDocumentController;
 use App\Mail\PaymentProofUploaded;
+use App\Mail\PaymentRejected;
 use App\Mail\PaymentSettled;
 use App\Models\Associate;
 use App\Models\Invoice;
@@ -196,6 +197,12 @@ class PaymentService
 
         $payment->save();
 
+        // Solo el rechazo del admin (transferencia/comprobante) avisa al asociado;
+        // un fallo de pasarela ($gateway) sigue su propio hilo.
+        if (empty($gateway)) {
+            $this->notifyAssociateOfRejection($payment);
+        }
+
         return $payment->fresh();
     }
 
@@ -332,8 +339,7 @@ class PaymentService
         // o la pasarela reintenta. El pago ya quedó aplicado en la base; el
         // correo sale tras devolver la respuesta.
         defer(function () use ($payment, $newExpiration) {
-            $recipient = $payment->associate?->users->first()?->email
-                ?? $payment->associate?->billing_email;
+            $recipient = $this->associateEmail($payment);
 
             if (! $recipient) {
                 return;
@@ -345,5 +351,32 @@ class PaymentService
                 Log::error('Error avisando al asociado del pago aplicado: '.$e->getMessage());
             }
         });
+    }
+
+    private function notifyAssociateOfRejection(Payment $payment): void
+    {
+        // defer(): el correo sale tras responder, sin bloquear la acción del admin.
+        defer(function () use ($payment) {
+            $payment->loadMissing('invoice', 'associate');
+
+            $recipient = $this->associateEmail($payment);
+
+            if (! $recipient) {
+                return;
+            }
+
+            try {
+                Mail::to($recipient)->send(new PaymentRejected($payment));
+            } catch (\Exception $e) {
+                Log::error('Error avisando al asociado del comprobante rechazado: '.$e->getMessage());
+            }
+        });
+    }
+
+    /** Correo de contacto del asociado: su primer usuario o el correo de cobro. */
+    private function associateEmail(Payment $payment): ?string
+    {
+        return $payment->associate?->users->first()?->email
+            ?? $payment->associate?->billing_email;
     }
 }

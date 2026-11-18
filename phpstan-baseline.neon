@@ -79,6 +79,12 @@ parameters:
 			path: app/Console/Commands/SendBillingReminders.php
 
 		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Events/MessageSent.php
+
+		-
 			message: '#^Access to an undefined property App\\Models\\Announcement\:\:\$author\.$#'
 			identifier: property.notFound
 			count: 1
@@ -179,6 +185,78 @@ parameters:
 			identifier: larastan.relationExistence
 			count: 2
 			path: app/Http/Controllers/Admin/BlogController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$attachments\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$body\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$company_name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Admin/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$conversation\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sender\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sender_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/ConversationController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Conversation\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Admin/ConversationController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Admin/ConversationController.php
+
+		-
+			message: '#^Parameter \#1 \$message of event class App\\Events\\MessageSent constructor expects App\\Models\\Message in App\\Events\\MessageSent\:\:dispatch\(\), Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Admin/ConversationController.php
+
+		-
+			message: '#^Parameter \#1 \$message of method App\\Http\\Controllers\\Admin\\ConversationController\:\:storeAttachments\(\) expects App\\Models\\Message, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Admin/ConversationController.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$billing_email\.$#'
@@ -373,6 +451,66 @@ parameters:
 			path: app/Http/Controllers/Associate/CheckoutController.php
 
 		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$attachments\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$body\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$conversation\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sender\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sender_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/ConversationController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Associate/ConversationController.php
+
+		-
+			message: '#^Parameter \#1 \$message of event class App\\Events\\MessageSent constructor expects App\\Models\\Message in App\\Events\\MessageSent\:\:dispatch\(\), Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Associate/ConversationController.php
+
+		-
+			message: '#^Parameter \#1 \$message of method App\\Http\\Controllers\\Associate\\ConversationController\:\:storeAttachments\(\) expects App\\Models\\Message, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Associate/ConversationController.php
+
+		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$plan\.$#'
 			identifier: property.notFound
 			count: 1
@@ -383,6 +521,72 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Associate/InvoicePaymentController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$certifications\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$clients\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$projects\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$services\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$teamMembers\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AssociateProject\:\:\$images\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Relation ''certifications'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Relation ''clients'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Relation ''projects'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Relation ''teamMembers'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Associate/MicrositeController.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$cover_url\.$#'
@@ -469,6 +673,12 @@ parameters:
 			path: app/Http/Controllers/Auth/AuthenticatedSessionController.php
 
 		-
+			message: '#^Instanceof between Illuminate\\Http\\UploadedFile and Illuminate\\Http\\UploadedFile will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Concerns/HandlesMessageAttachments.php
+
+		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
 			identifier: property.notFound
 			count: 1
@@ -535,6 +745,18 @@ parameters:
 			path: app/Http/Controllers/PublicBlogController.php
 
 		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$certifications\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$clients\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
 			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan_color\.$#'
 			identifier: property.notFound
 			count: 1
@@ -547,57 +769,21 @@ parameters:
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$services\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$projects\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$certifications\.$#'
+			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$services\.$#'
 			identifier: property.notFound
-			count: 1
+			count: 2
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$teamMembers\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$clients\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Relation ''certifications'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Relation ''clients'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Relation ''projects'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Relation ''teamMembers'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
@@ -619,7 +805,7 @@ parameters:
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Associate\>\:\:map\(\) contains unresolvable type\.$#'
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Pagination\\AbstractPaginator\<int,App\\Models\\Associate\>\:\:through\(\) contains unresolvable type\.$#'
 			identifier: argument.unresolvableType
 			count: 1
 			path: app/Http/Controllers/PublicCompanyController.php
@@ -637,7 +823,25 @@ parameters:
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
+			message: '#^Relation ''certifications'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''clients'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
 			message: '#^Relation ''contacts'' is not found in App\\Models\\Associate model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Relation ''projects'' is not found in App\\Models\\Associate model\.$#'
 			identifier: larastan.relationExistence
 			count: 2
 			path: app/Http/Controllers/PublicCompanyController.php
@@ -661,70 +865,10 @@ parameters:
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$certifications\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$teamMembers\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$clients\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Relation ''certifications'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
 			message: '#^Relation ''teamMembers'' is not found in App\\Models\\Associate model\.$#'
 			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Relation ''clients'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$services\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Relation ''projects'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$projects\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\AssociateProject\:\:\$images\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
+			count: 2
+			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
 			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
@@ -799,6 +943,36 @@ parameters:
 			path: app/Http/Middleware/HandleInertiaRequests.php
 
 		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/SendGroupMessage.php
+
+		-
+			message: '#^Parameter \#1 \$message of event class App\\Events\\MessageSent constructor expects App\\Models\\Message in App\\Events\\MessageSent\:\:dispatch\(\), Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/SendGroupMessage.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$associate_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Listeners/HandleNewMessage.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isAdmin\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Listeners/HandleNewMessage.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$subject\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Mail/NewMessageMail.php
+
+		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$company_name\.$#'
 			identifier: property.notFound
 			count: 1
@@ -811,37 +985,37 @@ parameters:
 			path: app/Mail/PaymentProofUploaded.php
 
 		-
-			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:performOnCollections\(\)\.$#'
+			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:nonQueued\(\)\.$#'
 			identifier: method.notFound
 			count: 2
 			path: app/Models/Announcement.php
 
 		-
-			message: '#^Deprecated in PHP 8\.4\: Parameter \#1 \$media \(Spatie\\MediaLibrary\\MediaCollections\\Models\\Media\) is implicitly nullable via default value null\.$#'
-			identifier: parameter.implicitlyNullable
-			count: 1
-			path: app/Models/Announcement.php
-
-		-
-			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:performOnCollections\(\)\.$#'
+			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:nonQueued\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: app/Models/BienesServiciosEmpresa.php
 
 		-
-			message: '#^Deprecated in PHP 8\.4\: Parameter \#1 \$media \(Spatie\\MediaLibrary\\MediaCollections\\Models\\Media\) is implicitly nullable via default value null\.$#'
-			identifier: parameter.implicitlyNullable
-			count: 1
-			path: app/Models/BienesServiciosEmpresa.php
-
-		-
-			message: '#^Deprecated in PHP 8\.4\: Parameter \#1 \$media \(Spatie\\MediaLibrary\\MediaCollections\\Models\\Media\) is implicitly nullable via default value null\.$#'
-			identifier: parameter.implicitlyNullable
-			count: 1
+			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:nonQueued\(\)\.$#'
+			identifier: method.notFound
+			count: 2
 			path: app/Models/BlogPost.php
 
 		-
-			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:performOnCollections\(\)\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Relations\\Pivot\:\:\$archived_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Conversation.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Relations\\Pivot\:\:\$last_read_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Conversation.php
+
+		-
+			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:nonQueued\(\)\.$#'
 			identifier: method.notFound
 			count: 2
 			path: app/Models/Licitacion.php

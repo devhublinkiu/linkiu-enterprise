@@ -410,7 +410,9 @@ it('el directorio oculta los micrositios en borrador', function () {
 
     $this->get(route('companies.index'))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->has('associates', 1));
+        // El directorio está paginado (corte 0023): las empresas van en
+        // `associates.data`, no en `associates` (que es el paginador).
+        ->assertInertia(fn (Assert $page) => $page->has('associates.data', 1));
 });
 
 // ─── Botón "Ver mi página" en el topbar (21-F) ────────────────────────────────

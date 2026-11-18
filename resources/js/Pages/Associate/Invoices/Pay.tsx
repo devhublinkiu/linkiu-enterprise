@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
+    AlertCircle,
     AlertTriangle,
     ArrowLeft,
     ArrowRight,
@@ -10,7 +11,7 @@ import {
     Upload,
     Zap,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import BankAccountCard, {
     type BankAccount,
@@ -53,6 +54,7 @@ interface Props {
         admin_notes: string | null;
         reviewed_at: string | null;
     } | null;
+    flash?: { success?: string; error?: string };
 }
 
 export default function Pay({
@@ -61,8 +63,26 @@ export default function Pay({
     onlineEnabled,
     pendingReview,
     lastRejected,
+    flash,
 }: Props) {
     const [preview, setPreview] = useState<string | null>(null);
+    const [notice, setNotice] = useState<{
+        variant: 'success' | 'destructive';
+        msg: string;
+    } | null>(null);
+
+    // Mensajes flash (éxito / error) con auto-cierre.
+    useEffect(() => {
+        if (flash?.success)
+            setNotice({ variant: 'success', msg: flash.success });
+        else if (flash?.error)
+            setNotice({ variant: 'destructive', msg: flash.error });
+
+        if (flash?.success || flash?.error) {
+            const t = setTimeout(() => setNotice(null), 5000);
+            return () => clearTimeout(t);
+        }
+    }, [flash]);
 
     const { data, setData, post, processing, errors } = useForm<{
         proof: File | null;
@@ -125,6 +145,18 @@ export default function Pay({
                         </p>
                     </div>
                 </div>
+
+                {/* Mensaje flash */}
+                {notice && (
+                    <Alert variant={notice.variant}>
+                        {notice.variant === 'success' ? (
+                            <CheckCircle2 />
+                        ) : (
+                            <AlertCircle />
+                        )}
+                        <AlertTitle>{notice.msg}</AlertTitle>
+                    </Alert>
+                )}
 
                 {/* Resumen del cobro */}
                 <Card>

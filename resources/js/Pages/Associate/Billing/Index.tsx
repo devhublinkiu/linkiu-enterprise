@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import {
+    AlertCircle,
     AlertTriangle,
     ArrowRight,
     Calendar,
@@ -13,6 +14,7 @@ import {
     RefreshCw,
     TrendingUp,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/Components/base/Alert';
 import { Badge } from '@/Components/base/Badge';
@@ -77,6 +79,7 @@ interface Props {
     usage: { services: number; gallery: number };
     availablePlans: AvailablePlan[];
     pendingInvoices: PendingInvoice[];
+    flash?: { success?: string; error?: string };
 }
 
 const formatCurrency = (value: string | number) =>
@@ -106,10 +109,29 @@ export default function BillingIndex({
     usage,
     availablePlans,
     pendingInvoices = [],
+    flash,
 }: Props) {
     const status = STATUS[subscriptionStatus];
     const needsPayment =
         subscriptionStatus === 'expired' || subscriptionStatus === 'grace';
+
+    const [notice, setNotice] = useState<{
+        variant: 'success' | 'destructive';
+        msg: string;
+    } | null>(null);
+
+    // Mensajes flash (éxito / error) con auto-cierre.
+    useEffect(() => {
+        if (flash?.success)
+            setNotice({ variant: 'success', msg: flash.success });
+        else if (flash?.error)
+            setNotice({ variant: 'destructive', msg: flash.error });
+
+        if (flash?.success || flash?.error) {
+            const t = setTimeout(() => setNotice(null), 5000);
+            return () => clearTimeout(t);
+        }
+    }, [flash]);
 
     return (
         <AppLayout>
@@ -125,6 +147,18 @@ export default function BillingIndex({
                         Tu membresía, tu uso y lo que debes pagar.
                     </p>
                 </div>
+
+                {/* Mensaje flash */}
+                {notice && (
+                    <Alert variant={notice.variant}>
+                        {notice.variant === 'success' ? (
+                            <CheckCircle2 />
+                        ) : (
+                            <AlertCircle />
+                        )}
+                        <AlertTitle>{notice.msg}</AlertTitle>
+                    </Alert>
+                )}
 
                 {/* Aviso vencida / gracia */}
                 {needsPayment && (

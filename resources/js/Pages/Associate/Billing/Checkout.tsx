@@ -2,30 +2,18 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
-    Building2,
     CheckCircle2,
     CreditCard,
-    Hash,
     Info,
-    User,
 } from 'lucide-react';
 
+import BankAccountCard, {
+    type BankAccount,
+} from '@/Components/BankAccountCard';
 import { Alert, AlertDescription, AlertTitle } from '@/Components/base/Alert';
-import { Badge } from '@/Components/base/Badge';
 import { Button } from '@/Components/base/Button';
 import { Card, CardContent } from '@/Components/base/Card';
 import AppLayout from '@/Layouts/AppLayout';
-
-interface BankAccount {
-    id: number;
-    bank_name: string;
-    account_type: string;
-    account_number: string;
-    holder_name: string;
-    holder_document: string;
-    holder_document_type: string;
-    color_hex: string;
-}
 
 interface Plan {
     id: number;
@@ -228,55 +216,10 @@ export default function Checkout({
                         )}
 
                         {bankAccounts.map((account) => (
-                            <Card key={account.id}>
-                                <CardContent>
-                                    <div className="flex items-start gap-4">
-                                        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                                            <Building2 className="size-5" />
-                                        </span>
-                                        <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-3">
-                                            <div>
-                                                <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                                                    Banco
-                                                </p>
-                                                <p className="font-medium text-foreground">
-                                                    {account.bank_name}
-                                                </p>
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="mt-1"
-                                                >
-                                                    {account.account_type}
-                                                </Badge>
-                                            </div>
-                                            <div>
-                                                <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
-                                                    <Hash className="size-3" />{' '}
-                                                    Cuenta
-                                                </p>
-                                                <p className="select-all font-mono text-sm text-foreground">
-                                                    {account.account_number}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
-                                                    <User className="size-3" />{' '}
-                                                    Titular
-                                                </p>
-                                                <p className="text-sm text-foreground">
-                                                    {account.holder_name}
-                                                </p>
-                                                <p className="font-mono text-xs text-muted-foreground">
-                                                    {
-                                                        account.holder_document_type
-                                                    }
-                                                    : {account.holder_document}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <BankAccountCard
+                                key={account.id}
+                                account={account}
+                            />
                         ))}
 
                         {bankAccounts.length === 0 && !onlineEnabled && (

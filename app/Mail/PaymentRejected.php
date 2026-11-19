@@ -29,7 +29,7 @@ class PaymentRejected extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Acción Requerida: Problema con su Comprobante de Pago - CAMEP',
+            subject: 'Acción requerida: problema con tu comprobante de pago - CAMEP',
         );
     }
 

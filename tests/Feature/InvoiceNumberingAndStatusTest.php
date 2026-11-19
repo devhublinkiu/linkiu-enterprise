@@ -84,7 +84,9 @@ it('al rechazar un comprobante le avisa al asociado por correo', function () {
 
     app(PaymentService::class)->reject($payment, 'Comprobante ilegible');
 
-    Mail::assertSent(PaymentRejected::class, fn (PaymentRejected $m) => $m->hasTo($user->email));
+    Mail::assertSent(PaymentRejected::class, fn (PaymentRejected $m) => $m->hasTo($user->email)
+        // El asunto tutea (no "su comprobante"); ver corte posterior al 0028.
+        && str_contains($m->envelope()->subject, 'tu comprobante'));
 });
 
 it('un fallo de pasarela no dispara el correo de comprobante rechazado', function () {

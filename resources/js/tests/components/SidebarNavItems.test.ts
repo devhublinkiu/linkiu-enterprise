@@ -12,6 +12,7 @@ const locks = {
     isBillingLocked: false,
     isAfiliacionLocked: false,
     bienesServiciosLocked: false,
+    anunciosLocked: false,
     unreadInvoices: 0,
 };
 
@@ -32,5 +33,20 @@ describe('buildAssociateItems', () => {
         expect(ranking?.soon).toBe(true);
         // Un "próximamente" no debe quedar además marcado como bloqueado.
         expect(empleamep?.locked).toBeFalsy();
+    });
+
+    it('bloquea "Anuncios y Licitaciones" cuando el plan no incluye anuncios', () => {
+        const abierto = buildAssociateItems(locks);
+        expect(
+            abierto.find((i) => i.name === 'Anuncios y Licitaciones')?.locked,
+        ).toBe(false);
+
+        const bloqueado = buildAssociateItems({
+            ...locks,
+            anunciosLocked: true,
+        });
+        expect(
+            bloqueado.find((i) => i.name === 'Anuncios y Licitaciones')?.locked,
+        ).toBe(true);
     });
 });

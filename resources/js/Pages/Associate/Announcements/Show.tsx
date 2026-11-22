@@ -311,16 +311,18 @@ export default function Show({ announcement, documents, can_download }: Props) {
                                     </div>
                                 )}
 
-                                <div className="flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50 p-3">
-                                    <Info
-                                        size={14}
-                                        className="mt-0.5 shrink-0 text-blue-500"
-                                    />
-                                    <p className="text-[9px] font-bold uppercase leading-relaxed tracking-wider text-blue-800">
-                                        Información exclusiva para asociados
-                                        CAMEP.
-                                    </p>
-                                </div>
+                                {announcement.visibility === 'members_only' && (
+                                    <div className="flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50 p-3">
+                                        <Info
+                                            size={14}
+                                            className="mt-0.5 shrink-0 text-blue-500"
+                                        />
+                                        <p className="text-[9px] font-bold uppercase leading-relaxed tracking-wider text-blue-800">
+                                            Información exclusiva para asociados
+                                            CAMEP.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </section>
                     </div>

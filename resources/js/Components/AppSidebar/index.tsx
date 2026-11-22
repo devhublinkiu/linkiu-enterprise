@@ -84,6 +84,7 @@ export default function AppSidebar() {
     // autoridad; aquí solo se refleja en el menú.
     const bienesServiciosLocked =
         props.plan_features?.bienes_servicios === false;
+    const anunciosLocked = props.plan_features?.anuncios === false;
     // Solo con el plan ACTIVO un perfil no público significa "falta completar".
     // Vencido/gracia ocultan el perfil por falta de pago, no por estar incompleto;
     // ahí el widget muestra el CTA de pago, no "completa tus secciones".
@@ -110,6 +111,7 @@ export default function AppSidebar() {
                   isBillingLocked,
                   isAfiliacionLocked,
                   bienesServiciosLocked,
+                  anunciosLocked,
                   unreadInvoices,
               },
               unreadMessages,

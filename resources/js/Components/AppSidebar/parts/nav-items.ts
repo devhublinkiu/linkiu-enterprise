@@ -56,6 +56,9 @@ export type AssociateLocks = {
     // El plan no incluye el módulo Bienes y Servicios (ADR-0002). El servidor es
     // la autoridad (feature:bienes_servicios); aquí solo se refleja en el menú.
     bienesServiciosLocked: boolean;
+    // El plan no incluye Anuncios (feature:anuncios). Igual que el anterior: el
+    // servidor manda, aquí solo se refleja.
+    anunciosLocked: boolean;
     unreadInvoices: number;
 };
 
@@ -229,6 +232,7 @@ export function buildAssociateItems(
         isBillingLocked,
         isAfiliacionLocked,
         bienesServiciosLocked,
+        anunciosLocked,
         unreadInvoices,
     } = locks;
 
@@ -316,7 +320,7 @@ export function buildAssociateItems(
             name: 'Anuncios y Licitaciones',
             icon: Megaphone,
             href: route('associate.announcements.index'),
-            locked: isGeneralLocked,
+            locked: isGeneralLocked || anunciosLocked,
         },
         {
             name: 'Bienes y Servicios',

@@ -89,6 +89,7 @@ export default function AppLayout({
               isBillingLocked: false,
               isAfiliacionLocked: false,
               bienesServiciosLocked: false,
+              anunciosLocked: false,
               unreadInvoices: 0,
           });
     const homeHref = route('dashboard');

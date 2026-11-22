@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Announcement extends Model implements HasMedia
 {
@@ -37,7 +37,7 @@ class Announcement extends Model implements HasMedia
     /**
      * Get the options for generating the slug.
      */
-    public function getSlugOptions() : SlugOptions
+    public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
             ->generateSlugsFrom('title')
@@ -61,14 +61,14 @@ class Announcement extends Model implements HasMedia
         $this->addMediaCollection('cover')
             ->singleFile() // Cover is just one image
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
-            
+
         $this->addMediaCollection('documents')
             ->acceptsMimeTypes([
-                'application/pdf', 
-                'application/msword', 
+                'application/pdf',
+                'application/msword',
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             ]); // Allow multiple PDFs, DOCs, EXCELs, etc.
     }
 
@@ -90,7 +90,7 @@ class Announcement extends Model implements HasMedia
             ->sharpen(10)
             ->nonQueued()
             ->performOnCollections('cover');
-            
+
         // No conversions needed for 'documents'
     }
 
@@ -100,7 +100,19 @@ class Announcement extends Model implements HasMedia
     public function scopePublished($query)
     {
         return $query->where('status', 'published')
-                     ->where('published_at', '<=', now());
+            ->where('published_at', '<=', now());
+    }
+
+    /**
+     * Vigente: sin fecha de vencimiento o aún no vencida. Se usa en la vista del
+     * asociado para no mostrar anuncios caducados; el admin los sigue viendo.
+     */
+    public function scopeNotExpired($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('expires_at')
+                ->orWhere('expires_at', '>=', now());
+        });
     }
 
     public function scopePublic($query)

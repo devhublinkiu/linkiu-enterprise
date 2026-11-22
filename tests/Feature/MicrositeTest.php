@@ -392,6 +392,40 @@ it('un slug inexistente sigue dando 404 (no la página amigable)', function () {
     $this->get('/empresa-que-no-existe-xyz')->assertNotFound();
 });
 
+it('una empresa en revisión (pending) muestra la página amigable, no 404', function () {
+    $associate = micrositeAssociate([
+        'company_name' => 'Pendiente SAS',
+        'slug' => 'pendiente-co',
+        'status' => 'pending',
+    ]);
+
+    // Por slug: página "no publicada", no 404 crudo.
+    $this->get('/pendiente-co')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Public/Companies/Unpublished')
+            ->where('companyName', 'Pendiente SAS')
+        );
+
+    // Por id (con slug) redirige al slug canónico; ya no revienta en findOrFail.
+    $this->get(route('companies.show', $associate->id))
+        ->assertRedirect('/pendiente-co');
+});
+
+it('una empresa en pending sin slug tampoco da 404 por id', function () {
+    $associate = micrositeAssociate([
+        'company_name' => 'Sin Slug SAS',
+        'slug' => null,
+        'status' => 'pending',
+    ]);
+
+    $this->get(route('companies.show', $associate->id))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Public/Companies/Unpublished')
+        );
+});
+
 it('el dueño ve su micrositio en borrador como vista previa', function () {
     $associate = micrositeAssociate(['slug' => 'borrador-co', 'microsite_published' => false]);
 

@@ -87,7 +87,11 @@ class PublicCompanyController extends Controller
 
     public function show($id)
     {
-        $associate = Associate::where('status', 'approved')
+        // Sin filtro de estado en el lookup: la visibilidad la decide
+        // renderVisible() (aprobada+publicada = pública; dueño = vista previa; el
+        // resto = página "no publicada"). Filtrar aquí daba un 404 crudo a una
+        // empresa en pending/verified.
+        $associate = Associate::query()
             ->with(['services.category', 'contacts', 'references', 'projects.images', 'certifications', 'teamMembers', 'clients'])
             ->findOrFail($id);
 
@@ -110,8 +114,8 @@ class PublicCompanyController extends Controller
             abort(404);
         }
 
+        // Sin filtro de estado: la visibilidad la decide renderVisible() (ver show).
         $associate = Associate::where('slug', $slug)
-            ->where('status', 'approved')
             ->with(['services.category', 'contacts', 'references', 'projects.images', 'certifications', 'teamMembers', 'clients'])
             ->firstOrFail();
 
@@ -128,7 +132,11 @@ class PublicCompanyController extends Controller
         $viewerAssociateId = auth()->user()?->associate_id;
         $isOwner = $viewerAssociateId && (int) $viewerAssociateId === (int) $associate->id;
 
-        $live = $associate->is_public && $associate->microsite_published;
+        // Pública solo una empresa aprobada, pública y con el micrositio publicado.
+        // El estado se exige aquí (no en el lookup) para no dar 404 a las demás.
+        $live = $associate->status === 'approved'
+            && $associate->is_public
+            && $associate->microsite_published;
         $ownerPreview = $isOwner && $associate->is_public && ! $associate->microsite_published;
 
         // La empresa existe pero su micrositio aún no está publicado: en vez de un

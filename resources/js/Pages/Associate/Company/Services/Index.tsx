@@ -56,7 +56,8 @@ export default function Services({
     };
     const status = review.status;
     const canEdit = status === 'draft' || status === 'rejected';
-    const limit = serviceLimit ?? 0; // 0/null = ilimitado
+    // null/undefined = ilimitado; un número (incluido 0 = ninguno) es el tope exacto.
+    const limit = serviceLimit ?? null;
 
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm<ServicesForm>({
@@ -98,7 +99,7 @@ export default function Services({
                 'service_ids',
                 ids.filter((x) => x !== svcId),
             );
-        } else if (limit === 0 || ids.length < limit) {
+        } else if (limit === null || ids.length < limit) {
             setData('service_ids', [...ids, svcId]);
         }
     };

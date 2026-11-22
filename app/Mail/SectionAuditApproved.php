@@ -21,12 +21,17 @@ class SectionAuditApproved extends Mailable
 
     public $sectionUrl;
 
-    public function __construct($associate, $sectionName, bool $isChangeRequest = false)
+    public $showNextSteps;
+
+    public function __construct($associate, $sectionName, bool $isChangeRequest = false, bool $showNextSteps = true)
     {
         $this->associate = $associate;
         $this->sectionUrl = Associate::sectionUrl($sectionName);
         $this->sectionName = Associate::sectionLabel($sectionName);
         $this->isChangeRequest = $isChangeRequest;
+        // "Completa las demás secciones" solo tiene sentido en onboarding; al
+        // re-aprobar una sección de una empresa ya admitida, no.
+        $this->showNextSteps = $showNextSteps;
     }
 
     public function envelope(): Envelope

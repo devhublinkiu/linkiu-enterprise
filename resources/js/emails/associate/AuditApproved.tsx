@@ -49,7 +49,7 @@ export default function AuditApproved(): React.ReactElement {
                 </Text>
             </EmailInfoBox>
 
-            <Blade if="! $isChangeRequest">
+            <Blade if="$showNextSteps">
                 <Text>
                     Continúa completando las demás secciones de tu perfil para
                     avanzar en tu afiliación a CAMEP.

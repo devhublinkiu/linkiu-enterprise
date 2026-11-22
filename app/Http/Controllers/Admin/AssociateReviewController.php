@@ -96,10 +96,14 @@ class AssociateReviewController extends Controller
                 'rejected_reason' => null,
             ]);
 
+            // Onboarding: aún no admitido. Al re-aprobar una sección de una
+            // empresa ya admitida no se muestra "completa las demás secciones".
+            $showNextSteps = ! in_array($associate->status, ['approved', 'active'], true);
+
             try {
                 if ($recipientEmail) {
                     Mail::to($recipientEmail)->send(
-                        new SectionAuditApproved($associate, $section)
+                        new SectionAuditApproved($associate, $section, false, $showNextSteps)
                     );
                 }
             } catch (\Exception $e) {

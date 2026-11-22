@@ -121,7 +121,7 @@
                               </tbody>
                             </table>
                             
-@if (! $isChangeRequest)
+@if ($showNextSteps)
 
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">

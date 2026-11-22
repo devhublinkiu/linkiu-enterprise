@@ -40,7 +40,7 @@ interface Props {
     availableServices: ServiceItem[];
     serviceCategories: CategoryItem[];
     disabled: boolean;
-    limit: number; // 0 = ilimitado
+    limit: number | null; // null = ilimitado; un número (incl. 0 = ninguno) es el tope
     error?: string;
 }
 
@@ -57,7 +57,7 @@ export default function ServicePicker({
     const [term, setTerm] = useState('');
     const [category, setCategory] = useState<string>('all');
 
-    const atLimit = limit > 0 && selectedIds.length >= limit;
+    const atLimit = limit !== null && selectedIds.length >= limit;
     // Catálogo grande: no se lista completo. Se muestra solo al buscar o filtrar por categoría.
     const hasFilter = term.trim() !== '' || category !== 'all';
 
@@ -88,7 +88,7 @@ export default function ServicePicker({
                 </CardTitle>
                 <Badge variant={error ? 'destructive' : 'secondary'}>
                     {selectedIds.length}
-                    {limit > 0 ? ` / ${limit}` : ''} elegidos
+                    {limit !== null ? ` / ${limit}` : ''} elegidos
                 </Badge>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -165,8 +165,9 @@ export default function ServicePicker({
                         className="text-sm text-muted-foreground"
                         aria-live="polite"
                     >
-                        Alcanzaste el máximo de tu plan ({limit}). Quita uno
-                        para elegir otro.
+                        {limit === 0
+                            ? 'Tu plan no incluye servicios.'
+                            : `Alcanzaste el máximo de tu plan (${limit}). Quita uno para elegir otro.`}
                     </p>
                 )}
 

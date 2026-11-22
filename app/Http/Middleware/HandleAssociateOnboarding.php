@@ -87,6 +87,8 @@ class HandleAssociateOnboarding
                     'associate.company.documentation',
                     'associate.company.update.documentation',
                     'associate.company.save.documentation.draft',
+                    'associate.company.reopen.documentation',
+                    'associate.company.documentation.delete',
                     'associate.company.gallery',
                     'associate.company.update.gallery',
                     'associate.company.delete.gallery.image',

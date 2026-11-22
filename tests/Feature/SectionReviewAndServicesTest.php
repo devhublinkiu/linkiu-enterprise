@@ -8,6 +8,7 @@ use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -99,4 +100,51 @@ it('el borrador rechaza pasarse del límite de servicios del plan', function () 
             'service_ids' => [$s1->id, $s2->id],
         ])
         ->assertSessionHas('error');
+});
+
+// ─── Corte 0030 A: correo de re-aprobación ────────────────────────────────
+
+it('re-aprobar una sección de una empresa admitida no ofrece "completar las demás"', function () {
+    Mail::fake();
+    $associate = Associate::create(['company_name' => 'Admitida SAS', 'status' => 'approved']);
+    User::factory()->create(['associate_id' => $associate->id]);
+    $admin = User::factory()->create(['is_superadmin' => true]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.associates.audit-section', $associate), [
+            'section' => 'basicinfo',
+            'action' => 'approve',
+        ])
+        ->assertRedirect();
+
+    Mail::assertSent(SectionAuditApproved::class, fn (SectionAuditApproved $m) => $m->showNextSteps === false);
+});
+
+it('aprobar una sección en afiliación sí ofrece "completar las demás"', function () {
+    Mail::fake();
+    $associate = Associate::create(['company_name' => 'Pending SAS', 'status' => 'pending']);
+    User::factory()->create(['associate_id' => $associate->id]);
+    $admin = User::factory()->create(['is_superadmin' => true]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.associates.audit-section', $associate), [
+            'section' => 'basicinfo',
+            'action' => 'approve',
+        ])
+        ->assertRedirect();
+
+    Mail::assertSent(SectionAuditApproved::class, fn (SectionAuditApproved $m) => $m->showNextSteps === true);
+});
+
+// ─── Corte 0030 B: documentación editable en afiliación ───────────────────
+
+it('en afiliación (pending) se puede reabrir la sección de Documentación', function () {
+    $associate = Associate::create(['company_name' => 'Docs SAS', 'status' => 'pending']);
+    $associate->setSectionStatus('documentation', Associate::SEC_APPROVED);
+    $associate->save();
+    $user = User::factory()->create(['associate_id' => $associate->id]);
+
+    $this->actingAs($user)
+        ->post(route('associate.company.reopen.documentation'))
+        ->assertSessionHas('success');
 });

@@ -13,9 +13,13 @@ import {
 export function InvoicesCard({
     unread,
     locked = false,
+    canChoosePlan = true,
 }: {
     unread: number;
     locked?: boolean;
+    // Facturación alcanzable (admitido o con plan). En afiliación (pending) el
+    // middleware la rebota, así que no se ofrece el botón a Gestión del Plan.
+    canChoosePlan?: boolean;
 }) {
     return (
         <Card>
@@ -34,20 +38,22 @@ export function InvoicesCard({
                         ? `Tienes ${unread} factura${unread === 1 ? '' : 's'} sin revisar.`
                         : 'No tienes facturas pendientes de revisar.'}
                 </p>
-                {locked ? (
-                    <Button asChild variant="outline">
-                        <Link href={route('associate.company.billing')}>
-                            Ir a Gestión del Plan
-                            <ArrowRight />
-                        </Link>
-                    </Button>
-                ) : (
+                {!locked ? (
                     <Button asChild variant="outline">
                         <Link href={route('associate.company.invoices.index')}>
                             Ver mis facturas
                             <ArrowRight />
                         </Link>
                     </Button>
+                ) : (
+                    canChoosePlan && (
+                        <Button asChild variant="outline">
+                            <Link href={route('associate.company.billing')}>
+                                Ir a Gestión del Plan
+                                <ArrowRight />
+                            </Link>
+                        </Button>
+                    )
                 )}
             </CardContent>
         </Card>

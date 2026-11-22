@@ -115,6 +115,36 @@ describe('Dashboard (asociado)', () => {
         expect(
             screen.getByText(/cuando CAMEP admita tu empresa/i),
         ).toBeInTheDocument();
+        // La tarjeta Facturas tampoco ofrece el botón muerto a facturación.
+        expect(
+            screen.queryByText('Ir a Gestión del Plan'),
+        ).not.toBeInTheDocument();
+    });
+
+    it('admitido sin pagar (verified) bloquea las secciones cerradas del perfil', () => {
+        setProps({
+            auth: {
+                user: { name: 'Ana', is_superadmin: false, role: 'associate' },
+                associate: {
+                    is_public: false,
+                    company_name: 'Minera SAS',
+                    status: 'verified',
+                },
+            },
+            subscription: {
+                status: 'none',
+                plan_name: null,
+                days_remaining: null,
+                expires_at: null,
+            },
+        });
+        render(<Dashboard />);
+
+        // Información Básica sigue abierta; Caracterización queda bloqueada (sin enlace).
+        expect(
+            screen.getByText('Información Básica').closest('a'),
+        ).not.toBeNull();
+        expect(screen.getByText('Caracterización').closest('a')).toBeNull();
     });
 
     it('Bienes y Servicios dentro del plan pero sin sub activa: "Requiere plan"', () => {

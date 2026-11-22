@@ -83,6 +83,8 @@ export default function Dashboard() {
         associate?.status === 'verified' ||
         associate?.status === 'active' ||
         associate?.status === 'approved';
+    // Admitido sin pagar: solo Información Básica se edita (igual que el menú).
+    const afiliacionLocked = associate?.status === 'verified';
     const planFeatures = page.plan_features ?? {};
     // Perfil oculto por falta de pago (vencido/gracia), no por estar incompleto.
     const hiddenByExpiry =
@@ -167,12 +169,17 @@ export default function Dashboard() {
                         sectionReviews={sectionReviews}
                         isPublic={!!associate?.is_public}
                         hiddenByExpiry={hiddenByExpiry}
+                        afiliacionLocked={afiliacionLocked}
                     />
                     <QuickAccessCard
                         locked={isGeneralLocked}
                         planFeatures={planFeatures}
                     />
-                    <InvoicesCard unread={unread} locked={isGeneralLocked} />
+                    <InvoicesCard
+                        unread={unread}
+                        locked={isGeneralLocked}
+                        canChoosePlan={canChoosePlan}
+                    />
                 </div>
             </div>
         </AppLayout>

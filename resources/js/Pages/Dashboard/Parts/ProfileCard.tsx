@@ -5,6 +5,7 @@ import {
     Building2,
     CheckCircle2,
     Clock,
+    Lock,
     MinusCircle,
     XCircle,
     type LucideIcon,
@@ -76,13 +77,35 @@ const SECTION_STATUS: Record<
 function SectionRow({
     section,
     review,
+    locked = false,
 }: {
     section: (typeof SECTIONS)[number];
     review?: { status: string };
+    // Admitido sin pagar (verified): esta sección aún no se puede editar; el
+    // servidor la bloquea hasta activar el plan. Se muestra sin enlace.
+    locked?: boolean;
 }) {
     const cfg =
         SECTION_STATUS[review?.status || 'draft'] ?? SECTION_STATUS.draft;
     const Icon = cfg.icon;
+
+    if (locked) {
+        return (
+            <div className="-mx-2 flex items-center justify-between rounded-lg px-2 py-2">
+                <span className="flex items-center gap-2.5">
+                    <Icon className={cn('size-4', cfg.cls)} />
+                    <span className="text-sm font-medium text-muted-foreground">
+                        {section.label}
+                    </span>
+                </span>
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Lock className="size-3" />
+                    Activa tu plan
+                </span>
+            </div>
+        );
+    }
+
     return (
         <Link
             href={route(section.route)}
@@ -106,11 +129,15 @@ export function ProfileCard({
     sectionReviews,
     isPublic,
     hiddenByExpiry = false,
+    afiliacionLocked = false,
 }: {
     sectionReviews: Record<string, { status: string }>;
     isPublic: boolean;
     // Perfil oculto por falta de pago (vencido/gracia), no por estar incompleto.
     hiddenByExpiry?: boolean;
+    // Admitido sin pagar (verified): solo Información Básica se edita; el resto se
+    // abre al activar el plan (igual que el menú lateral).
+    afiliacionLocked?: boolean;
 }) {
     const approved = SECTIONS.filter(
         (s) => sectionReviews[s.key]?.status === 'approved',
@@ -154,6 +181,9 @@ export function ProfileCard({
                             key={section.key}
                             section={section}
                             review={sectionReviews[section.key]}
+                            locked={
+                                afiliacionLocked && section.key !== 'basicinfo'
+                            }
                         />
                     ))}
                 </div>

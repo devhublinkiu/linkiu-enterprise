@@ -50,6 +50,9 @@ export type AssociateLocks = {
     isCompanyLocked: boolean;
     isGeneralLocked: boolean;
     isBillingLocked: boolean;
+    // El plan no incluye el módulo Bienes y Servicios (ADR-0002). El servidor es
+    // la autoridad (feature:bienes_servicios); aquí solo se refleja en el menú.
+    bienesServiciosLocked: boolean;
     unreadInvoices: number;
 };
 
@@ -221,6 +224,7 @@ export function buildAssociateItems(
         isCompanyLocked,
         isGeneralLocked,
         isBillingLocked,
+        bienesServiciosLocked,
         unreadInvoices,
     } = locks;
 
@@ -314,7 +318,7 @@ export function buildAssociateItems(
             name: 'Bienes y Servicios',
             icon: Building2,
             href: route('associate.company.bienes-servicios.index'),
-            locked: isGeneralLocked,
+            locked: isGeneralLocked || bienesServiciosLocked,
         },
         {
             name: 'EmpleAmep',

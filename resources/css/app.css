@@ -108,3 +108,96 @@
         animation: caret-blink 1.25s ease-out infinite;
     }
 }
+
+/*
+ * Contenido de texto enriquecido del editor (Tiptap) — Anuncios, Blog,
+ * Licitaciones y Foro. Las clases `prose` de Tailwind Typography no están
+ * activas (sin el plugin); esto da el formato base a lo que emite el editor.
+ */
+.tiptap-content,
+.prose {
+    color: hsl(var(--foreground));
+    line-height: 1.7;
+}
+.tiptap-content :where(h1, h2, h3, h4),
+.prose :where(h1, h2, h3, h4) {
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 1.4em 0 0.6em;
+    color: hsl(var(--foreground));
+}
+.tiptap-content :where(h1, h2, h3, h4):first-child,
+.prose :where(h1, h2, h3, h4):first-child {
+    margin-top: 0;
+}
+.tiptap-content h1,
+.prose h1 {
+    font-size: 1.6rem;
+}
+.tiptap-content h2,
+.prose h2 {
+    font-size: 1.35rem;
+}
+.tiptap-content h3,
+.prose h3 {
+    font-size: 1.15rem;
+}
+.tiptap-content p,
+.prose p {
+    margin: 0.75em 0;
+}
+.tiptap-content ul,
+.tiptap-content ol,
+.prose ul,
+.prose ol {
+    margin: 0.75em 0;
+    padding-left: 1.5rem;
+}
+.tiptap-content ul,
+.prose ul {
+    list-style: disc;
+}
+.tiptap-content ol,
+.prose ol {
+    list-style: decimal;
+}
+.tiptap-content li,
+.prose li {
+    margin: 0.3em 0;
+}
+.tiptap-content a,
+.prose a {
+    color: hsl(var(--primary));
+    font-weight: 600;
+    text-decoration: underline;
+}
+.tiptap-content strong,
+.prose strong {
+    font-weight: 700;
+    color: hsl(var(--foreground));
+}
+.tiptap-content em,
+.prose em {
+    font-style: italic;
+}
+.tiptap-content blockquote,
+.prose blockquote {
+    border-left: 3px solid hsl(var(--border));
+    padding-left: 1rem;
+    margin: 1em 0;
+    color: hsl(var(--muted-foreground));
+    font-style: italic;
+}
+.tiptap-content img,
+.prose img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin: 1em 0;
+}
+.tiptap-content hr,
+.prose hr {
+    border: 0;
+    border-top: 1px solid hsl(var(--border));
+    margin: 1.5em 0;
+}

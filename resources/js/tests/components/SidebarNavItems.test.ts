@@ -10,6 +10,7 @@ const locks = {
     isCompanyLocked: false,
     isGeneralLocked: false,
     isBillingLocked: false,
+    bienesServiciosLocked: false,
     unreadInvoices: 0,
 };
 

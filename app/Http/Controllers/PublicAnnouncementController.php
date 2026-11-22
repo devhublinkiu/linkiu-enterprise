@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class PublicAnnouncementController extends Controller
@@ -20,7 +19,7 @@ class PublicAnnouncementController extends Controller
                 'title' => $announcement->title,
                 'slug' => $announcement->slug,
                 'excerpt' => $announcement->excerpt,
-                'published_at' => $announcement->published_at ? $announcement->published_at->format('d M, Y') : null,
+                'published_at' => $announcement->published_at ? $announcement->published_at->translatedFormat('d M, Y') : null,
                 'cover_url' => $announcement->getFirstMediaUrl('cover', 'thumb') ?: null,
             ]);
 
@@ -36,7 +35,7 @@ class PublicAnnouncementController extends Controller
             ->firstOrFail();
 
         // If it's members_only and user is not logged in, we should redirect or show a partial view
-        if ($announcement->visibility === 'members_only' && !auth()->check()) {
+        if ($announcement->visibility === 'members_only' && ! auth()->check()) {
             return Inertia::render('Public/Announcements/Restricted', [
                 'title' => $announcement->title,
                 'excerpt' => $announcement->excerpt,
@@ -62,7 +61,7 @@ class PublicAnnouncementController extends Controller
                 'content' => $announcement->content,
                 'excerpt' => $announcement->excerpt,
                 'visibility' => $announcement->visibility,
-                'published_at' => $announcement->published_at ? $announcement->published_at->format('d M, Y') : null,
+                'published_at' => $announcement->published_at ? $announcement->published_at->translatedFormat('d M, Y') : null,
                 'cover_url' => $announcement->getFirstMediaUrl('cover') ?: null,
                 'author' => $announcement->author ? $announcement->author->name : 'CAMEP',
             ],

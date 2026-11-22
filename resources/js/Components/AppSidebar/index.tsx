@@ -35,6 +35,7 @@ type SidebarProps = {
     pending_payment_requests?: number;
     unread_invoices?: number;
     unread_messages?: number | null;
+    plan_features?: Record<string, boolean>;
 };
 
 // Navegación del panel (admin y asociado) sobre base/Sidebar. Reemplaza al viejo
@@ -68,6 +69,10 @@ export default function AppSidebar() {
     const isGeneralLocked = !isAdmin && !hasActiveSubscription;
     const isCompanyLocked = !isAdmin && sub?.status === 'expired';
     const isBillingLocked = !isAdmin && !isAssociateVerified && !sub;
+    // El plan no incluye Bienes y Servicios (ADR-0002). El servidor es la
+    // autoridad; aquí solo se refleja en el menú.
+    const bienesServiciosLocked =
+        props.plan_features?.bienes_servicios === false;
     const needsProfileCompletion = !!(
         !isAdmin &&
         sub &&
@@ -87,6 +92,7 @@ export default function AppSidebar() {
                   isCompanyLocked,
                   isGeneralLocked,
                   isBillingLocked,
+                  bienesServiciosLocked,
                   unreadInvoices,
               },
               unreadMessages,

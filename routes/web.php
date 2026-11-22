@@ -338,8 +338,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/mi-pagina/publicado', [MicrositeController::class, 'togglePublished'])
             ->name('microsite.published.toggle');
 
-        // Bienes y Servicios (Associate) — beneficio de plan: se corta al vencer
-        Route::middleware(['subscription.active'])->group(function () {
+        // Bienes y Servicios (Associate) — beneficio de plan: exige módulo incluido
+        // (ADR-0002) y se corta al vencer.
+        Route::middleware(['subscription.active', 'feature:bienes_servicios'])->group(function () {
             Route::get('/bienes-y-servicios', [BienesServiciosController::class, 'index'])->name('bienes-servicios.index');
             Route::get('/bienes-y-servicios/{company}', [BienesServiciosController::class, 'showCompany'])->name('bienes-servicios.company');
             Route::get('/bienes-y-servicios/{company}/{tender}', [BienesServiciosController::class, 'showTender'])->name('bienes-servicios.tender');

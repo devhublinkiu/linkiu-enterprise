@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Associate;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
-use Illuminate\Http\Request;
+use App\Models\Associate;
 use Inertia\Inertia;
 
 class AnnouncementController extends Controller
@@ -21,8 +21,8 @@ class AnnouncementController extends Controller
                 'slug' => $announcement->slug,
                 'excerpt' => $announcement->excerpt,
                 'visibility' => $announcement->visibility,
-                'published_at' => $announcement->published_at ? $announcement->published_at->format('d M, Y') : null,
-                'expires_at' => $announcement->expires_at ? $announcement->expires_at->format('d M, Y') : null,
+                'published_at' => $announcement->published_at ? $announcement->published_at->translatedFormat('d M, Y') : null,
+                'expires_at' => $announcement->expires_at ? $announcement->expires_at->translatedFormat('d M, Y') : null,
                 'cover_url' => $announcement->getFirstMediaUrl('cover', 'thumb') ?: null,
                 'documents_count' => $announcement->getMedia('documents')->count(),
             ]);
@@ -39,7 +39,7 @@ class AnnouncementController extends Controller
             ->firstOrFail();
 
         $user = auth()->user();
-        $associate = \App\Models\Associate::find($user->associate_id);
+        $associate = Associate::find($user->associate_id);
         $canDownload = $associate?->plan?->can_download_tenders ?? false;
 
         $documents = $announcement->getMedia('documents')->map(function ($media) use ($canDownload) {
@@ -50,7 +50,7 @@ class AnnouncementController extends Controller
                 'size' => $media->human_readable_size,
                 'url' => $canDownload ? $media->getUrl() : null,
                 'ext' => $media->extension,
-                'is_locked' => !$canDownload,
+                'is_locked' => ! $canDownload,
             ];
         });
 
@@ -61,8 +61,8 @@ class AnnouncementController extends Controller
                 'content' => $announcement->content,
                 'excerpt' => $announcement->excerpt,
                 'visibility' => $announcement->visibility,
-                'published_at' => $announcement->published_at ? $announcement->published_at->format('d M, Y') : null,
-                'expires_at' => $announcement->expires_at ? $announcement->expires_at->format('d M, Y') : null,
+                'published_at' => $announcement->published_at ? $announcement->published_at->translatedFormat('d M, Y') : null,
+                'expires_at' => $announcement->expires_at ? $announcement->expires_at->translatedFormat('d M, Y') : null,
                 'cover_url' => $announcement->getFirstMediaUrl('cover') ?: null,
                 'author' => $announcement->author ? $announcement->author->name : 'CAMEP',
             ],

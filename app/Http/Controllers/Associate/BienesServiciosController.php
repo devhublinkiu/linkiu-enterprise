@@ -63,7 +63,8 @@ class BienesServiciosController extends Controller
                 'extracto' => $tender->extracto,
                 'publico_objetivo' => $tender->publico_objetivo,
                 'estado' => $tender->estado,
-                'fecha_publicacion' => $tender->fecha_publicacion ? $tender->fecha_publicacion->format('d M, Y') : null,
+                'fecha_publicacion' => $tender->fecha_publicacion ? $tender->fecha_publicacion->translatedFormat('d M, Y') : null,
+                'fecha_cierre' => $tender->fecha_cierre ? $tender->fecha_cierre->translatedFormat('d M, Y') : null,
                 'featured_image_url' => $tender->getFirstMediaUrl('featured_image', 'thumb') ?: null,
             ]);
 
@@ -116,9 +117,10 @@ class BienesServiciosController extends Controller
                 'contenido' => $tender->contenido,
                 'extracto' => $tender->extracto,
                 'enlace_externo' => $tender->enlace_externo,
+                'publico_objetivo' => $tender->publico_objetivo,
                 'estado' => $tender->estado,
-                'fecha_publicacion' => $tender->fecha_publicacion ? $tender->fecha_publicacion->format('d M, Y') : null,
-                'fecha_cierre' => $tender->fecha_cierre ? $tender->fecha_cierre->format('d M, Y') : null,
+                'fecha_publicacion' => $tender->fecha_publicacion ? $tender->fecha_publicacion->translatedFormat('d M, Y') : null,
+                'fecha_cierre' => $tender->fecha_cierre ? $tender->fecha_cierre->translatedFormat('d M, Y') : null,
                 'featured_image_url' => $tender->getFirstMediaUrl('featured_image') ?: null,
             ],
             'documents' => $documents,

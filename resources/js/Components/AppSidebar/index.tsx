@@ -69,14 +69,19 @@ export default function AppSidebar() {
     const isGeneralLocked = !isAdmin && !hasActiveSubscription;
     const isCompanyLocked = !isAdmin && sub?.status === 'expired';
     const isBillingLocked = !isAdmin && !isAssociateVerified && !sub;
+    // Admitido sin pagar (verified): solo Información Básica; el resto se abre al
+    // activar el plan (el middleware lo manda a Gestión del Plan).
+    const isAfiliacionLocked = !isAdmin && isAssociateVerified;
     // El plan no incluye Bienes y Servicios (ADR-0002). El servidor es la
     // autoridad; aquí solo se refleja en el menú.
     const bienesServiciosLocked =
         props.plan_features?.bienes_servicios === false;
+    // Solo con el plan ACTIVO un perfil no público significa "falta completar".
+    // Vencido/gracia ocultan el perfil por falta de pago, no por estar incompleto;
+    // ahí el widget muestra el CTA de pago, no "completa tus secciones".
     const needsProfileCompletion = !!(
         !isAdmin &&
-        sub &&
-        sub.status !== 'none' &&
+        sub?.status === 'active' &&
         associate &&
         !associate.is_public
     );
@@ -92,6 +97,7 @@ export default function AppSidebar() {
                   isCompanyLocked,
                   isGeneralLocked,
                   isBillingLocked,
+                  isAfiliacionLocked,
                   bienesServiciosLocked,
                   unreadInvoices,
               },

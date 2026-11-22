@@ -105,9 +105,12 @@ function SectionRow({
 export function ProfileCard({
     sectionReviews,
     isPublic,
+    hiddenByExpiry = false,
 }: {
     sectionReviews: Record<string, { status: string }>;
     isPublic: boolean;
+    // Perfil oculto por falta de pago (vencido/gracia), no por estar incompleto.
+    hiddenByExpiry?: boolean;
 }) {
     const approved = SECTIONS.filter(
         (s) => sectionReviews[s.key]?.status === 'approved',
@@ -127,12 +130,23 @@ export function ProfileCard({
             </CardHeader>
             <CardContent className="space-y-4">
                 <Progress value={pct} />
-                {!isPublic && (
-                    <p className="flex items-start gap-2 rounded-lg bg-accent-subtle p-3 text-xs text-accent-strong">
+                {hiddenByExpiry ? (
+                    <Link
+                        href={route('associate.company.billing')}
+                        className="flex items-start gap-2 rounded-lg bg-destructive-subtle p-3 text-xs text-destructive transition-colors hover:bg-destructive-subtle/70"
+                    >
                         <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
-                        Aún no apareces en el directorio público. Completa y
-                        envía tus secciones para que el equipo las apruebe.
-                    </p>
+                        Tu plan venció y tu perfil está oculto del directorio.
+                        Paga para reactivarlo.
+                    </Link>
+                ) : (
+                    !isPublic && (
+                        <p className="flex items-start gap-2 rounded-lg bg-accent-subtle p-3 text-xs text-accent-strong">
+                            <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+                            Aún no apareces en el directorio público. Completa y
+                            envía tus secciones para que el equipo las apruebe.
+                        </p>
+                    )
                 )}
                 <div className="divide-y">
                     {SECTIONS.map((section) => (

@@ -30,6 +30,7 @@ export default function Dashboard() {
             } | null;
             subscription?: Subscription | null;
             unread_invoices?: number | null;
+            plan_features?: Record<string, boolean>;
         }
     >().props;
 
@@ -71,6 +72,15 @@ export default function Dashboard() {
         'tu empresa';
     const sub = page.subscription ?? null;
     const unread = page.unread_invoices ?? 0;
+
+    // Candados para que las tarjetas no ofrezcan lo que el servidor bloquea.
+    const hasActiveSub = sub?.status === 'active' || sub?.status === 'grace';
+    const isGeneralLocked = !hasActiveSub;
+    const planFeatures = page.plan_features ?? {};
+    // Perfil oculto por falta de pago (vencido/gracia), no por estar incompleto.
+    const hiddenByExpiry =
+        (sub?.status === 'expired' || sub?.status === 'grace') &&
+        !associate?.is_public;
 
     // Perfil ya público pero micrositio en borrador → nadie lo ve. Aviso accionable.
     const micrositeInDraft =
@@ -149,9 +159,13 @@ export default function Dashboard() {
                     <ProfileCard
                         sectionReviews={sectionReviews}
                         isPublic={!!associate?.is_public}
+                        hiddenByExpiry={hiddenByExpiry}
                     />
-                    <QuickAccessCard />
-                    <InvoicesCard unread={unread} />
+                    <QuickAccessCard
+                        locked={isGeneralLocked}
+                        planFeatures={planFeatures}
+                    />
+                    <InvoicesCard unread={unread} locked={isGeneralLocked} />
                 </div>
             </div>
         </AppLayout>

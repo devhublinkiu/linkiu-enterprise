@@ -9,6 +9,7 @@ use App\Http\Controllers\Associate\InvoicePaymentController;
 use App\Http\Controllers\Associate\MicrositeController;
 use App\Http\Controllers\AssociateController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BillingDocumentController;
@@ -191,6 +192,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [PasswordController::class, 'update'])->name('password.change');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Catálogo propio de ubicaciones (DANE/DIVIPOLA) para los Select del formulario.

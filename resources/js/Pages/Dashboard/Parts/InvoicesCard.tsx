@@ -10,7 +10,13 @@ import {
     CardTitle,
 } from '@/Components/base/Card';
 
-export function InvoicesCard({ unread }: { unread: number }) {
+export function InvoicesCard({
+    unread,
+    locked = false,
+}: {
+    unread: number;
+    locked?: boolean;
+}) {
     return (
         <Card>
             <CardHeader className="border-b">
@@ -28,12 +34,21 @@ export function InvoicesCard({ unread }: { unread: number }) {
                         ? `Tienes ${unread} factura${unread === 1 ? '' : 's'} sin revisar.`
                         : 'No tienes facturas pendientes de revisar.'}
                 </p>
-                <Button asChild variant="outline">
-                    <Link href={route('associate.company.invoices.index')}>
-                        Ver mis facturas
-                        <ArrowRight />
-                    </Link>
-                </Button>
+                {locked ? (
+                    <Button asChild variant="outline">
+                        <Link href={route('associate.company.billing')}>
+                            Ir a Gestión del Plan
+                            <ArrowRight />
+                        </Link>
+                    </Button>
+                ) : (
+                    <Button asChild variant="outline">
+                        <Link href={route('associate.company.invoices.index')}>
+                            Ver mis facturas
+                            <ArrowRight />
+                        </Link>
+                    </Button>
+                )}
             </CardContent>
         </Card>
     );

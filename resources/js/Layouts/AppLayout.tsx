@@ -84,6 +84,7 @@ export default function AppLayout({
               isCompanyLocked: false,
               isGeneralLocked: false,
               isBillingLocked: false,
+              isAfiliacionLocked: false,
               bienesServiciosLocked: false,
               unreadInvoices: 0,
           });

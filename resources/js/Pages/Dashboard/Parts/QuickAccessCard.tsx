@@ -5,6 +5,7 @@ import {
     Briefcase,
     Building2,
     Image as ImageIcon,
+    Lock,
     Megaphone,
     Network,
     Star,
@@ -24,6 +25,9 @@ type QuickModule = {
     icon: LucideIcon;
     route?: string;
     soon?: boolean;
+    // Requiere suscripción activa (todos los módulos reales) y, opcionalmente,
+    // que el plan incluya esta feature.
+    feature?: string;
 };
 
 const QUICK_MODULES: QuickModule[] = [
@@ -41,6 +45,7 @@ const QUICK_MODULES: QuickModule[] = [
         label: 'Bienes y Servicios',
         icon: Building2,
         route: 'associate.company.bienes-servicios.index',
+        feature: 'bienes_servicios',
     },
     { label: 'Red Camep', icon: Network, route: 'forums.index' },
     { label: 'EmpleAmep', icon: Briefcase, soon: true },
@@ -48,7 +53,14 @@ const QUICK_MODULES: QuickModule[] = [
     { label: 'Mi Ranking', icon: Trophy, soon: true },
 ];
 
-export function QuickAccessCard() {
+export function QuickAccessCard({
+    locked = false,
+    planFeatures = {},
+}: {
+    // Sin suscripción activa: los módulos de plan quedan bloqueados.
+    locked?: boolean;
+    planFeatures?: Record<string, boolean>;
+}) {
     return (
         <Card>
             <CardHeader className="border-b">
@@ -73,6 +85,28 @@ export function QuickAccessCard() {
                                     </span>
                                     <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                                         Próximamente
+                                    </span>
+                                </div>
+                            );
+                        }
+                        const moduleLocked =
+                            locked ||
+                            (!!m.feature && planFeatures[m.feature] === false);
+                        if (moduleLocked) {
+                            return (
+                                <div
+                                    key={m.label}
+                                    className="flex flex-col items-start gap-2 rounded-lg border border-dashed p-3 opacity-70"
+                                >
+                                    <Icon className="size-5 text-muted-foreground" />
+                                    <span className="text-sm font-medium">
+                                        {m.label}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <Lock className="size-3" />
+                                        {m.feature
+                                            ? 'No incluido'
+                                            : 'Requiere plan'}
                                     </span>
                                 </div>
                             );

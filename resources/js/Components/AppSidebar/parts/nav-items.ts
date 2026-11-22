@@ -50,6 +50,9 @@ export type AssociateLocks = {
     isCompanyLocked: boolean;
     isGeneralLocked: boolean;
     isBillingLocked: boolean;
+    // Empresa admitida sin pagar (verified): el perfil se edita solo por
+    // Información Básica; el resto de secciones se abren al activar el plan.
+    isAfiliacionLocked: boolean;
     // El plan no incluye el módulo Bienes y Servicios (ADR-0002). El servidor es
     // la autoridad (feature:bienes_servicios); aquí solo se refleja en el menú.
     bienesServiciosLocked: boolean;
@@ -224,6 +227,7 @@ export function buildAssociateItems(
         isCompanyLocked,
         isGeneralLocked,
         isBillingLocked,
+        isAfiliacionLocked,
         bienesServiciosLocked,
         unreadInvoices,
     } = locks;
@@ -250,22 +254,22 @@ export function buildAssociateItems(
                 {
                     name: 'Caracterización',
                     href: route('associate.company.characterization'),
-                    locked: isCompanyLocked,
+                    locked: isCompanyLocked || isAfiliacionLocked,
                 },
                 {
                     name: 'Contactos',
                     href: route('associate.company.contacts'),
-                    locked: isCompanyLocked,
+                    locked: isCompanyLocked || isAfiliacionLocked,
                 },
                 {
                     name: 'Servicios',
                     href: route('associate.company.services'),
-                    locked: isCompanyLocked,
+                    locked: isCompanyLocked || isAfiliacionLocked,
                 },
                 {
                     name: 'Documentación',
                     href: route('associate.company.documentation'),
-                    locked: isCompanyLocked,
+                    locked: isCompanyLocked || isAfiliacionLocked,
                 },
             ],
         },

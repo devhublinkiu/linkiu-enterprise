@@ -3,7 +3,11 @@
 namespace App\Models;
 
 use App\Services\SubscriptionService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /**
@@ -12,6 +16,15 @@ use Illuminate\Support\Str;
  * como string para reflejar los valores vigentes (draft/verified/approved/…).
  *
  * @property string $status
+ * @property-read Collection<int, AssociateContact> $contacts
+ * @property-read Collection<int, AssociateReference> $references
+ * @property-read Collection<int, Service> $services
+ * @property-read Collection<int, AssociateProject> $projects
+ * @property-read Collection<int, AssociateCertification> $certifications
+ * @property-read Collection<int, AssociateTeamMember> $teamMembers
+ * @property-read Collection<int, AssociateClient> $clients
+ * @property-read Collection<int, User> $users
+ * @property-read Plan|null $plan
  */
 class Associate extends Model
 {
@@ -103,17 +116,17 @@ class Associate extends Model
 
     // ─── Relationships ────────────────────────────────────────────────────────
 
-    public function contacts()
+    public function contacts(): HasMany
     {
         return $this->hasMany(AssociateContact::class);
     }
 
-    public function references()
+    public function references(): HasMany
     {
         return $this->hasMany(AssociateReference::class);
     }
 
-    public function services()
+    public function services(): BelongsToMany
     {
         // Pivot enriquecido para el micrositio (plan 0021): descripción y cover por
         // servicio, opcionales. La SELECCIÓN de servicios sigue siendo la sección
@@ -124,22 +137,22 @@ class Associate extends Model
 
     // ─── Micrositio (plan 0021) ───────────────────────────────────────────────
 
-    public function projects()
+    public function projects(): HasMany
     {
         return $this->hasMany(AssociateProject::class)->orderBy('sort');
     }
 
-    public function certifications()
+    public function certifications(): HasMany
     {
         return $this->hasMany(AssociateCertification::class)->orderBy('sort');
     }
 
-    public function teamMembers()
+    public function teamMembers(): HasMany
     {
         return $this->hasMany(AssociateTeamMember::class)->orderBy('sort');
     }
 
-    public function clients()
+    public function clients(): HasMany
     {
         return $this->hasMany(AssociateClient::class)->orderBy('sort');
     }
@@ -161,12 +174,12 @@ class Associate extends Model
         return in_array($slug, config('microsite.reserved_slugs', []), true);
     }
 
-    public function users()
+    public function users(): HasMany
     {
         return $this->hasMany(User::class);
     }
 
-    public function plan()
+    public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
     }

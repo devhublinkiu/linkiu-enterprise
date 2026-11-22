@@ -25,24 +25,6 @@ parameters:
 			path: app/Console/Commands/BackfillPaymentRequests.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Console/Commands/GenerateMonthlyInvoices.php
-
-		-
-			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Console/Commands/GenerateMonthlyInvoices.php
-
-		-
-			message: '#^Relation ''users'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Console/Commands/GenerateMonthlyInvoices.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$company_name\.$#'
 			identifier: property.notFound
 			count: 1
@@ -53,24 +35,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Console/Commands/ReconcileBoldPayments.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$users\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Console/Commands/SendBillingReminders.php
-
-		-
-			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Console/Commands/SendBillingReminders.php
-
-		-
-			message: '#^Relation ''users'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Console/Commands/SendBillingReminders.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -111,42 +75,6 @@ parameters:
 		-
 			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$gallery_urls\.$#'
 			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/AssociateReviewController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$users\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/Admin/AssociateReviewController.php
-
-		-
-			message: '#^Relation ''contacts'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Admin/AssociateReviewController.php
-
-		-
-			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Admin/AssociateReviewController.php
-
-		-
-			message: '#^Relation ''references'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Admin/AssociateReviewController.php
-
-		-
-			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Admin/AssociateReviewController.php
-
-		-
-			message: '#^Relation ''users'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
 			count: 1
 			path: app/Http/Controllers/Admin/AssociateReviewController.php
 
@@ -391,18 +319,6 @@ parameters:
 			path: app/Http/Controllers/Admin/PlanController.php
 
 		-
-			message: '#^Relation ''associates'' is not found in App\\Models\\Service model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Admin/ServiceController.php
-
-		-
-			message: '#^Relation ''category'' is not found in App\\Models\\Service model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Admin/ServiceController.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\User\:\:\$associate\.$#'
 			identifier: property.notFound
 			count: 1
@@ -416,12 +332,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Models\\Announcement\:\:\$author\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Associate/AnnouncementController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/Associate/AnnouncementController.php
@@ -523,68 +433,44 @@ parameters:
 			path: app/Http/Controllers/Associate/InvoicePaymentController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$certifications\.$#'
+			message: '#^Access to an undefined property App\\Models\\Service\:\:\$pivot\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Associate/MicrositeController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$path\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/Associate/MicrositeController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$clients\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Relations\\Pivot\:\:\$cover_path\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/Associate/MicrositeController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$projects\.$#'
-			identifier: property.notFound
+			message: '#^Anonymous function should return array\{id\: int, title\: string, description\: string\|null, client\: string\|null, images\: Illuminate\\Support\\Collection\<int, array\{id\: int, url\: string\|null\}\>\} but returns array\{id\: int, title\: string, description\: string\|null, client\: string\|null, images\: Illuminate\\Support\\Collection\<int, array\{id\: int, url\: string\|null\}\>\}\.$#'
+			identifier: return.type
 			count: 1
 			path: app/Http/Controllers/Associate/MicrositeController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$services\.$#'
-			identifier: property.notFound
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\AssociateProject\>\:\:map\(\) expects callable\(App\\Models\\AssociateProject, int\)\: array\{id\: int, title\: string, description\: string\|null, client\: string\|null, images\: Illuminate\\Support\\Collection\<int, array\{id\: int, url\: string\|null\}\>\}, Closure\(mixed\)\: array\{id\: int, title\: string, description\: string\|null, client\: string\|null, images\: Illuminate\\Support\\Collection\<int, array\{id\: int, url\: string\|null\}\>\} given\.$#'
+			identifier: argument.type
 			count: 1
 			path: app/Http/Controllers/Associate/MicrositeController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$teamMembers\.$#'
-			identifier: property.notFound
+			message: '#^Parameter \#2 \$project of method App\\Http\\Controllers\\Associate\\MicrositeController\:\:addProjectImages\(\) expects App\\Models\\AssociateProject, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
 			count: 1
 			path: app/Http/Controllers/Associate/MicrositeController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\AssociateProject\:\:\$images\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Relation ''certifications'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Relation ''clients'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Relation ''projects'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/Associate/MicrositeController.php
-
-		-
-			message: '#^Relation ''teamMembers'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
+			message: '#^Using nullsafe property access on non\-nullable type App\\Models\\ServiceCategory\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Associate/MicrositeController.php
 
@@ -607,12 +493,6 @@ parameters:
 			path: app/Http/Controllers/AssociateController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
-			identifier: property.notFound
-			count: 5
-			path: app/Http/Controllers/AssociateController.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$key\.$#'
 			identifier: property.notFound
 			count: 1
@@ -628,36 +508,6 @@ parameters:
 			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
 			identifier: larastan.noEnvCallsOutsideOfConfig
 			count: 1
-			path: app/Http/Controllers/AssociateController.php
-
-		-
-			message: '#^Relation ''category'' is not found in App\\Models\\Service model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/AssociateController.php
-
-		-
-			message: '#^Relation ''contacts'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 4
-			path: app/Http/Controllers/AssociateController.php
-
-		-
-			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 3
-			path: app/Http/Controllers/AssociateController.php
-
-		-
-			message: '#^Relation ''references'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 4
-			path: app/Http/Controllers/AssociateController.php
-
-		-
-			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 5
 			path: app/Http/Controllers/AssociateController.php
 
 		-
@@ -745,18 +595,6 @@ parameters:
 			path: app/Http/Controllers/PublicBlogController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$certifications\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$clients\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan_color\.$#'
 			identifier: property.notFound
 			count: 1
@@ -769,38 +607,116 @@ parameters:
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$projects\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$services\.$#'
+			message: '#^Access to an undefined property App\\Models\\Service\:\:\$pivot\.$#'
 			identifier: property.notFound
 			count: 2
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$teamMembers\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Service\:\:\$associates\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Service\:\:\$category\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\ServiceCategory\:\:\$services\.$#'
 			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$company_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$cover_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$description\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_verified\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$logo_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nit\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$plan_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$services\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$social_facebook\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$social_instagram\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$social_linkedin\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$website\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Anonymous function should return array\{id\: int, title\: string, description\: string\|null, client\: string\|null, images\: Illuminate\\Support\\Collection\<int, string\|null\>\} but returns array\{id\: int, title\: string, description\: string\|null, client\: string\|null, images\: Illuminate\\Support\\Collection\<int, string\|null\>\}\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\AssociateProject\>\:\:map\(\) expects callable\(App\\Models\\AssociateProject, int\)\: array\{id\: int, title\: string, description\: string\|null, client\: string\|null, images\: Illuminate\\Support\\Collection\<int, string\|null\>\}, Closure\(mixed\)\: array\{id\: int, title\: string, description\: string\|null, client\: string\|null, images\: Illuminate\\Support\\Collection\<int, string\|null\>\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/PublicCompanyController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
 			count: 1
 			path: app/Http/Controllers/PublicCompanyController.php
 
@@ -811,63 +727,15 @@ parameters:
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
-			message: '#^Relation ''associates'' is not found in App\\Models\\Service model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Relation ''category'' is not found in App\\Models\\Service model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Relation ''certifications'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Relation ''clients'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Relation ''contacts'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Relation ''projects'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Relation ''references'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
-			message: '#^Relation ''services'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 5
-			path: app/Http/Controllers/PublicCompanyController.php
-
-		-
 			message: '#^Relation ''services'' is not found in App\\Models\\ServiceCategory model\.$#'
 			identifier: larastan.relationExistence
 			count: 1
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
-			message: '#^Relation ''teamMembers'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
+			message: '#^Using nullsafe property access on non\-nullable type App\\Models\\ServiceCategory\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
 			path: app/Http/Controllers/PublicCompanyController.php
 
 		-
@@ -895,22 +763,10 @@ parameters:
 			path: app/Http/Controllers/Webhooks/BoldWebhookController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_enabled\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Middleware/CheckFeature.php
-
-		-
-			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Middleware/CheckFeature.php
-
-		-
-			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Middleware/CheckSubscription.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\User\:\:\$associate\.$#'
@@ -919,21 +775,9 @@ parameters:
 			path: app/Http/Middleware/HandleAssociateOnboarding.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Http/Middleware/HandleInertiaRequests.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\User\:\:\$associate\.$#'
 			identifier: property.notFound
 			count: 10
-			path: app/Http/Middleware/HandleInertiaRequests.php
-
-		-
-			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
 			path: app/Http/Middleware/HandleInertiaRequests.php
 
 		-
@@ -1039,12 +883,6 @@ parameters:
 			path: app/Models/User.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Associate\:\:\$plan\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/BillingService.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$billing_email\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1120,10 +958,4 @@ parameters:
 			message: '#^Parameter \#1 \$currentExpiration of static method App\\Services\\SubscriptionService\:\:nextExpiration\(\) expects Illuminate\\Support\\Carbon\|null, Carbon\\Carbon\|null given\.$#'
 			identifier: argument.type
 			count: 2
-			path: app/Services/SubscriptionService.php
-
-		-
-			message: '#^Relation ''plan'' is not found in App\\Models\\Associate model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
 			path: app/Services/SubscriptionService.php

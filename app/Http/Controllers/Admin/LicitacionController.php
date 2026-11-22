@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\NewTenderPublished;
+use App\Mail\TenderUpdatedAlert;
 use App\Models\BienesServiciosEmpresa;
 use App\Models\Licitacion;
 use App\Models\User;
+use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
@@ -120,16 +123,23 @@ class LicitacionController extends Controller
             $tender->addMediaFromRequest('featured_image')->toMediaCollection('featured_image');
         }
 
+        $addedDocuments = false;
         if ($request->hasFile('documents')) {
             foreach ($request->file('documents') as $file) {
                 $tender->addMedia($file)->toMediaCollection('documents');
             }
+            $addedDocuments = true;
         }
 
         // Solo en la transición borrador/cerrado → publicado. Editar una ya
-        // publicada NO reenvía correo (antes se spameaba a todos en cada guardado).
+        // publicada NO reenvía el correo de publicación (antes se spameaba en cada
+        // guardado).
         if ($tender->estado === 'publicado' && ! $wasPublished) {
             $this->notifyAssociatesOfPublication($tender);
+        } elseif ($wasPublished && $tender->estado === 'publicado' && $addedDocuments) {
+            // Ya estaba publicada y se le subieron documentos nuevos: aviso de
+            // actualización (asunto propio), sin reenviar el de publicación.
+            $this->notifyAssociatesOfUpdate($tender);
         }
 
         return redirect()->route('admin.bienes-servicios.tenders.index')
@@ -153,18 +163,35 @@ class LicitacionController extends Controller
     }
 
     /**
-     * Avisa de una licitación recién publicada SOLO a quien puede abrirla: los
-     * asociados admitidos, al día y con el módulo Bienes y Servicios en su plan
-     * (ADR-0002). Antes se mandaba a los `verified` (admitidos sin pagar), que no
-     * pueden entrar. Se reusa la lógica autoritativa (isSubscriptionActive +
-     * allows) en vez de replicarla en SQL.
-     *
-     * Diferido con defer() y por lotes de BCC para no bloquear el guardado. Se
-     * llama solo en la transición a "publicado".
+     * Aviso de una licitación recién publicada. Se llama solo en la transición a
+     * "publicado". El público y el envío los resuelve notifyAssociates().
      */
     private function notifyAssociatesOfPublication(Licitacion $tender): void
     {
-        defer(function () use ($tender) {
+        $this->notifyAssociates(fn () => new NewTenderPublished($tender));
+    }
+
+    /**
+     * Aviso de actualización (documentos nuevos) de una licitación ya publicada.
+     * Mismo público que la publicación; se llama solo al subir documentos.
+     */
+    private function notifyAssociatesOfUpdate(Licitacion $tender): void
+    {
+        $this->notifyAssociates(fn () => new TenderUpdatedAlert($tender));
+    }
+
+    /**
+     * Envía el correo (uno nuevo por lote, vía la fábrica) SOLO a quien puede abrir
+     * la licitación: asociados admitidos, al día y con el módulo Bienes y Servicios
+     * en su plan (ADR-0002). Se reusa la lógica autoritativa (isSubscriptionActive +
+     * allows) en vez de replicarla en SQL. Diferido con defer() y por lotes de BCC
+     * para no bloquear el guardado (ADR-0011).
+     *
+     * @param  Closure(): Mailable  $makeMail  Fábrica del correo a enviar.
+     */
+    private function notifyAssociates(Closure $makeMail): void
+    {
+        defer(function () use ($makeMail) {
             $emails = User::query()
                 ->whereHas('associate', fn ($q) => $q->where('status', 'approved'))
                 ->with('associate.plan.features')
@@ -176,13 +203,13 @@ class LicitacionController extends Controller
                 ->filter()
                 ->values();
 
-            $emails->chunk(50)->each(function ($chunk) use ($tender) {
+            $emails->chunk(50)->each(function ($chunk) use ($makeMail) {
                 try {
                     // Resend exige un `to`: mandamos a la casilla de envío y los
                     // asociados en BCC (ocultos entre sí). Sin `to`, la API
                     // responde "Missing `to` field" y el aviso no sale.
                     $to = config('mail.from.address') ?: 'afiliate@camepg.org';
-                    Mail::to($to)->bcc($chunk->all())->send(new NewTenderPublished($tender));
+                    Mail::to($to)->bcc($chunk->all())->send($makeMail());
                 } catch (\Throwable $e) {
                     Log::error('Error enviando alerta de licitación: '.$e->getMessage());
                 }

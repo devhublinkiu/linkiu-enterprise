@@ -1,6 +1,7 @@
 <?php
 
 use App\Mail\NewTenderPublished;
+use App\Mail\TenderUpdatedAlert;
 use App\Models\BienesServiciosEmpresa;
 use App\Models\Feature;
 use App\Models\Licitacion;
@@ -271,6 +272,28 @@ it('NO reenvía correo al editar una licitación ya publicada', function () {
     ]);
 
     Mail::assertNothingSent();
+});
+
+it('avisa de actualización al subir documentos a una licitación ya publicada', function () {
+    bsRecipient(); // admitido, al día y con el módulo
+    $tender = bsTender('abierto', estado: 'publicado');
+
+    test()->actingAs(bsAdmin())->put(route('admin.bienes-servicios.tenders.update', $tender), [
+        'empresa_id' => $tender->empresa_id,
+        'titulo' => $tender->titulo,
+        'publico_objetivo' => 'abierto',
+        'estado' => 'publicado',
+        'documents' => [
+            UploadedFile::fake()->createWithContent('pliego.pdf', "%PDF-1.4\n1 0 obj<<>>endobj\n%%EOF"),
+        ],
+    ]);
+
+    // Aviso de actualización (to + bcc), sin reenviar el de publicación.
+    Mail::assertSent(
+        TenderUpdatedAlert::class,
+        fn ($mail) => count($mail->to) >= 1 && count($mail->bcc) >= 1,
+    );
+    Mail::assertNotSent(NewTenderPublished::class);
 });
 
 it('avisa al pasar una licitación de borrador a publicado', function () {

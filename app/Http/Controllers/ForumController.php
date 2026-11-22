@@ -2,21 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ForumReportAlert;
+use App\Mail\NewForumReply;
+use App\Mail\NewForumTopicAlert;
 use App\Models\ForumCategory;
-use App\Models\ForumTopic;
+use App\Models\ForumReaction;
 use App\Models\ForumReply;
 use App\Models\ForumReport;
+use App\Models\ForumTopic;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
 
 class ForumController extends Controller
 {
     public function index()
     {
         $categories = ForumCategory::withCount(['topics', 'replies'])->orderBy('order')->get();
-        
+
         $stats = [
             'total_topics' => ForumTopic::count(),
             'total_replies' => ForumReply::count(),
@@ -24,16 +30,16 @@ class ForumController extends Controller
 
         return Inertia::render('Forums/Index', [
             'categories' => $categories,
-            'stats' => $stats
+            'stats' => $stats,
         ]);
     }
 
     public function showCategory($slug)
     {
         $category = ForumCategory::where('slug', $slug)->firstOrFail();
-        
+
         // If private, check auth
-        if ($category->is_private && !Auth::check()) {
+        if ($category->is_private && ! Auth::check()) {
             return redirect()->route('login')->with('error', 'Este círculo es privado. Inicia sesión para entrar.');
         }
 
@@ -46,35 +52,35 @@ class ForumController extends Controller
 
         return Inertia::render('Forums/CategoryShow', [
             'category' => $category,
-            'topics' => $topics
+            'topics' => $topics,
         ]);
     }
 
     public function showTopic($categorySlug, $topicSlug)
     {
         $category = ForumCategory::where('slug', $categorySlug)->firstOrFail();
-        
+
         // Use withTrashed() to catch deleted topics and redirect gracefully
         $topic = ForumTopic::withTrashed()
             ->where('slug', $topicSlug)
             ->where('category_id', $category->id)
             ->with([
-                'user.associate', 
-                'replies' => function($query) {
+                'user.associate',
+                'replies' => function ($query) {
                     $query->withCount('reactions')
-                          ->withExists(['reactions as is_liked' => function($q) {
-                              $q->where('user_id', Auth::id());
-                          }])
-                          ->with(['user.associate']);
-                }
+                        ->withExists(['reactions as is_liked' => function ($q) {
+                            $q->where('user_id', Auth::id());
+                        }])
+                        ->with(['user.associate']);
+                },
             ])
             ->withCount('reactions')
-            ->withExists(['reactions as is_liked' => function($q) {
+            ->withExists(['reactions as is_liked' => function ($q) {
                 $q->where('user_id', Auth::id());
             }])
             ->first();
 
-        if (!$topic) {
+        if (! $topic) {
             return redirect()->route('forums.index')
                 ->with('error', 'El debate que buscas no existe.');
         }
@@ -85,7 +91,7 @@ class ForumController extends Controller
         }
 
         // If private, check auth
-        if ($category->is_private && !Auth::check()) {
+        if ($category->is_private && ! Auth::check()) {
             return redirect()->route('login')->with('error', 'Este debate es privado.');
         }
 
@@ -94,7 +100,7 @@ class ForumController extends Controller
 
         return Inertia::render('Forums/TopicShow', [
             'category' => $category,
-            'topic' => $topic
+            'topic' => $topic,
         ]);
     }
 
@@ -109,15 +115,15 @@ class ForumController extends Controller
             'category_id' => $category->id,
             'user_id' => Auth::id(),
             'title' => $request->title,
-            'slug' => Str::slug($request->title) . '-' . uniqid(),
+            'slug' => Str::slug($request->title).'-'.uniqid(),
             'content' => $request->content,
         ]);
 
         try {
-            \Illuminate\Support\Facades\Mail::to(config('mail.admin_recipient', env('ADMIN_EMAIL')))
-                ->send(new \App\Mail\NewForumTopicAlert($topic));
+            Mail::to(config('mail.admin_recipient', env('ADMIN_EMAIL')))
+                ->send(new NewForumTopicAlert($topic));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error enviando alerta de nuevo tema: ' . $e->getMessage());
+            Log::error('Error enviando alerta de nuevo tema: '.$e->getMessage());
         }
 
         return redirect()->route('forums.topic', [$category->slug, $topic->slug])
@@ -143,36 +149,30 @@ class ForumController extends Controller
         // Notificar al autor del tema si no es el mismo que responde
         if ($topic->user_id !== Auth::id()) {
             try {
-                \Illuminate\Support\Facades\Mail::to($topic->user->email)
-                    ->send(new \App\Mail\NewForumReply($reply));
+                Mail::to($topic->user->email)
+                    ->send(new NewForumReply($reply));
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Error enviando notificación de foro: ' . $e->getMessage());
+                Log::error('Error enviando notificación de foro: '.$e->getMessage());
             }
         }
 
         return back()->with('success', 'Respuesta enviada');
     }
 
-    public function react(Request $request, $type, $id)
+    public function react(Request $request, string $reactable, $type, $id)
     {
         $user = Auth::user();
-        
-        // Find by ID in topics or replies (simplified for now)
-        $topic = ForumTopic::find($id);
-        $reactable = $topic;
-        $reactableType = ForumTopic::class;
 
-        if (!$reactable) {
-            $reply = ForumReply::find($id);
-            $reactable = $reply;
-            $reactableType = ForumReply::class;
-        }
+        // El id de un tema y el de una respuesta pueden coincidir: el tipo de
+        // objeto viene explícito en la ruta, no se adivina por id.
+        $reactableType = $reactable === 'reply' ? ForumReply::class : ForumTopic::class;
+        $reactable = $reactableType::find($id);
 
-        if (!$reactable) {
+        if (! $reactable) {
             return back()->with('error', 'Contenido no encontrado');
         }
 
-        $existing = \App\Models\ForumReaction::where('user_id', $user->id)
+        $existing = ForumReaction::where('user_id', $user->id)
             ->where('reactable_id', $reactable->id)
             ->where('reactable_type', $reactableType)
             ->where('type', $type)
@@ -181,7 +181,7 @@ class ForumController extends Controller
         if ($existing) {
             $existing->delete();
         } else {
-            \App\Models\ForumReaction::create([
+            ForumReaction::create([
                 'user_id' => $user->id,
                 'reactable_id' => $reactable->id,
                 'reactable_type' => $reactableType,
@@ -199,7 +199,7 @@ class ForumController extends Controller
         ]);
 
         $user = Auth::user();
-        
+
         $data = [
             'user_id' => $user->id,
             'reason' => $request->reason,
@@ -216,10 +216,10 @@ class ForumController extends Controller
 
         // Notificar al administrador
         try {
-            \Illuminate\Support\Facades\Mail::to(config('mail.admin_recipient', env('ADMIN_EMAIL')))
-                ->send(new \App\Mail\ForumReportAlert($report));
+            Mail::to(config('mail.admin_recipient', env('ADMIN_EMAIL')))
+                ->send(new ForumReportAlert($report));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error enviando alerta de reporte a admin: ' . $e->getMessage());
+            Log::error('Error enviando alerta de reporte a admin: '.$e->getMessage());
         }
 
         return back()->with('success', 'Reporte enviado correctamente. El equipo de administración lo revisará.');

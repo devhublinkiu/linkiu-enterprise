@@ -353,7 +353,8 @@ Route::middleware('auth')->group(function () {
     Route::name('forums.')->prefix('red-camep')->middleware(['associate.onboarding', 'subscription.active', 'feature:foros'])->group(function () {
         Route::post('/{category}/topic', [ForumController::class, 'storeTopic'])->name('topic.store');
         Route::post('/topic/{topic}/reply', [ForumController::class, 'storeReply'])->name('reply.store');
-        Route::post('/react/{type}/{id}', [ForumController::class, 'react'])->name('react');
+        Route::post('/react/{reactable}/{type}/{id}', [ForumController::class, 'react'])
+            ->whereIn('reactable', ['topic', 'reply'])->name('react');
         Route::post('/report/{type}/{id}', [ForumController::class, 'report'])->name('report');
     });
 

@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
@@ -30,7 +29,7 @@ class NewForumReply extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Nueva respuesta en tu debate: ' . $this->reply->topic->title,
+            subject: 'Nueva respuesta en tu debate: '.$this->reply->topic->title,
         );
     }
 
@@ -40,7 +39,7 @@ class NewForumReply extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.forum\new_reply',
+            view: 'emails.forum.new_reply',
         );
     }
 

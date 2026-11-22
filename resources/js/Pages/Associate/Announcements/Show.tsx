@@ -186,10 +186,15 @@ export default function Show({ announcement, documents, can_download }: Props) {
                                 </p>
                             </div>
 
-                            <Button className="relative z-10 h-12 shrink-0 rounded-lg bg-emerald-500 px-8 text-xs font-black uppercase tracking-widest text-slate-950 shadow-lg transition-all hover:bg-emerald-400">
-                                <ExternalLink size={16} className="mr-2" />{' '}
-                                Soporte CAMEP
-                            </Button>
+                            <Link
+                                href={route('associate.messages.index')}
+                                className="relative z-10 shrink-0"
+                            >
+                                <Button className="h-12 rounded-lg bg-emerald-500 px-8 text-xs font-black uppercase tracking-widest text-slate-950 shadow-lg transition-all hover:bg-emerald-400">
+                                    <ExternalLink size={16} className="mr-2" />{' '}
+                                    Soporte CAMEP
+                                </Button>
+                            </Link>
                         </div>
                     </div>
 

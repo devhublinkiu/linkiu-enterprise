@@ -1,30 +1,30 @@
-import { Head, Link, usePage, useForm, router } from '@inertiajs/react';
+import { Badge } from '@/Components/ui/Badge';
+import { Button } from '@/Components/ui/Button';
+import { Card, CardContent } from '@/Components/ui/Card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/Components/ui/DropdownMenu';
+import { Textarea } from '@/Components/ui/Textarea';
 import AppLayout from '@/Layouts/AppLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
-import { 
-    MessageSquare, 
-    ArrowLeft, 
-    Send,
-    ThumbsUp,
-    MoreVertical,
-    Share2,
-    Flag,
-    Users,
-    Clock,
-    Shield,
-    Lock
-} from 'lucide-react';
-import { Card, CardContent } from '@/Components/ui/Card';
-import { Button } from '@/Components/ui/Button';
-import { Textarea } from '@/Components/ui/Textarea';
-import { 
-    DropdownMenu, 
-    DropdownMenuContent, 
-    DropdownMenuItem, 
-    DropdownMenuTrigger 
-} from '@/Components/ui/DropdownMenu';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/Components/ui/Badge';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import {
+    ArrowLeft,
+    Clock,
+    Flag,
+    Lock,
+    MessageSquare,
+    MoreVertical,
+    Send,
+    Share2,
+    Shield,
+    ThumbsUp,
+    Users,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Category {
@@ -73,7 +73,9 @@ interface Props {
 }
 
 export default function TopicShow({ category, topic }: Props) {
-    const { auth } = usePage().props as any;
+    const { auth } = usePage().props as {
+        auth: { user: { name: string } | null };
+    };
     const Layout = auth.user ? AppLayout : PublicLayout;
 
     const { data, setData, post, processing, reset, errors } = useForm({
@@ -85,10 +87,17 @@ export default function TopicShow({ category, topic }: Props) {
             toast.error('Inicia sesión para valorar este aporte');
             return;
         }
-        post(route('forums.react', { type: 'useful', id: topic.id }), {
-            preserveScroll: true,
-            onSuccess: () => toast.success('¡Aporte valorado!'),
-        });
+        post(
+            route('forums.react', {
+                reactable: 'topic',
+                type: 'useful',
+                id: topic.id,
+            }),
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('¡Aporte valorado!'),
+            },
+        );
     };
 
     const handleShare = () => {
@@ -101,16 +110,22 @@ export default function TopicShow({ category, topic }: Props) {
             toast.error('Inicia sesión para reportar contenido');
             return;
         }
-        
-        const reason = window.prompt('¿Por qué deseas reportar este contenido?');
+
+        const reason = window.prompt(
+            '¿Por qué deseas reportar este contenido?',
+        );
         if (!reason) return;
 
-        router.post(route('forums.report', { type, id: contentId }), {
-            reason: reason,
-        }, {
-            preserveScroll: true,
-            onSuccess: () => toast.success('Reporte enviado correctamente'),
-        });
+        router.post(
+            route('forums.report', { type, id: contentId }),
+            {
+                reason: reason,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Reporte enviado correctamente'),
+            },
+        );
     };
 
     const handleReplyLike = (replyId: number) => {
@@ -118,10 +133,17 @@ export default function TopicShow({ category, topic }: Props) {
             toast.error('Inicia sesión para valorar este aporte');
             return;
         }
-        post(route('forums.react', { type: 'useful', id: replyId }), {
-            preserveScroll: true,
-            onSuccess: () => toast.success('¡Aporte valorado!'),
-        });
+        post(
+            route('forums.react', {
+                reactable: 'reply',
+                type: 'useful',
+                id: replyId,
+            }),
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('¡Aporte valorado!'),
+            },
+        );
     };
 
     const submitReply = (e: React.FormEvent) => {
@@ -135,23 +157,28 @@ export default function TopicShow({ category, topic }: Props) {
         <Layout>
             <Head title={`${topic.title} - ${category.name}`} />
 
-            <div className={cn(
-                "max-w-5xl mx-auto px-4 sm:px-6 lg:px-8",
-                auth.user ? "py-8" : "py-16 md:py-24"
-            )}>
+            <div
+                className={cn(
+                    'mx-auto max-w-5xl px-4 sm:px-6 lg:px-8',
+                    auth.user ? 'py-8' : 'py-16 md:py-24',
+                )}
+            >
                 {/* Header / Breadcrumbs */}
                 <div className="mb-6">
-                    <Link 
+                    <Link
                         href={route('forums.category', category.slug)}
-                        className="inline-flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 hover:text-slate-900 transition-colors mb-3"
+                        className="mb-3 inline-flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 transition-colors hover:text-slate-900"
                     >
                         <ArrowLeft size={12} />
                         Volver a {category.name}
                     </Link>
-                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase leading-tight tracking-tight flex items-center gap-3">
+                    <h1 className="flex items-center gap-3 text-2xl font-black uppercase leading-tight tracking-tight text-slate-900 md:text-3xl">
                         {topic.title}
                         {topic.is_locked && (
-                            <Badge variant="destructive" className="bg-amber-500 hover:bg-amber-600 border-none px-3 py-1 rounded-full text-[10px] tracking-widest flex items-center gap-1.5 shadow-lg shadow-amber-200">
+                            <Badge
+                                variant="destructive"
+                                className="flex items-center gap-1.5 rounded-full border-none bg-amber-500 px-3 py-1 text-[10px] tracking-widest shadow-lg shadow-amber-200 hover:bg-amber-600"
+                            >
                                 <Lock size={12} /> CERRADO
                             </Badge>
                         )}
@@ -159,48 +186,84 @@ export default function TopicShow({ category, topic }: Props) {
                 </div>
 
                 {/* Main Post */}
-                <Card className="border-slate-200 rounded-xl overflow-hidden bg-white mb-8 shadow-sm">
+                <Card className="mb-8 overflow-hidden rounded-xl border-slate-200 bg-white shadow-sm">
                     <CardContent className="p-0">
-                        <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-50">
+                        <div className="flex flex-col divide-y divide-slate-50 md:flex-row md:divide-x md:divide-y-0">
                             {/* Author Sidebar */}
-                            <div className="w-full md:w-52 p-6 bg-slate-50/30 flex flex-col items-center text-center space-y-4">
-                                <div className="h-16 w-16 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center overflow-hidden">
+                            <div className="flex w-full flex-col items-center space-y-4 bg-slate-50/30 p-6 text-center md:w-52">
+                                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
                                     {topic.user.associate?.logo_path ? (
-                                        <img 
-                                            src={`/storage/${topic.user.associate.logo_path}`} 
-                                            alt="" 
+                                        <img
+                                            src={`/storage/${topic.user.associate.logo_path}`}
+                                            alt=""
                                             className="h-full w-full object-contain"
                                         />
                                     ) : (
-                                        <Users size={24} className="text-slate-100" />
+                                        <Users
+                                            size={24}
+                                            className="text-slate-100"
+                                        />
                                     )}
                                 </div>
                                 <div className="space-y-1">
-                                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight">{topic.user.associate?.company_name || topic.user.name}</h4>
-                                    <p className="text-[8px] font-black uppercase text-emerald-600 tracking-widest">{topic.user.associate ? 'Miembro Red' : 'Administrador'}</p>
+                                    <h4 className="text-xs font-black uppercase tracking-tight text-slate-900">
+                                        {topic.user.associate?.company_name ||
+                                            topic.user.name}
+                                    </h4>
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-emerald-600">
+                                        {topic.user.associate
+                                            ? 'Miembro Red'
+                                            : 'Administrador'}
+                                    </p>
                                 </div>
                             </div>
 
                             {/* Post Content */}
                             <div className="flex-1 p-6 md:p-10">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center gap-4 text-slate-400 text-[9px] font-black uppercase tracking-widest">
-                                        <span className="flex items-center gap-1.5"><Clock size={12} /> {new Date(topic.created_at).toLocaleDateString()}</span>
-                                        <span className="h-1 w-1 bg-slate-200 rounded-full" />
-                                        <span className="flex items-center gap-1.5"><MessageSquare size={12} /> {topic.replies.length} Respuestas</span>
+                                <div className="mb-6 flex items-center justify-between">
+                                    <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                        <span className="flex items-center gap-1.5">
+                                            <Clock size={12} />{' '}
+                                            {new Date(
+                                                topic.created_at,
+                                            ).toLocaleDateString()}
+                                        </span>
+                                        <span className="h-1 w-1 rounded-full bg-slate-200" />
+                                        <span className="flex items-center gap-1.5">
+                                            <MessageSquare size={12} />{' '}
+                                            {topic.replies.length} Respuestas
+                                        </span>
                                     </div>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-300 hover:text-slate-900 transition-colors">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 rounded-lg text-slate-300 transition-colors hover:text-slate-900"
+                                            >
                                                 <MoreVertical size={18} />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44 rounded-xl border-slate-100 shadow-xl p-1">
-                                            <DropdownMenuItem onClick={handleShare} className="rounded-lg gap-2 font-black text-[9px] uppercase tracking-widest cursor-pointer">
+                                        <DropdownMenuContent
+                                            align="end"
+                                            className="w-44 rounded-xl border-slate-100 p-1 shadow-xl"
+                                        >
+                                            <DropdownMenuItem
+                                                onClick={handleShare}
+                                                className="cursor-pointer gap-2 rounded-lg text-[9px] font-black uppercase tracking-widest"
+                                            >
                                                 <Share2 size={12} />
                                                 Copiar Enlace
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleReport(topic.id, 'topic')} className="rounded-lg gap-2 font-black text-[9px] uppercase tracking-widest text-red-500 focus:text-red-600 cursor-pointer">
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    handleReport(
+                                                        topic.id,
+                                                        'topic',
+                                                    )
+                                                }
+                                                className="cursor-pointer gap-2 rounded-lg text-[9px] font-black uppercase tracking-widest text-red-500 focus:text-red-600"
+                                            >
                                                 <Flag size={12} />
                                                 Reportar Contenido
                                             </DropdownMenuItem>
@@ -208,40 +271,51 @@ export default function TopicShow({ category, topic }: Props) {
                                     </DropdownMenu>
                                 </div>
 
-                                <div className="prose prose-slate max-w-none mb-10">
-                                    <p className="text-slate-700 text-base md:text-lg leading-relaxed font-medium">
+                                <div className="prose prose-slate mb-10 max-w-none">
+                                    <p className="whitespace-pre-line text-base font-medium leading-relaxed text-slate-700 md:text-lg">
                                         {topic.content}
                                     </p>
                                 </div>
 
-                                <div className="pt-6 border-t border-slate-100 flex items-center gap-3 relative z-50">
-                                    <Button 
+                                <div className="relative z-50 flex items-center gap-3 border-t border-slate-100 pt-6">
+                                    <Button
                                         onClick={handleLike}
                                         className={cn(
-                                            "rounded-lg gap-2 px-5 h-10 font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 shadow-sm",
-                                            topic.is_liked 
-                                                ? "bg-emerald-600 text-white hover:bg-emerald-700" 
-                                                : "bg-slate-900 text-white hover:bg-emerald-600"
+                                            'h-10 gap-2 rounded-lg px-5 text-[9px] font-black uppercase tracking-widest shadow-sm transition-all active:scale-95',
+                                            topic.is_liked
+                                                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                                : 'bg-slate-900 text-white hover:bg-emerald-600',
                                         )}
                                     >
-                                        <ThumbsUp size={12} className={cn(topic.is_liked && "fill-white")} />
-                                        {topic.is_liked ? 'Valorado' : 'Valorar Aporte'}
+                                        <ThumbsUp
+                                            size={12}
+                                            className={cn(
+                                                topic.is_liked && 'fill-white',
+                                            )}
+                                        />
+                                        {topic.is_liked
+                                            ? 'Valorado'
+                                            : 'Valorar Aporte'}
                                         {topic.reactions_count > 0 && (
-                                            <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-[8px]">{topic.reactions_count}</span>
+                                            <span className="ml-1 rounded bg-white/20 px-1.5 py-0.5 text-[8px]">
+                                                {topic.reactions_count}
+                                            </span>
                                         )}
                                     </Button>
-                                    <Button 
+                                    <Button
                                         onClick={handleShare}
-                                        variant="outline" 
-                                        className="rounded-lg border-slate-200 gap-2 px-5 h-10 font-black text-[9px] uppercase tracking-widest active:scale-95 transition-all"
+                                        variant="outline"
+                                        className="h-10 gap-2 rounded-lg border-slate-200 px-5 text-[9px] font-black uppercase tracking-widest transition-all active:scale-95"
                                     >
                                         <Share2 size={12} />
                                         Compartir
                                     </Button>
-                                    <Button 
-                                        onClick={() => handleReport(topic.id, 'topic')}
-                                        variant="ghost" 
-                                        className="rounded-lg text-slate-400 hover:text-red-500 gap-2 px-5 h-10 font-black text-[9px] uppercase tracking-widest ml-auto active:scale-95 transition-all"
+                                    <Button
+                                        onClick={() =>
+                                            handleReport(topic.id, 'topic')
+                                        }
+                                        variant="ghost"
+                                        className="ml-auto h-10 gap-2 rounded-lg px-5 text-[9px] font-black uppercase tracking-widest text-slate-400 transition-all hover:text-red-500 active:scale-95"
                                     >
                                         <Flag size={12} />
                                         Reportar
@@ -253,59 +327,93 @@ export default function TopicShow({ category, topic }: Props) {
                 </Card>
 
                 {/* Replies Listing */}
-                <div className="space-y-6 mb-12">
-                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                <div className="mb-12 space-y-6">
+                    <h3 className="flex items-center gap-3 text-lg font-black uppercase tracking-tight text-slate-900">
                         Respuestas Gremiales
-                        <span className="h-6 w-10 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] text-slate-400">{topic.replies.length}</span>
+                        <span className="flex h-6 w-10 items-center justify-center rounded-lg bg-slate-100 text-[10px] text-slate-400">
+                            {topic.replies.length}
+                        </span>
                     </h3>
 
                     {topic.replies.map((reply) => (
-                        <Card key={reply.id} className="border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
+                        <Card
+                            key={reply.id}
+                            className="overflow-hidden rounded-xl border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md"
+                        >
                             <CardContent className="p-6 md:p-8">
                                 <div className="flex gap-6">
-                                    <div className="h-10 w-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
                                         {reply.user.associate?.logo_path ? (
-                                            <img 
-                                                src={`/storage/${reply.user.associate.logo_path}`} 
-                                                alt="" 
+                                            <img
+                                                src={`/storage/${reply.user.associate.logo_path}`}
+                                                alt=""
                                                 className="h-full w-full object-contain"
                                             />
                                         ) : (
-                                            <Users size={18} className="text-slate-200" />
+                                            <Users
+                                                size={18}
+                                                className="text-slate-200"
+                                            />
                                         )}
                                     </div>
                                     <div className="flex-1 space-y-4">
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-0.5">
-                                                <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{reply.user.associate?.company_name || reply.user.name}</h4>
-                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Aportado el {new Date(reply.created_at).toLocaleDateString()}</p>
+                                                <h4 className="text-[10px] font-black uppercase tracking-tight text-slate-900">
+                                                    {reply.user.associate
+                                                        ?.company_name ||
+                                                        reply.user.name}
+                                                </h4>
+                                                <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">
+                                                    Aportado el{' '}
+                                                    {new Date(
+                                                        reply.created_at,
+                                                    ).toLocaleDateString()}
+                                                </p>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="sm" 
-                                                    onClick={() => handleReplyLike(reply.id)}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        handleReplyLike(
+                                                            reply.id,
+                                                        )
+                                                    }
                                                     className={cn(
-                                                        "h-8 rounded-lg gap-2 px-3 font-black text-[9px] uppercase tracking-widest transition-colors",
-                                                        reply.is_liked 
-                                                            ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100" 
-                                                            : "text-slate-300 hover:text-emerald-500"
+                                                        'h-8 gap-2 rounded-lg px-3 text-[9px] font-black uppercase tracking-widest transition-colors',
+                                                        reply.is_liked
+                                                            ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                                            : 'text-slate-300 hover:text-emerald-500',
                                                     )}
                                                 >
-                                                    <ThumbsUp size={12} className={cn(reply.is_liked && "fill-emerald-600")} />
-                                                    {reply.reactions_count > 0 && reply.reactions_count}
+                                                    <ThumbsUp
+                                                        size={12}
+                                                        className={cn(
+                                                            reply.is_liked &&
+                                                                'fill-emerald-600',
+                                                        )}
+                                                    />
+                                                    {reply.reactions_count >
+                                                        0 &&
+                                                        reply.reactions_count}
                                                 </Button>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    onClick={() => handleReport(reply.id, 'reply')}
-                                                    className="h-8 w-8 rounded-lg text-slate-200 hover:text-red-500 transition-colors"
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() =>
+                                                        handleReport(
+                                                            reply.id,
+                                                            'reply',
+                                                        )
+                                                    }
+                                                    className="h-8 w-8 rounded-lg text-slate-200 transition-colors hover:text-red-500"
                                                 >
                                                     <Flag size={12} />
                                                 </Button>
                                             </div>
                                         </div>
-                                        <div className="text-slate-600 text-sm font-medium leading-relaxed">
+                                        <div className="whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
                                             {reply.content}
                                         </div>
                                     </div>
@@ -315,49 +423,64 @@ export default function TopicShow({ category, topic }: Props) {
                     ))}
 
                     {topic.replies.length === 0 && (
-                        <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-xl">
-                            <p className="text-slate-400 font-black uppercase text-[9px] tracking-widest">No hay respuestas aún. Sé el primero en opinar.</p>
+                        <div className="rounded-xl border-2 border-dashed border-slate-100 py-20 text-center">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                No hay respuestas aún. Sé el primero en opinar.
+                            </p>
                         </div>
                     )}
                 </div>
 
                 {/* Reply Editor */}
                 {topic.is_locked ? (
-                    <Card className="border-amber-200 bg-amber-50/30 rounded-xl overflow-hidden p-10 text-center border-2 border-dashed shadow-sm">
-                        <div className="max-w-md mx-auto space-y-5">
-                            <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center mx-auto shadow-sm border border-amber-100">
+                    <Card className="overflow-hidden rounded-xl border-2 border-dashed border-amber-200 bg-amber-50/30 p-10 text-center shadow-sm">
+                        <div className="mx-auto max-w-md space-y-5">
+                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl border border-amber-100 bg-white shadow-sm">
                                 <Lock size={24} className="text-amber-500" />
                             </div>
-                            <h3 className="text-lg font-black text-amber-900 uppercase tracking-tight">Debate Finalizado</h3>
-                            <p className="text-amber-700/70 text-sm font-medium leading-relaxed">
-                                Este hilo ha sido cerrado por un administrador. La conversación ha finalizado y no se admiten más aportes.
+                            <h3 className="text-lg font-black uppercase tracking-tight text-amber-900">
+                                Debate Finalizado
+                            </h3>
+                            <p className="text-sm font-medium leading-relaxed text-amber-700/70">
+                                Este hilo ha sido cerrado por un administrador.
+                                La conversación ha finalizado y no se admiten
+                                más aportes.
                             </p>
                         </div>
                     </Card>
                 ) : auth.user ? (
-                    <Card className="border-slate-200 rounded-xl overflow-hidden shadow-xl border-t-4 border-t-slate-900">
+                    <Card className="overflow-hidden rounded-xl border-t-4 border-slate-200 border-t-slate-900 shadow-xl">
                         <CardContent className="p-8">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="h-10 w-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
+                            <div className="mb-6 flex items-center gap-4">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg">
                                     <Send size={18} />
                                 </div>
-                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Tu Aporte Gremial</h3>
+                                <h3 className="text-lg font-black uppercase tracking-tight text-slate-900">
+                                    Tu Aporte Gremial
+                                </h3>
                             </div>
                             <form onSubmit={submitReply} className="space-y-6">
-                                <Textarea 
+                                <Textarea
                                     placeholder="Escribe tu opinión técnica o profesional aquí..."
                                     value={data.content}
-                                    onChange={e => setData('content', e.target.value)}
-                                    className="min-h-[140px] rounded-xl border-slate-200 focus:ring-slate-950 focus:border-slate-950 p-6 font-medium text-slate-700 text-sm"
+                                    onChange={(e) =>
+                                        setData('content', e.target.value)
+                                    }
+                                    className="min-h-[140px] rounded-xl border-slate-200 p-6 text-sm font-medium text-slate-700 focus:border-slate-950 focus:ring-slate-950"
                                 />
-                                {errors.content && <p className="text-xs font-black text-red-500 uppercase">{errors.content}</p>}
-                                <div className="flex items-center justify-between">
-                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest max-w-[200px]">
-                                        Recuerda mantener un lenguaje profesional y constructivo.
+                                {errors.content && (
+                                    <p className="text-xs font-black uppercase text-red-500">
+                                        {errors.content}
                                     </p>
-                                    <Button 
+                                )}
+                                <div className="flex items-center justify-between">
+                                    <p className="max-w-[200px] text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                        Recuerda mantener un lenguaje
+                                        profesional y constructivo.
+                                    </p>
+                                    <Button
                                         disabled={processing}
-                                        className="rounded-lg bg-slate-900 hover:bg-emerald-600 text-white px-8 h-12 font-black text-[10px] uppercase tracking-widest shadow-lg transition-all"
+                                        className="h-12 rounded-lg bg-slate-900 px-8 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all hover:bg-emerald-600"
                                     >
                                         Enviar Respuesta
                                     </Button>
@@ -366,23 +489,33 @@ export default function TopicShow({ category, topic }: Props) {
                         </CardContent>
                     </Card>
                 ) : (
-                    <Card className="border-emerald-100 bg-emerald-50/50 rounded-xl overflow-hidden p-12 text-center border-2 border-dashed">
-                        <div className="max-w-md mx-auto space-y-6">
-                            <div className="h-14 w-14 bg-white rounded-xl flex items-center justify-center mx-auto shadow-sm">
-                                <Shield size={28} className="text-emerald-500" />
+                    <Card className="overflow-hidden rounded-xl border-2 border-dashed border-emerald-100 bg-emerald-50/50 p-12 text-center">
+                        <div className="mx-auto max-w-md space-y-6">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-white shadow-sm">
+                                <Shield
+                                    size={28}
+                                    className="text-emerald-500"
+                                />
                             </div>
-                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Debate Reservado</h3>
-                            <p className="text-slate-500 text-sm font-medium leading-relaxed">
-                                Para participar en este debate y dar tu opinión como empresario, debes estar registrado en la Red CAMEP.
+                            <h3 className="text-lg font-black uppercase tracking-tight text-slate-900">
+                                Debate Reservado
+                            </h3>
+                            <p className="text-sm font-medium leading-relaxed text-slate-500">
+                                Para participar en este debate y dar tu opinión
+                                como empresario, debes estar registrado en la
+                                Red CAMEP.
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <div className="flex flex-col justify-center gap-3 sm:flex-row">
                                 <Link href={route('login')}>
-                                    <Button className="w-full sm:w-auto rounded-lg bg-slate-900 text-white px-8 h-11 font-black text-[9px] uppercase tracking-widest">
+                                    <Button className="h-11 w-full rounded-lg bg-slate-900 px-8 text-[9px] font-black uppercase tracking-widest text-white sm:w-auto">
                                         Iniciar Sesión
                                     </Button>
                                 </Link>
                                 <Link href={route('register')}>
-                                    <Button variant="outline" className="w-full sm:w-auto rounded-lg border-slate-200 px-8 h-11 font-black text-[9px] uppercase tracking-widest">
+                                    <Button
+                                        variant="outline"
+                                        className="h-11 w-full rounded-lg border-slate-200 px-8 text-[9px] font-black uppercase tracking-widest sm:w-auto"
+                                    >
                                         Unirse a la Red
                                     </Button>
                                 </Link>

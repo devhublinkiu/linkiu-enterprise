@@ -85,7 +85,10 @@ export default function AppSidebar() {
         associate &&
         !associate.is_public
     );
-    const hasNoPlan = !isAdmin && (!sub || sub.status === 'none');
+    // Solo se ofrece "Ver planes" si facturación es alcanzable: en afiliación
+    // (pending) el middleware la bloquea, así que el CTA no debe aparecer.
+    const hasNoPlan =
+        !isAdmin && (!sub || sub.status === 'none') && !isBillingLocked;
     // Perfil público pero micrositio en borrador → recordatorio persistente.
     const needsMicrositePublish =
         !isAdmin && !!associate?.is_public && !associate?.microsite_published;

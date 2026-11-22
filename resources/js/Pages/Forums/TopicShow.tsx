@@ -226,12 +226,15 @@ export default function TopicShow({ category, topic }: Props) {
                                             <Clock size={12} />{' '}
                                             {new Date(
                                                 topic.created_at,
-                                            ).toLocaleDateString()}
+                                            ).toLocaleDateString('es-CO')}
                                         </span>
                                         <span className="h-1 w-1 rounded-full bg-slate-200" />
                                         <span className="flex items-center gap-1.5">
                                             <MessageSquare size={12} />{' '}
-                                            {topic.replies.length} Respuestas
+                                            {topic.replies.length}{' '}
+                                            {topic.replies.length === 1
+                                                ? 'Respuesta'
+                                                : 'Respuestas'}
                                         </span>
                                     </div>
                                     <DropdownMenu>
@@ -368,7 +371,9 @@ export default function TopicShow({ category, topic }: Props) {
                                                     Aportado el{' '}
                                                     {new Date(
                                                         reply.created_at,
-                                                    ).toLocaleDateString()}
+                                                    ).toLocaleDateString(
+                                                        'es-CO',
+                                                    )}
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-2">

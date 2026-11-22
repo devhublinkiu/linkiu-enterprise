@@ -89,9 +89,11 @@ export function QuickAccessCard({
                                 </div>
                             );
                         }
-                        const moduleLocked =
-                            locked ||
-                            (!!m.feature && planFeatures[m.feature] === false);
+                        // "No incluido" solo si el plan excluye esta feature; si el
+                        // bloqueo es por falta de suscripción activa → "Requiere plan".
+                        const featureExcluded =
+                            !!m.feature && planFeatures[m.feature] === false;
+                        const moduleLocked = locked || featureExcluded;
                         if (moduleLocked) {
                             return (
                                 <div
@@ -104,7 +106,7 @@ export function QuickAccessCard({
                                     </span>
                                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                         <Lock className="size-3" />
-                                        {m.feature
+                                        {featureExcluded
                                             ? 'No incluido'
                                             : 'Requiere plan'}
                                     </span>

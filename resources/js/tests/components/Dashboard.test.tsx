@@ -91,4 +91,52 @@ describe('Dashboard (asociado)', () => {
         expect(screen.getByText('Vencido')).toBeInTheDocument();
         expect(screen.getByText('Pagar y renovar')).toBeInTheDocument();
     });
+
+    it('en revisión (pending) no ofrece "Ver planes" y avisa', () => {
+        setProps({
+            auth: {
+                user: { name: 'Ana', is_superadmin: false, role: 'associate' },
+                associate: {
+                    is_public: false,
+                    company_name: 'Minera SAS',
+                    status: 'pending',
+                },
+            },
+            subscription: {
+                status: 'none',
+                plan_name: null,
+                days_remaining: null,
+                expires_at: null,
+            },
+        });
+        render(<Dashboard />);
+
+        expect(screen.queryByText('Ver planes')).not.toBeInTheDocument();
+        expect(
+            screen.getByText(/cuando CAMEP admita tu empresa/i),
+        ).toBeInTheDocument();
+    });
+
+    it('Bienes y Servicios dentro del plan pero sin sub activa: "Requiere plan"', () => {
+        setProps({
+            subscription: {
+                status: 'none',
+                plan_name: null,
+                days_remaining: null,
+                expires_at: null,
+            },
+            plan_features: { bienes_servicios: true },
+        });
+        render(<Dashboard />);
+
+        expect(screen.getAllByText('Requiere plan').length).toBeGreaterThan(0);
+        expect(screen.queryByText('No incluido')).not.toBeInTheDocument();
+    });
+
+    it('Bienes y Servicios fuera del plan: "No incluido"', () => {
+        setProps({ plan_features: { bienes_servicios: false } });
+        render(<Dashboard />);
+
+        expect(screen.getByText('No incluido')).toBeInTheDocument();
+    });
 });

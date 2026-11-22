@@ -68,7 +68,15 @@ export default function AppSidebar() {
     const isAssociateVerified = associate?.status === 'verified';
     const isGeneralLocked = !isAdmin && !hasActiveSubscription;
     const isCompanyLocked = !isAdmin && sub?.status === 'expired';
-    const isBillingLocked = !isAdmin && !isAssociateVerified && !sub;
+    // Facturación es alcanzable solo cuando el middleware la deja pasar: admitido
+    // (verified) o ya con plan (active/approved). En pending/draft rebota al
+    // Dashboard, así que aquí se refleja como candado. `sub` no sirve de proxy:
+    // HandleInertiaRequests siempre entrega un objeto (status 'none' sin plan).
+    const isBillingReachable =
+        isAssociateVerified ||
+        associate?.status === 'active' ||
+        associate?.status === 'approved';
+    const isBillingLocked = !isAdmin && !isBillingReachable;
     // Admitido sin pagar (verified): solo Información Básica; el resto se abre al
     // activar el plan (el middleware lo manda a Gestión del Plan).
     const isAfiliacionLocked = !isAdmin && isAssociateVerified;

@@ -13,6 +13,7 @@ import { QuickAccessCard } from '@/Pages/Dashboard/Parts/QuickAccessCard';
 import { PageProps } from '@/types';
 
 type Associate = {
+    status?: string;
     logo_url?: string | null;
     is_public?: boolean;
     company_name?: string;
@@ -76,6 +77,12 @@ export default function Dashboard() {
     // Candados para que las tarjetas no ofrezcan lo que el servidor bloquea.
     const hasActiveSub = sub?.status === 'active' || sub?.status === 'grace';
     const isGeneralLocked = !hasActiveSub;
+    // Elegir plan solo es posible tras ser admitido (verified) o con plan vigente.
+    // En pending/draft el middleware rebota facturación: no se ofrece "Ver planes".
+    const canChoosePlan =
+        associate?.status === 'verified' ||
+        associate?.status === 'active' ||
+        associate?.status === 'approved';
     const planFeatures = page.plan_features ?? {};
     // Perfil oculto por falta de pago (vencido/gracia), no por estar incompleto.
     const hiddenByExpiry =
@@ -155,7 +162,7 @@ export default function Dashboard() {
                 )}
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <MembershipCard sub={sub} />
+                    <MembershipCard sub={sub} canChoosePlan={canChoosePlan} />
                     <ProfileCard
                         sectionReviews={sectionReviews}
                         isPublic={!!associate?.is_public}

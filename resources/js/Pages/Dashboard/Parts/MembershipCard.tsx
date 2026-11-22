@@ -26,7 +26,15 @@ const STATUS_BADGE: Record<
     expired: { label: 'Vencido', variant: 'destructive' },
 };
 
-export function MembershipCard({ sub }: { sub: Subscription | null }) {
+export function MembershipCard({
+    sub,
+    canChoosePlan = true,
+}: {
+    sub: Subscription | null;
+    // El asociado puede elegir plan (facturación alcanzable) solo tras ser
+    // admitido. Antes (pending/draft) el CTA "Ver planes" no lleva a ningún lado.
+    canChoosePlan?: boolean;
+}) {
     const noPlan = !sub || sub.status === 'none';
     const badge = !noPlan
         ? STATUS_BADGE[sub!.status as 'active' | 'grace' | 'expired']
@@ -48,19 +56,27 @@ export function MembershipCard({ sub }: { sub: Subscription | null }) {
             </CardHeader>
             <CardContent className="space-y-4">
                 {noPlan ? (
-                    <>
+                    canChoosePlan ? (
+                        <>
+                            <p className="text-sm text-muted-foreground">
+                                Aún no tienes una membresía activa. Actívala
+                                para habilitar todas las funciones y aparecer en
+                                el directorio.
+                            </p>
+                            <Button asChild>
+                                <Link href={route('associate.company.billing')}>
+                                    Ver planes
+                                    <ArrowRight />
+                                </Link>
+                            </Button>
+                        </>
+                    ) : (
                         <p className="text-sm text-muted-foreground">
-                            Aún no tienes una membresía activa. Actívala para
-                            habilitar todas las funciones y aparecer en el
-                            directorio.
+                            Tu membresía se activa cuando CAMEP admita tu
+                            empresa. Primero completa y envía tu perfil para la
+                            revisión.
                         </p>
-                        <Button asChild>
-                            <Link href={route('associate.company.billing')}>
-                                Ver planes
-                                <ArrowRight />
-                            </Link>
-                        </Button>
-                    </>
+                    )
                 ) : (
                     <>
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">

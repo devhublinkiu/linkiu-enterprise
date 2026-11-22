@@ -78,3 +78,29 @@ it('valorar un tema marca el tema', function () {
     expect(ForumReaction::where('reactable_type', ForumTopic::class)
         ->where('reactable_id', $topic->id)->exists())->toBeTrue();
 });
+
+it('valorar y quitar el voto dejan avisos distintos', function () {
+    $user = frUser();
+    $topic = frTopic($user);
+    $url = route('forums.react', ['reactable' => 'topic', 'type' => 'useful', 'id' => $topic->id]);
+
+    test()->actingAs($user)->post($url)->assertSessionHas('success', '¡Aporte valorado!');
+    test()->actingAs($user)->post($url)->assertSessionHas('success', 'Quitaste tu valoración.');
+});
+
+it('solo un admin puede fijar/desfijar un debate', function () {
+    $user = frUser();
+    $topic = frTopic($user);
+    $admin = User::factory()->create(['is_superadmin' => true]);
+
+    // El asociado no puede: is_pinned no cambia.
+    test()->actingAs($user)->post(route('forums.topic.pin', $topic->id));
+    expect($topic->fresh()->is_pinned)->toBeFalse();
+
+    // El admin fija y desfija.
+    test()->actingAs($admin)->post(route('forums.topic.pin', $topic->id))->assertRedirect();
+    expect($topic->fresh()->is_pinned)->toBeTrue();
+
+    test()->actingAs($admin)->post(route('forums.topic.pin', $topic->id))->assertRedirect();
+    expect($topic->fresh()->is_pinned)->toBeFalse();
+});

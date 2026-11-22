@@ -180,6 +180,7 @@ class ForumController extends Controller
 
         if ($existing) {
             $existing->delete();
+            $message = 'Quitaste tu valoración.';
         } else {
             ForumReaction::create([
                 'user_id' => $user->id,
@@ -187,9 +188,21 @@ class ForumController extends Controller
                 'reactable_type' => $reactableType,
                 'type' => $type,
             ]);
+            $message = '¡Aporte valorado!';
         }
 
-        return back();
+        return back()->with('success', $message);
+    }
+
+    /**
+     * Fija o desfija un debate (solo admin; la ruta lleva el middleware `admin`).
+     * `is_pinned` ordena los temas arriba en la lista del círculo.
+     */
+    public function togglePin(ForumTopic $topic)
+    {
+        $topic->update(['is_pinned' => ! $topic->is_pinned]);
+
+        return back()->with('success', $topic->is_pinned ? 'Debate fijado.' : 'Debate desfijado.');
     }
 
     public function report(Request $request, $type, $id)

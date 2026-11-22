@@ -29,8 +29,12 @@ export default function NewReply(): React.ReactElement {
         >
             <Text>Hola,</Text>
             <Text>
-                <strong>{blade('$reply->user->name')}</strong> ha respondido a
-                tu debate{' '}
+                <strong>
+                    {blade(
+                        '$reply->user->associate?->company_name ?? $reply->user->name',
+                    )}
+                </strong>{' '}
+                ha respondido a tu debate{' '}
                 <strong>&quot;{blade('$reply->topic->title')}&quot;</strong>.
             </Text>
 

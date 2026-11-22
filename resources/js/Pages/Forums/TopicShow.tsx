@@ -25,6 +25,7 @@ import {
     ThumbsUp,
     Users,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface Category {
@@ -57,6 +58,7 @@ interface Topic {
     is_liked: boolean;
     created_at: string;
     is_locked: boolean;
+    is_pinned: boolean;
     user: {
         name: string;
         associate: {
@@ -73,14 +75,28 @@ interface Props {
 }
 
 export default function TopicShow({ category, topic }: Props) {
-    const { auth } = usePage().props as {
-        auth: { user: { name: string } | null };
+    const { auth, flash } = usePage().props as {
+        auth: { user: { name: string; is_superadmin?: boolean } | null };
+        flash?: { success?: string; error?: string };
     };
     const Layout = auth.user ? AppLayout : PublicLayout;
+    const isAdmin = !!auth.user?.is_superadmin;
 
     const { data, setData, post, processing, reset, errors } = useForm({
         content: '',
     });
+
+    const [reportTarget, setReportTarget] = useState<{
+        id: number;
+        type: 'topic' | 'reply';
+    } | null>(null);
+    const [reportReason, setReportReason] = useState('');
+
+    // Los avisos del foro (valorar, responder, reportar, fijar) llegan por flash.
+    useEffect(() => {
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
+    }, [flash]);
 
     const handleLike = () => {
         if (!auth.user) {
@@ -95,7 +111,6 @@ export default function TopicShow({ category, topic }: Props) {
             }),
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('¡Aporte valorado!'),
             },
         );
     };
@@ -110,21 +125,30 @@ export default function TopicShow({ category, topic }: Props) {
             toast.error('Inicia sesión para reportar contenido');
             return;
         }
+        setReportReason('');
+        setReportTarget({ id: contentId, type });
+    };
 
-        const reason = window.prompt(
-            '¿Por qué deseas reportar este contenido?',
-        );
-        if (!reason) return;
-
+    const submitReport = () => {
+        if (!reportTarget || !reportReason.trim()) return;
         router.post(
-            route('forums.report', { type, id: contentId }),
-            {
-                reason: reason,
-            },
+            route('forums.report', {
+                type: reportTarget.type,
+                id: reportTarget.id,
+            }),
+            { reason: reportReason },
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('Reporte enviado correctamente'),
+                onSuccess: () => setReportTarget(null),
             },
+        );
+    };
+
+    const togglePin = () => {
+        router.post(
+            route('forums.topic.pin', topic.id),
+            {},
+            { preserveScroll: true },
         );
     };
 
@@ -141,7 +165,6 @@ export default function TopicShow({ category, topic }: Props) {
             }),
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('¡Aporte valorado!'),
             },
         );
     };
@@ -270,6 +293,17 @@ export default function TopicShow({ category, topic }: Props) {
                                                 <Flag size={12} />
                                                 Reportar Contenido
                                             </DropdownMenuItem>
+                                            {isAdmin && (
+                                                <DropdownMenuItem
+                                                    onClick={togglePin}
+                                                    className="cursor-pointer gap-2 rounded-lg text-[9px] font-black uppercase tracking-widest"
+                                                >
+                                                    <Shield size={12} />
+                                                    {topic.is_pinned
+                                                        ? 'Desfijar debate'
+                                                        : 'Fijar debate'}
+                                                </DropdownMenuItem>
+                                            )}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>
@@ -529,6 +563,43 @@ export default function TopicShow({ category, topic }: Props) {
                     </Card>
                 )}
             </div>
+
+            {reportTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+                        <h3 className="text-lg font-black uppercase tracking-tight text-slate-900">
+                            Reportar contenido
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-500">
+                            Cuéntanos por qué. El equipo de administración lo
+                            revisará.
+                        </p>
+                        <Textarea
+                            value={reportReason}
+                            onChange={(e) => setReportReason(e.target.value)}
+                            placeholder="Motivo del reporte…"
+                            className="mt-4 min-h-24"
+                            autoFocus
+                        />
+                        <div className="mt-5 flex justify-end gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setReportTarget(null)}
+                                className="rounded-lg text-[10px] font-black uppercase tracking-widest"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={submitReport}
+                                disabled={!reportReason.trim()}
+                                className="rounded-lg bg-red-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-700"
+                            >
+                                Enviar reporte
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Layout>
     );
 }

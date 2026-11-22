@@ -79,7 +79,8 @@
                             </p>
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              <strong>{{ $reply->user->name }}</strong> ha respondido a tu debate
+                              <strong>{{ $reply->user->associate?->company_name ?? $reply->user->name }}</strong>
+                              ha respondido a tu debate
                               <strong
                                 >&quot;{{ $reply->topic->title }}&quot;</strong
                               >.

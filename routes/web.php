@@ -360,6 +360,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/report/{type}/{id}', [ForumController::class, 'report'])->name('report');
     });
 
+    // Fijar/desfijar un debate: solo admin (is_pinned ordena la lista del círculo).
+    Route::post('/red-camep/topic/{topic}/pin', [ForumController::class, 'togglePin'])
+        ->name('forums.topic.pin')->middleware('admin');
+
     // Admin Panel for CAMEP — solo admin/superadmin (ADR-0006). Antes estaba solo bajo 'auth'.
     // Panel de administración. Las rutas viven en routes/admin.php (plan 0015).
     Route::name('admin.')->prefix('admin')->middleware('admin')->group(base_path('routes/admin.php'));

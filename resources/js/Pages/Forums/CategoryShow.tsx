@@ -295,7 +295,11 @@ export default function CategoryShow({ category, topics }: Props) {
                                                                 0,
                                                                 120,
                                                             )}
-                                                            ..."
+                                                            {topic.content
+                                                                .length > 120
+                                                                ? '…'
+                                                                : ''}
+                                                            "
                                                         </p>
                                                     </div>
                                                 </div>
@@ -380,6 +384,35 @@ export default function CategoryShow({ category, topics }: Props) {
                                 <Plus size={16} className="mr-2" />
                                 Crear primer hilo
                             </Button>
+                        </div>
+                    )}
+
+                    {topics.links.length > 3 && (
+                        <div className="mt-8 flex flex-wrap items-center justify-center gap-1">
+                            {topics.links.map((link, i) =>
+                                link.url ? (
+                                    <Link
+                                        key={i}
+                                        href={link.url}
+                                        className={`rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-widest transition-colors ${
+                                            link.active
+                                                ? 'bg-slate-900 text-white'
+                                                : 'text-slate-500 hover:bg-slate-100'
+                                        }`}
+                                        dangerouslySetInnerHTML={{
+                                            __html: link.label,
+                                        }}
+                                    />
+                                ) : (
+                                    <span
+                                        key={i}
+                                        className="rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-widest text-slate-300"
+                                        dangerouslySetInnerHTML={{
+                                            __html: link.label,
+                                        }}
+                                    />
+                                ),
+                            )}
                         </div>
                     )}
                 </div>

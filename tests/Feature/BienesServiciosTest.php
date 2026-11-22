@@ -2,6 +2,7 @@
 
 use App\Mail\NewTenderPublished;
 use App\Models\BienesServiciosEmpresa;
+use App\Models\Feature;
 use App\Models\Licitacion;
 use App\Models\Plan;
 use App\Models\User;
@@ -52,6 +53,33 @@ function bsAssociateUser(bool $active): User
         'plan_id' => $plan->id,
         'plan_expires_at' => $active ? now()->addDays(10) : now()->subDays(10),
         'status' => 'verified',
+    ]);
+
+    return $user->fresh();
+}
+
+// Destinatario válido del aviso: admitido, al día y con el módulo en su plan.
+function bsRecipient(): User
+{
+    $plan = Plan::create([
+        'name' => 'Plan '.Str::random(5),
+        'slug' => 'plan-'.Str::lower(Str::random(8)),
+        'grace_days' => 0,
+    ]);
+    $feature = Feature::firstOrCreate(
+        ['key' => 'bienes_servicios'],
+        ['name' => 'Bienes y servicios', 'type' => 'boolean', 'group' => 'contenido', 'is_enabled' => true, 'sort' => 40],
+    );
+    $plan->features()->attach($feature->id, ['enabled' => true]);
+
+    $user = User::factory()->create();
+    test()->actingAs($user)->post(route('associate.company.save.draft'), [
+        'company_name' => 'Activa '.Str::random(5),
+    ]);
+    $user->fresh()->associate->update([
+        'plan_id' => $plan->id,
+        'plan_expires_at' => now()->addDays(10),
+        'status' => 'approved',
     ]);
 
     return $user->fresh();
@@ -215,7 +243,7 @@ it('el sitio público solo lista las licitaciones abiertas de la empresa', funct
 // ─── Correo: solo en la transición a publicado ───────────────────────────────
 
 it('avisa a los asociados al publicar una licitación nueva', function () {
-    bsAssociateUser(active: true); // destinatario verificado
+    bsRecipient(); // admitido, al día y con el módulo
 
     test()->actingAs(bsAdmin())->post(route('admin.bienes-servicios.tenders.store'), [
         'empresa_id' => bsEmpresa()->id,
@@ -246,7 +274,7 @@ it('NO reenvía correo al editar una licitación ya publicada', function () {
 });
 
 it('avisa al pasar una licitación de borrador a publicado', function () {
-    bsAssociateUser(active: true);
+    bsRecipient();
     $tender = bsTender('abierto', estado: 'borrador');
 
     test()->actingAs(bsAdmin())->put(route('admin.bienes-servicios.tenders.update', $tender), [
@@ -257,4 +285,17 @@ it('avisa al pasar una licitación de borrador a publicado', function () {
     ]);
 
     Mail::assertSent(NewTenderPublished::class);
+});
+
+it('no avisa al asociado admitido sin pagar (verified), que no puede abrir el enlace', function () {
+    bsAssociateUser(active: true); // status verified: admitido sin pago
+
+    test()->actingAs(bsAdmin())->post(route('admin.bienes-servicios.tenders.store'), [
+        'empresa_id' => bsEmpresa()->id,
+        'titulo' => 'Licitación para nadie',
+        'publico_objetivo' => 'abierto',
+        'estado' => 'publicado',
+    ]);
+
+    Mail::assertNotSent(NewTenderPublished::class);
 });

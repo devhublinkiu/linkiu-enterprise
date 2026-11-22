@@ -24,8 +24,8 @@ export default function NewTender(): React.ReactElement {
         >
             <Text>Hola,</Text>
             <Text>
-                Se ha publicado una nueva licitación en el portal de{' '}
-                <strong>CAMEP</strong> que podría ser de su interés:
+                Se publicó una nueva licitación en el portal de{' '}
+                <strong>CAMEP</strong> que puede interesarte:
             </Text>
 
             <EmailInfoBox background="#f8f9fa" border="#dee2e6">
@@ -51,8 +51,8 @@ export default function NewTender(): React.ReactElement {
             </EmailInfoBox>
 
             <Text>
-                Para ver todos los detalles y descargar los pliegos, ingrese a
-                la sección de Licitaciones.
+                Para ver los detalles y descargar los pliegos, entra a Bienes y
+                Servicios.
             </Text>
 
             <Section style={{ textAlign: 'center' }}>

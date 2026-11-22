@@ -153,30 +153,40 @@ class LicitacionController extends Controller
     }
 
     /**
-     * Avisa a los asociados verificados de una licitación recién publicada.
+     * Avisa de una licitación recién publicada SOLO a quien puede abrirla: los
+     * asociados admitidos, al día y con el módulo Bienes y Servicios en su plan
+     * (ADR-0002). Antes se mandaba a los `verified` (admitidos sin pagar), que no
+     * pueden entrar. Se reusa la lógica autoritativa (isSubscriptionActive +
+     * allows) en vez de replicarla en SQL.
      *
-     * Diferido con defer() (se manda tras la respuesta; bajo Octane corre en la
-     * corrutina de la petición) y por lotes de BCC para no armar una cabecera
-     * gigante ni bloquear el guardado. Se llama solo en la transición a
-     * "publicado", nunca en cada edición.
+     * Diferido con defer() y por lotes de BCC para no bloquear el guardado. Se
+     * llama solo en la transición a "publicado".
      */
     private function notifyAssociatesOfPublication(Licitacion $tender): void
     {
         defer(function () use ($tender) {
-            User::whereHas('associate', fn ($q) => $q->where('status', 'verified'))
+            $emails = User::query()
+                ->whereHas('associate', fn ($q) => $q->where('status', 'approved'))
+                ->with('associate.plan.features')
+                ->get()
+                ->filter(fn ($user) => $user->associate
+                    && $user->associate->isSubscriptionActive()
+                    && $user->associate->plan?->allows('bienes_servicios'))
                 ->pluck('email')
-                ->chunk(50)
-                ->each(function ($emails) use ($tender) {
-                    try {
-                        // Resend exige un `to`: mandamos a la casilla de envío y
-                        // los asociados en BCC (ocultos entre sí). Sin `to`, la API
-                        // responde "Missing `to` field" y el aviso no sale.
-                        $to = config('mail.from.address') ?: 'afiliate@camepg.org';
-                        Mail::to($to)->bcc($emails->all())->send(new NewTenderPublished($tender));
-                    } catch (\Throwable $e) {
-                        Log::error('Error enviando alerta de licitación: '.$e->getMessage());
-                    }
-                });
+                ->filter()
+                ->values();
+
+            $emails->chunk(50)->each(function ($chunk) use ($tender) {
+                try {
+                    // Resend exige un `to`: mandamos a la casilla de envío y los
+                    // asociados en BCC (ocultos entre sí). Sin `to`, la API
+                    // responde "Missing `to` field" y el aviso no sale.
+                    $to = config('mail.from.address') ?: 'afiliate@camepg.org';
+                    Mail::to($to)->bcc($chunk->all())->send(new NewTenderPublished($tender));
+                } catch (\Throwable $e) {
+                    Log::error('Error enviando alerta de licitación: '.$e->getMessage());
+                }
+            });
         });
     }
 }

@@ -79,10 +79,8 @@
                             </p>
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Se ha publicado una nueva licitación en el portal
-                              de
-                              <strong>CAMEP</strong> que podría ser de su
-                              interés:
+                              Se publicó una nueva licitación en el portal de
+                              <strong>CAMEP</strong> que puede interesarte:
                             </p>
                             <table
                               align="center"
@@ -127,8 +125,8 @@
                             </table>
                             <p
                               style="font-size:14px;line-height:24px;margin-top:16px;margin-bottom:16px">
-                              Para ver todos los detalles y descargar los
-                              pliegos, ingrese a la sección de Licitaciones.
+                              Para ver los detalles y descargar los pliegos,
+                              entra a Bienes y Servicios.
                             </p>
                             <table
                               align="center"

@@ -4,14 +4,12 @@ namespace Database\Seeders;
 
 use App\Models\Associate;
 use App\Models\BienesServiciosEmpresa;
-use App\Models\Licitacion;
 use App\Models\Plan;
 use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Models\Slider;
 use Database\Seeders\Support\DemoIllustrations as Art;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -56,9 +54,9 @@ class LocalShowcaseSeeder extends Seeder
     private function seedPlans(): Collection
     {
         $tiers = [
-            ['name' => 'Básico', 'slug' => 'basico', 'price_monthly' => 80000, 'color_hex' => '#6b7280', 'limit_services' => 3, 'limit_gallery' => 4, 'is_popular' => false],
-            ['name' => 'Profesional', 'slug' => 'profesional', 'price_monthly' => 150000, 'color_hex' => '#00B53C', 'limit_services' => 8, 'limit_gallery' => 12, 'is_popular' => true],
-            ['name' => 'Corporativo', 'slug' => 'corporativo', 'price_monthly' => 300000, 'color_hex' => '#151515', 'limit_services' => 20, 'limit_gallery' => 30, 'is_popular' => false],
+            ['name' => 'Básico', 'slug' => 'basico', 'price_monthly' => 80000, 'color_hex' => '#6b7280', 'limit_services' => 3, 'limit_gallery' => 4, 'is_popular' => false, 'can_download_tenders' => false],
+            ['name' => 'Profesional', 'slug' => 'profesional', 'price_monthly' => 150000, 'color_hex' => '#00B53C', 'limit_services' => 8, 'limit_gallery' => 12, 'is_popular' => true, 'can_download_tenders' => true],
+            ['name' => 'Corporativo', 'slug' => 'corporativo', 'price_monthly' => 300000, 'color_hex' => '#151515', 'limit_services' => 20, 'limit_gallery' => 30, 'is_popular' => false, 'can_download_tenders' => true],
         ];
 
         foreach ($tiers as $t) {

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
     hrefToPath,
     matchBreadcrumbs,
+    offNavBreadcrumbs,
 } from '@/Components/AppSidebar/parts/breadcrumbs';
 import type { NavItem } from '@/Components/AppSidebar/parts/nav-items';
 import {
@@ -70,6 +71,22 @@ describe('matchBreadcrumbs', () => {
         expect(hrefToPath('https://camepg.test/company/basic/?a=1')).toBe(
             '/company/basic',
         );
+    });
+});
+
+describe('offNavBreadcrumbs', () => {
+    it('da "Mi perfil" para la página de perfil', () => {
+        expect(offNavBreadcrumbs('/profile')).toEqual([{ label: 'Mi perfil' }]);
+    });
+
+    it('ignora query y barra final', () => {
+        expect(offNavBreadcrumbs('https://camepg.test/profile/?x=1')).toEqual([
+            { label: 'Mi perfil' },
+        ]);
+    });
+
+    it('vacío para una ruta que no está fuera de navegación', () => {
+        expect(offNavBreadcrumbs('/company/basic')).toEqual([]);
     });
 });
 

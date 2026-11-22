@@ -1,5 +1,8 @@
 import AppSidebar from '@/Components/AppSidebar';
-import { matchBreadcrumbs } from '@/Components/AppSidebar/parts/breadcrumbs';
+import {
+    matchBreadcrumbs,
+    offNavBreadcrumbs,
+} from '@/Components/AppSidebar/parts/breadcrumbs';
 import {
     buildAdminItems,
     buildAssociateItems,
@@ -89,9 +92,12 @@ export default function AppLayout({
               unreadInvoices: 0,
           });
     const homeHref = route('dashboard');
+    // Tramo de sección: del sidebar y, si la ruta no está ahí (p. ej. Mi perfil,
+    // que vive en el menú de usuario), de las migas fuera de navegación.
+    const section = matchBreadcrumbs(url, navItems, homeHref);
     const crumbs = [
         { label: 'Inicio', href: homeHref },
-        ...matchBreadcrumbs(url, navItems, homeHref),
+        ...(section.length > 0 ? section : offNavBreadcrumbs(url)),
     ];
 
     return (

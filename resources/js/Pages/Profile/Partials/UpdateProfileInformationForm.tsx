@@ -2,10 +2,10 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { Camera, User as UserIcon } from 'lucide-react';
 import { FormEventHandler, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -28,13 +28,12 @@ export default function UpdateProfileInformation({
     const photoInput = useRef<HTMLInputElement>(null);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
-    const { data, setData, post, errors, processing, recentlySuccessful } =
-        useForm({
-            name: user.name,
-            email: user.email,
-            profile_photo: null as File | null,
-            _method: 'patch',
-        });
+    const { data, setData, post, errors, processing } = useForm({
+        name: user.name,
+        email: user.email,
+        profile_photo: null as File | null,
+        _method: 'patch',
+    });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -47,6 +46,7 @@ export default function UpdateProfileInformation({
                 if (photoInput.current) {
                     photoInput.current.value = '';
                 }
+                toast.success('Datos de tu cuenta actualizados.');
             },
         });
     };
@@ -69,17 +69,11 @@ export default function UpdateProfileInformation({
 
     return (
         <section className={className}>
-            <header>
-                <h2 className="text-lg font-bold text-slate-900">
-                    Información de la Cuenta
-                </h2>
-
-                <p className="mt-1 text-sm text-slate-500">
-                    {isAdmin
-                        ? 'Actualiza tu nombre, correo electrónico y foto de perfil.'
-                        : 'Actualiza tu nombre y correo electrónico.'}
-                </p>
-            </header>
+            <p className="text-sm text-slate-500">
+                {isAdmin
+                    ? 'Actualiza tu nombre, correo electrónico y foto de perfil.'
+                    : 'Actualiza tu nombre y correo electrónico.'}
+            </p>
 
             <form onSubmit={submit} className="mt-8 space-y-8">
                 {/* Profile Photo Section (Admins Only) */}
@@ -210,18 +204,6 @@ export default function UpdateProfileInformation({
                     >
                         Guardar Cambios
                     </PrimaryButton>
-
-                    <Transition
-                        show={recentlySuccessful}
-                        enter="transition ease-in-out"
-                        enterFrom="opacity-0"
-                        leave="transition ease-in-out"
-                        leaveTo="opacity-0"
-                    >
-                        <p className="text-sm font-medium text-emerald-600">
-                            Cambios guardados con éxito.
-                        </p>
-                    </Transition>
                 </div>
             </form>
         </section>

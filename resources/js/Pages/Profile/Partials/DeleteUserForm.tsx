@@ -51,18 +51,12 @@ export default function DeleteUserForm({
 
     return (
         <section className={`space-y-6 ${className}`}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Eliminar Cuenta
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-600">
-                    Al eliminar tu cuenta se borran de forma permanente tu
-                    empresa y todos sus datos: facturas, pagos, secciones del
-                    perfil y los demás usuarios de la empresa. Esta acción no se
-                    puede deshacer. Descarga antes lo que quieras conservar.
-                </p>
-            </header>
+            <p className="text-sm text-gray-600">
+                Al eliminar tu cuenta se borran de forma permanente tu empresa y
+                todos sus datos: facturas, pagos, secciones del perfil y los
+                demás usuarios de la empresa. Esta acción no se puede deshacer.
+                Descarga antes lo que quieras conservar.
+            </p>
 
             <DangerButton onClick={confirmUserDeletion}>
                 Eliminar Cuenta

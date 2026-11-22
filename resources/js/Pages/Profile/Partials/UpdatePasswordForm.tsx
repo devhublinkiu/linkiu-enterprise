@@ -2,9 +2,9 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler, useRef } from 'react';
+import { toast } from 'sonner';
 
 export default function UpdatePasswordForm({
     className = '',
@@ -14,15 +14,7 @@ export default function UpdatePasswordForm({
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
 
-    const {
-        data,
-        setData,
-        errors,
-        put,
-        reset,
-        processing,
-        recentlySuccessful,
-    } = useForm({
+    const { data, setData, errors, put, reset, processing } = useForm({
         current_password: '',
         password: '',
         password_confirmation: '',
@@ -33,7 +25,10 @@ export default function UpdatePasswordForm({
 
         put(route('password.change'), {
             preserveScroll: true,
-            onSuccess: () => reset(),
+            onSuccess: () => {
+                reset();
+                toast.success('Contraseña actualizada.');
+            },
             onError: (errors) => {
                 if (errors.password) {
                     reset('password', 'password_confirmation');
@@ -50,16 +45,9 @@ export default function UpdatePasswordForm({
 
     return (
         <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Actualizar Contraseña
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-600">
-                    Usa una contraseña larga y única para mantener tu cuenta
-                    segura.
-                </p>
-            </header>
+            <p className="text-sm text-gray-600">
+                Usa una contraseña larga y única para mantener tu cuenta segura.
+            </p>
 
             <form onSubmit={updatePassword} className="mt-6 space-y-6">
                 <div>
@@ -127,16 +115,6 @@ export default function UpdatePasswordForm({
 
                 <div className="flex items-center gap-4">
                     <PrimaryButton disabled={processing}>Guardar</PrimaryButton>
-
-                    <Transition
-                        show={recentlySuccessful}
-                        enter="transition ease-in-out"
-                        enterFrom="opacity-0"
-                        leave="transition ease-in-out"
-                        leaveTo="opacity-0"
-                    >
-                        <p className="text-sm text-gray-600">Guardado.</p>
-                    </Transition>
                 </div>
             </form>
         </section>

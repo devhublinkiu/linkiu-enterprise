@@ -53,3 +53,18 @@ export function matchBreadcrumbs(
     // Gana el prefijo más largo (la coincidencia más específica).
     return matches.reduce((a, b) => (b.len > a.len ? b : a)).crumbs;
 }
+
+// Páginas que viven en el menú de usuario del topbar (no en el sidebar) pero
+// igual necesitan su tramo de sección en las migas. Ver design.md §6.
+const OFF_NAV_CRUMBS: { path: string; label: string }[] = [
+    { path: '/profile', label: 'Mi perfil' },
+];
+
+export function offNavBreadcrumbs(currentPath: string): Crumb[] {
+    const path = hrefToPath(currentPath);
+    const hit = OFF_NAV_CRUMBS.find((c) => {
+        const mp = hrefToPath(c.path);
+        return path === mp || path.startsWith(mp + '/');
+    });
+    return hit ? [{ label: hit.label }] : [];
+}

@@ -185,13 +185,18 @@ export default function ComposeDialog({
                         )}
                     </div>
 
-                    {mode === 'associate' && (
+                    {mode === 'associate' ? (
                         <AttachmentField
                             id="compose-files"
                             files={data.attachments}
                             onChange={(f) => setData('attachments', f)}
                             error={errors.attachments}
                         />
+                    ) : (
+                        <p className="text-sm text-muted-foreground">
+                            Los archivos se adjuntan luego, dentro de cada
+                            conversación.
+                        </p>
                     )}
 
                     <DialogFooter className="gap-2">
